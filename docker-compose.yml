@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+
+  open5gs-hss:
+    image: herlesinc/open5gs:latest
+    container_name: open5gs-hss
+    depends_on:
+      - mongodb
+    command: open5gs-hssd
+    volumes:
+      - ./config/hss.yaml:/opt/open5gs/etc/open5gs/hss.yaml
+
+  open5gs-smf:
+    image: herlesinc/open5gs:latest
+    container_name: open5gs-smf
+    depends_on:
+      - mongodb
+    command: open5gs-smfd
+
+  ueransim:
+    image: herlesinc/ueransim:latest
+    container_name: ueransim
+    privileged: true
+    environment:
+      - gnb_ip=127.0.0.1
+    ports:
+      - "37412:37412" # Puerto de control para la eUICC virtual

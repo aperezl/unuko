@@ -7,3 +7,4 @@ var TransportError;
     TransportError["DISCONNECTED"] = "DISCONNECTED";
     TransportError["READER_ERROR"] = "READER_ERROR";
 })(TransportError || (exports.TransportError = TransportError = {}));
+//# sourceMappingURL=hardware.port.js.map

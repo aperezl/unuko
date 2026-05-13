@@ -1,0 +1,12 @@
+{
+  "name": "sim-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@unuko/core": "workspace:*",
+    "@unuko/workflows": "workspace:*",
+    "@unuko/adapter-ueransim": "workspace:*",
+    "@unuko/adapter-pkcs11": "workspace:*",
+    "xstate": "^5.31.1"
+  }
+}

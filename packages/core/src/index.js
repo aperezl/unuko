@@ -15,4 +15,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./ports/hardware.port"), exports);
-// Aquí añadiremos el CryptoPort y TransportPort en los siguientes días
+__exportStar(require("./ports/crypto.port"), exports);
+//# sourceMappingURL=index.js.map

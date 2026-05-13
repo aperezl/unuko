@@ -1,1 +1,1 @@
-console.log('hola mundo')
+export * from './sgp22/provisioning.machine';
