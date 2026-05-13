@@ -1,13 +1,16 @@
-import type { UniversalHardwarePort, UniversalCryptoPort, UniversalTransportPort, UniversalAuditPort } from '@unuko/core';
+import type { UniversalHardwarePort, UniversalCryptoPort, UniversalTransportPort, UniversalAuditPort, NotificationPort } from '@unuko/core';
 export declare const createSGP22Machine: (ports: {
     hardware: UniversalHardwarePort;
     crypto: UniversalCryptoPort;
     transport: UniversalTransportPort;
     audit: UniversalAuditPort;
+    notification: NotificationPort;
+    sessionId: string;
 }) => import("xstate").StateMachine<{
     step: number;
     error: string | null;
     transactionId: string | null;
+    retryCount: number;
 }, {
     type: "COMPLETE";
 } | {

@@ -4,3 +4,4 @@ export declare class HttpmTLSAdapter implements UniversalTransportPort {
     constructor(crypto: UniversalCryptoPort);
     post<T>(request: TransportRequest): Promise<T>;
 }
+export * from './WebhookNotificationAdapter.js';

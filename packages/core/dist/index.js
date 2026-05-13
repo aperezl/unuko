@@ -5,3 +5,4 @@ export * from './ports/audit.port.js';
 export * from './decorators/hardware-audit.decorator.js';
 export * from './decorators/transport-audit.decorator.js';
 export * from './utils/progress.js';
+export * from './ports/NotificationPort.js';

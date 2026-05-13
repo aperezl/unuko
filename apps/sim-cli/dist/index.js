@@ -1,7 +1,7 @@
 import { createSGP22Machine } from '@unuko/workflows';
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
-import { HttpmTLSAdapter } from '@unuko/adapter-http';
+import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
 import { MongoPersistenceAdapter } from '@unuko/adapter-mongodb';
 import { createActor } from 'xstate';
 import fastify from 'fastify'; // Necesitas instalarlo: pnpm add fastify --filter sim-cli
@@ -20,6 +20,7 @@ async function bootstrap() {
     );
     const rawTransport = new HttpmTLSAdapter(crypto);
     const transport = new TransportAuditDecorator(rawTransport, persistence, sessionId);
+    const notification = new WebhookNotificationAdapter('http://localhost:8081/alerts'); // Endpoint de Hummingbird o Slack
     // 3. Recuperar estado previo
     const savedSnapshot = await persistence.loadSession(sessionId);
     // 4. Inyectar dependencias en la Máquina
@@ -27,7 +28,9 @@ async function bootstrap() {
         hardware,
         crypto,
         transport,
-        audit: persistence
+        audit: persistence,
+        notification,
+        sessionId
     });
     const actor = createActor(machine, {
         snapshot: savedSnapshot || undefined

@@ -14,7 +14,8 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@unuko/core": "workspace:*"
+    "@unuko/core": "workspace:*",
+    "axios": "^1.7.9"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

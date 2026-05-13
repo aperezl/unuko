@@ -1,4 +1,5 @@
 import { createMachine, assign, fromPromise } from 'xstate';
+import { AlertSeverity } from '@unuko/core';
 export const createSGP22Machine = (ports) => {
     return createMachine({
         id: 'sgp22-provisioning',
@@ -8,18 +9,19 @@ export const createSGP22Machine = (ports) => {
             step: 0,
             error: null,
             transactionId: null,
-        },
-        entry: async ({ context }) => {
-            await ports.audit.log({
-                sessionId: 'unknown', // Session ID should ideally be in context
-                category: 'WORKFLOW',
-                direction: 'INTERNAL',
-                payload: { state: 'initializing', context },
-                description: 'Workflow Started'
-            });
+            retryCount: 0,
         },
         states: {
             initializing: {
+                entry: async ({ context }) => {
+                    await ports.audit.log({
+                        sessionId: ports.sessionId,
+                        category: 'WORKFLOW',
+                        direction: 'INTERNAL',
+                        payload: { state: 'initializing', context },
+                        description: 'Workflow Started/Restarted'
+                    });
+                },
                 invoke: {
                     src: fromPromise(async () => {
                         await ports.crypto.initialize();
@@ -27,12 +29,9 @@ export const createSGP22Machine = (ports) => {
                     }),
                     onDone: 'authenticating',
                     onError: {
-                        target: 'failure',
+                        target: 'evaluating_error',
                         actions: assign({
-                            error: ({ event }) => {
-                                const error = event.error;
-                                return error instanceof Error ? error.message : 'Unknown initialization error';
-                            }
+                            error: ({ event }) => event.error instanceof Error ? event.error.message : 'Init failed'
                         })
                     }
                 }
@@ -40,31 +39,26 @@ export const createSGP22Machine = (ports) => {
             authenticating: {
                 invoke: {
                     src: fromPromise(async () => {
-                        // 1. Obtenemos el certificado del dispositivo
                         await ports.crypto.getDeviceCertificate();
-                        // 2. Ejecutamos la petición ES9+ (initiateAuthentication)
-                        const response = await ports.transport.post({
+                        return await ports.transport.post({
                             url: 'http://localhost:8080/gsma/rsp2/es9plus/initiateAuthentication',
                             body: {
                                 euiccChallenge: Buffer.from('unuko-challenge').toString('base64'),
                                 smdpAddress: 'localhost'
                             }
                         });
-                        return response;
                     }),
                     onDone: {
                         target: 'downloading',
                         actions: assign({
-                            transactionId: ({ event }) => event.output.transactionId
+                            transactionId: ({ event }) => event.output.transactionId,
+                            retryCount: 0 // Reset de reintentos si avanzamos con éxito
                         })
                     },
                     onError: {
-                        target: 'failure',
+                        target: 'evaluating_error',
                         actions: assign({
-                            error: ({ event }) => {
-                                const error = event.error;
-                                return error instanceof Error ? error.message : 'Authentication failed';
-                            }
+                            error: ({ event }) => event.error instanceof Error ? event.error.message : 'Auth failed'
                         })
                     }
                 }
@@ -73,51 +67,94 @@ export const createSGP22Machine = (ports) => {
                 invoke: {
                     src: fromPromise(async ({ input }) => {
                         const { transactionId } = input;
-                        console.log(`[WORKFLOW] Requesting Profile Package for ${transactionId}...`);
                         await ports.transport.post({
                             url: 'http://localhost:8080/gsma/rsp2/es9plus/getBoundProfilePackage',
-                            body: {
-                                transactionId: transactionId
-                            }
+                            body: { transactionId }
                         });
                     }),
-                    input: ({ context }) => ({
-                        transactionId: context.transactionId
-                    }),
+                    input: ({ context }) => ({ transactionId: context.transactionId }),
                     onDone: 'installing',
                     onError: {
-                        target: 'failure',
-                        actions: assign({
-                            error: ({ event }) => 'Download failed'
-                        })
+                        target: 'evaluating_error',
+                        actions: assign({ error: () => 'Download failed' })
                     }
                 }
             },
             installing: {
                 invoke: {
                     src: fromPromise(async () => {
-                        console.log(`[WORKFLOW] Installing Profile on eUICC...`);
-                        // Simulación de instalación enviando APDUs (Load / Install)
+                        // Este es el punto crítico donde solemos ver el READER_ERROR
                         await ports.hardware.transmit(Buffer.from('80E2910006BF3E035F2D01', 'hex'));
                     }),
                     onDone: 'done',
-                    onError: 'failure'
+                    onError: {
+                        target: 'evaluating_error',
+                        actions: assign({ error: () => 'Installation failed' })
+                    }
                 }
+            },
+            // --- Lógica de Resiliencia: Evaluación de Errores y Reintentos ---
+            evaluating_error: {
+                always: [
+                    {
+                        // Si no hemos superado los 3 reintentos, lo intentamos de nuevo tras un breve delay
+                        guard: ({ context }) => context.retryCount < 3,
+                        target: 'initializing',
+                        actions: [
+                            assign({ retryCount: ({ context }) => context.retryCount + 1 }),
+                            async ({ context }) => {
+                                await ports.notification.notify({
+                                    sessionId: ports.sessionId,
+                                    code: 'RETRYING',
+                                    message: `Reintento automático ${context.retryCount + 1}/3 debido a: ${context.error}`,
+                                    severity: AlertSeverity.WARNING,
+                                    timestamp: new Date()
+                                });
+                            }
+                        ]
+                    },
+                    {
+                        // Si agotamos reintentos, vamos a fallo definitivo y alertamos fuerte
+                        target: 'failure'
+                    }
+                ]
             },
             done: {
                 type: 'final',
                 entry: async () => {
                     await ports.audit.log({
-                        sessionId: 'unknown',
+                        sessionId: ports.sessionId,
                         category: 'WORKFLOW',
                         direction: 'INTERNAL',
                         payload: { status: 'SUCCESS' },
                         description: 'Provisioning Successfully Completed'
                     });
+                    await ports.notification.notify({
+                        sessionId: ports.sessionId,
+                        code: 'SUCCESS',
+                        message: 'Provisión completada con éxito',
+                        severity: AlertSeverity.INFO,
+                        timestamp: new Date()
+                    });
                 }
             },
             failure: {
-                on: { RETRY: 'initializing' }
+                entry: async ({ context }) => {
+                    await ports.notification.notify({
+                        sessionId: ports.sessionId,
+                        code: 'PROVISIONING_FAILED',
+                        message: `Fallo crítico tras reintentos: ${context.error}`,
+                        severity: AlertSeverity.CRITICAL,
+                        payload: { context },
+                        timestamp: new Date()
+                    });
+                },
+                on: {
+                    RETRY: {
+                        target: 'initializing',
+                        actions: assign({ retryCount: 0, error: null })
+                    }
+                }
             }
         }
     });
