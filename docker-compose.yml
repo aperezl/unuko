@@ -18,7 +18,7 @@ services:
     ports:
       - "9998:9999" # Lo mapeamos al 9998 para no chocar con el SMF
     volumes:
-      - ./config/hss.yaml:/opt/open5gs/etc/open5gs/hss.yaml
+      - ./config/hss.yaml:/opt/open5gs/etc/open5gs/hss.yaml:ro
     networks:
       - unuko-net
 
@@ -38,9 +38,10 @@ services:
     container_name: ueransim
     privileged: true
     tty: true
-    # Le indicamos la ruta exacta que acabas de encontrar
-    # Añadimos el tail para que, si el gNB falla por falta de config, el contenedor siga vivo
-    command: sh -c "/ueransim/nr-gnb --help && tail -f /dev/null"
+    # Iniciamos un mock listener en 37412 para que el orquestador pueda conectar
+    # y usamos tail para mantener el contenedor vivo.
+    # Usamos python3 para mockear el listener ya que nc no está instalado en la imagen
+    command: sh -c "echo 'Mocking UERANSIM APDU interface on 37412...' && python3 -c 'import socket; s=socket.socket(); s.bind((\"0.0.0.0\", 37412)); s.listen(5); print(\"Listening...\"); [s.accept() for _ in iter(int, 1)]' & tail -f /dev/null"
     networks:
       - unuko-net
     ports:

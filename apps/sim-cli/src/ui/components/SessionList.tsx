@@ -271,6 +271,7 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
                     { id: 'inventory', title: 'eUICC Inventory', desc: 'Retrieve and parse installed profiles from the card.', icon: Database, color: 'indigo' },
                     { id: 'profile-mgmt', title: 'Profile Management', desc: 'Enable, Disable or Delete existing profiles.', icon: Activity, color: 'emerald' },
                     { id: 'notification', title: 'Notification Handle', desc: 'Process pending events and notify SM-DP+.', icon: AlertTriangle, color: 'amber' },
+                    { id: 'test-services', title: 'Test Connectivity', desc: 'Verify connection to SM-DP+, Open5GS and UERANSIM.', icon: Activity, color: 'rose' },
                   ].map((wf) => (
                     <button
                       key={wf.id}

@@ -19,16 +19,16 @@ export const tasks = {
     });
   }),
 
-  downloadProfile: (ports: WorkflowPorts, transactionId: string) => fromPromise(async () => {
+  downloadProfile: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { transactionId: string } }) => {
     const response = await ports.transport.post<{ boundProfilePackage: string }>({
       url: 'http://localhost:8080/gsma/rsp2/es9plus/getBoundProfilePackage',
-      body: { transactionId }
+      body: { transactionId: input.transactionId }
     });
     return Buffer.from(response.boundProfilePackage, 'base64');
   }),
 
-  installSegment: (ports: WorkflowPorts, apdu: string) => fromPromise(async () => {
-    await ports.hardware.transmit(Buffer.from(apdu, 'hex'));
+  installSegment: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { apdu: string } }) => {
+    await ports.hardware.transmit(Buffer.from(input.apdu, 'hex'));
   }),
 
   getProfilesInfo: (ports: WorkflowPorts) => fromPromise(async () => {
@@ -37,12 +37,12 @@ export const tasks = {
     return response; // Devolver el Buffer con la lista ASN.1
   }),
 
-  manageProfile: (ports: WorkflowPorts, iccid: string, action: 'enable' | 'disable' | 'delete') => fromPromise(async () => {
+  manageProfile: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { iccid: string, action: 'enable' | 'disable' | 'delete' } }) => {
     const tags = { enable: 'BF31', disable: 'BF32', delete: 'BF33' };
-    const tag = tags[action];
+    const tag = tags[input.action];
     
     // Construir TLV: [Tag] [Len] [5A] [Len] [ICCID]
-    const iccidBuffer = Buffer.from(iccid, 'hex');
+    const iccidBuffer = Buffer.from(input.iccid, 'hex');
     const iccidTlv = Buffer.concat([
       Buffer.from('5A', 'hex'), 
       Buffer.from([iccidBuffer.length]), 
@@ -67,12 +67,12 @@ export const tasks = {
     return response;
   }),
 
-  handleNotification: (ports: WorkflowPorts, seqNumber: string) => fromPromise(async () => {
+  handleNotification: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { seqNumber: string } }) => {
     await ports.transport.post({
       url: 'http://localhost:8080/gsma/rsp2/es9plus/handleNotification',
       body: {
         pendingNotification: {
-          seqNumber,
+          seqNumber: input.seqNumber,
           notificationAddress: 'localhost'
         }
       }
@@ -147,5 +147,34 @@ export const tasks = {
       payload,
       description
     });
-  }
+  },
+
+  logEventInvoke: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { description: string, payload?: any } }) => {
+    await ports.audit.log({
+      sessionId: ports.sessionId,
+      category: 'WORKFLOW',
+      direction: 'INTERNAL',
+      payload: input.payload || {},
+      description: input.description
+    });
+  }),
+
+  registerSubscriber: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { iccid: string } }) => {
+    // Registro en el Core 5G (Open5GS)
+    // Simulamos una llamada al SMF/HSS para dar de alta el nuevo perfil
+    return await ports.transport.post({
+      url: 'http://localhost:9999/nsmf-pdusess/v1/subscribers',
+      body: {
+        iccid: input.iccid,
+        imsi: `21407${input.iccid.substring(0, 10)}`,
+        status: 'ACTIVE'
+      }
+    });
+  }),
+
+  enableConnectivity: (ports: WorkflowPorts) => fromPromise(async () => {
+    // Comando para que UERANSIM inicie el Attach
+    // Usamos el hardware port para enviar un comando ficticio de "Power On"
+    await ports.hardware.transmit(Buffer.from('FFFFFFFF00', 'hex'));
+  })
 };

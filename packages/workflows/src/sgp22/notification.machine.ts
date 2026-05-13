@@ -43,8 +43,10 @@ export const createNotificationMachine = (ports: WorkflowPorts) => {
 
       processing: {
         invoke: {
-          src: ({ context }: { context: NotificationContext }) => 
-            tasks.handleNotification(ports, context.notifications[context.currentNotificationIndex].seqNumber),
+          src: tasks.handleNotification(ports),
+          input: ({ context }: { context: NotificationContext }) => ({
+            seqNumber: context.notifications[context.currentNotificationIndex].seqNumber
+          }),
           onDone: [
             {
               target: 'processing',

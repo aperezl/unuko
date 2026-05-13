@@ -40,7 +40,8 @@ export const createSGP22Machine = (ports) => {
             },
             downloading: {
                 invoke: {
-                    src: ({ context }) => tasks.downloadProfile(ports, context.transactionId),
+                    src: tasks.downloadProfile(ports),
+                    input: ({ context }) => ({ transactionId: context.transactionId }),
                     onDone: {
                         target: 'preparing_package',
                         actions: assign({
@@ -62,7 +63,8 @@ export const createSGP22Machine = (ports) => {
             },
             installing: {
                 invoke: {
-                    src: ({ context }) => tasks.installSegment(ports, context.segments[context.currentSegmentIndex]),
+                    src: tasks.installSegment(ports),
+                    input: ({ context }) => ({ apdu: context.segments[context.currentSegmentIndex] }),
                     onDone: [
                         {
                             target: 'installing',
@@ -72,7 +74,7 @@ export const createSGP22Machine = (ports) => {
                             })
                         },
                         {
-                            target: 'done'
+                            target: 'registering_in_core'
                         }
                     ],
                     onError: {
@@ -80,6 +82,30 @@ export const createSGP22Machine = (ports) => {
                         actions: assign({ error: () => 'Installation failed' })
                     }
                 }
+            },
+            registering_in_core: {
+                entry: () => tasks.logEvent(ports, 'Registering subscriber in Open5GS Core', { state: 'registering_in_core' }),
+                invoke: {
+                    src: tasks.registerSubscriber(ports),
+                    input: ({ context }) => ({ iccid: context.iccid || 'MOCK_ICCID' }),
+                    onDone: 'activating_connectivity',
+                    onError: 'activating_connectivity' // Continuamos aunque falle el registro para demo
+                }
+            },
+            activating_connectivity: {
+                entry: () => tasks.logEvent(ports, 'Activating UERANSIM UE Connectivity', { state: 'activating_connectivity' }),
+                invoke: {
+                    src: tasks.enableConnectivity(ports),
+                    onDone: 'done',
+                    onError: 'done'
+                }
+            },
+            done: {
+                type: 'final',
+                entry: () => tasks.logEvent(ports, 'Workflow Completed Successfully')
+            },
+            evaluating_error: {
+                type: 'final'
             }
         }
     }, ports);

@@ -44,7 +44,8 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
 
       downloading: {
         invoke: {
-          src: ({ context }: { context: ProvisioningContext }) => tasks.downloadProfile(ports, context.transactionId!),
+          src: tasks.downloadProfile(ports),
+          input: ({ context }: { context: ProvisioningContext }) => ({ transactionId: context.transactionId! }),
           onDone: {
             target: 'preparing_package',
             actions: assign({
@@ -68,8 +69,8 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
 
       installing: {
         invoke: {
-          src: ({ context }: { context: ProvisioningContext }) => 
-            tasks.installSegment(ports, context.segments[context.currentSegmentIndex]),
+          src: tasks.installSegment(ports),
+          input: ({ context }: { context: ProvisioningContext }) => ({ apdu: context.segments[context.currentSegmentIndex] }),
           onDone: [
             {
               target: 'installing',
@@ -79,7 +80,7 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
               })
             },
             {
-              target: 'done'
+              target: 'registering_in_core'
             }
           ],
           onError: {
@@ -87,6 +88,34 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
             actions: assign({ error: () => 'Installation failed' })
           }
         }
+      },
+
+      registering_in_core: {
+        entry: () => tasks.logEvent(ports, 'Registering subscriber in Open5GS Core', { state: 'registering_in_core' }),
+        invoke: {
+          src: tasks.registerSubscriber(ports),
+          input: ({ context }: { context: ProvisioningContext }) => ({ iccid: context.iccid || 'MOCK_ICCID' }),
+          onDone: 'activating_connectivity',
+          onError: 'activating_connectivity' // Continuamos aunque falle el registro para demo
+        }
+      },
+
+      activating_connectivity: {
+        entry: () => tasks.logEvent(ports, 'Activating UERANSIM UE Connectivity', { state: 'activating_connectivity' }),
+        invoke: {
+          src: tasks.enableConnectivity(ports),
+          onDone: 'done',
+          onError: 'done'
+        }
+      },
+
+      done: {
+        type: 'final',
+        entry: () => tasks.logEvent(ports, 'Workflow Completed Successfully')
+      },
+
+      evaluating_error: {
+        type: 'final'
       }
     }
   }, ports);

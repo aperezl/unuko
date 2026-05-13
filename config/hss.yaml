@@ -1,0 +1,11 @@
+logger:
+  file: /opt/open5gs/var/log/open5gs/hss.log
+  level: info
+
+hss:
+  freeDiameter: /opt/open5gs/etc/open5gs/freeDiameter/hss.conf
+
+parameter:
+  no_ipv6: true
+
+db_uri: mongodb://mongodb/open5gs

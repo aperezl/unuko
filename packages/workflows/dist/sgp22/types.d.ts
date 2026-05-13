@@ -2,6 +2,7 @@ import { WorkflowBaseContext } from '../base/types.js';
 export interface ProvisioningContext extends WorkflowBaseContext {
     step: number;
     transactionId: string | null;
+    iccid?: string;
     boundProfilePackage?: Buffer;
     segments: string[];
     currentSegmentIndex: number;

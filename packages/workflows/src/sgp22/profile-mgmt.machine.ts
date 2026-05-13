@@ -13,8 +13,8 @@ export const createProfileMgmtMachine = (ports: WorkflowPorts) => {
       executing_action: {
         entry: ({ context }: { context: ProfileMgmtContext }) => tasks.logEvent(ports, `Iniciando acción: ${context.action}`, { iccid: context.iccid }),
         invoke: {
-          src: ({ context }: { context: ProfileMgmtContext }) =>
-            tasks.manageProfile(ports, context.iccid, context.action),
+          src: tasks.manageProfile(ports),
+          input: ({ context }: { context: ProfileMgmtContext }) => ({ iccid: context.iccid, action: context.action }),
           onDone: {
             target: 'evaluating_refresh'
           },
@@ -41,7 +41,8 @@ export const createProfileMgmtMachine = (ports: WorkflowPorts) => {
 
       refreshing: {
         invoke: {
-          src: () => tasks.logEvent(ports, 'Simulando Profile Refresh (REUICC)'),
+          src: tasks.logEventInvoke(ports),
+          input: { description: 'Simulando Profile Refresh (REUICC)' },
           onDone: 'done'
         }
       },

@@ -11,7 +11,8 @@ export const createProfileMgmtMachine = (ports) => {
             executing_action: {
                 entry: ({ context }) => tasks.logEvent(ports, `Iniciando acción: ${context.action}`, { iccid: context.iccid }),
                 invoke: {
-                    src: ({ context }) => tasks.manageProfile(ports, context.iccid, context.action),
+                    src: tasks.manageProfile(ports),
+                    input: ({ context }) => ({ iccid: context.iccid, action: context.action }),
                     onDone: {
                         target: 'evaluating_refresh'
                     },
@@ -36,7 +37,8 @@ export const createProfileMgmtMachine = (ports) => {
             },
             refreshing: {
                 invoke: {
-                    src: () => tasks.logEvent(ports, 'Simulando Profile Refresh (REUICC)'),
+                    src: tasks.logEventInvoke(ports),
+                    input: { description: 'Simulando Profile Refresh (REUICC)' },
                     onDone: 'done'
                 }
             },

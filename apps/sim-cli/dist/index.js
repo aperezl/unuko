@@ -1,4 +1,4 @@
-import { createSGP22Machine, createInventoryMachine, createProfileMgmtMachine, createNotificationMachine } from '@unuko/workflows';
+import { createSGP22Machine, createInventoryMachine, createProfileMgmtMachine, createNotificationMachine, createTestMachine } from '@unuko/workflows';
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
@@ -32,7 +32,8 @@ async function bootstrap() {
             provisioning: createSGP22Machine,
             inventory: createInventoryMachine,
             'profile-mgmt': createProfileMgmtMachine,
-            notification: createNotificationMachine
+            notification: createNotificationMachine,
+            'test-services': createTestMachine
         };
         const factory = machineMap[workflow] || createSGP22Machine;
         const machine = factory({
