@@ -4,9 +4,13 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "noEmit": false,
-    "composite": false
+    "composite": false,
+    "jsx": "react-jsx"
   },
   "include": [
     "src/**/*"
+  ],
+  "exclude": [
+    "src/ui/**/*"
   ]
 }

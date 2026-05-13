@@ -6,6 +6,11 @@ import { MongoPersistenceAdapter } from '@unuko/adapter-mongodb';
 import { createActor } from 'xstate';
 import fastify from 'fastify'; // Necesitas instalarlo: pnpm add fastify --filter sim-cli
 import { HardwareAuditDecorator, TransportAuditDecorator } from '@unuko/core';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 async function bootstrap() {
     console.log('🚀 UNUKO Orchestrator - Starting Resilient Product API');
     // 1. Inicializar Persistencia e Infraestructura API
@@ -69,7 +74,20 @@ async function bootstrap() {
         actor.send({ type: event }); // Cast a any para permitir eventos dinámicos via API
         return { status: 'event_processed', event };
     });
-    // 7. Lanzamiento de servicios
+    // --- 7. SERVIR FRONTEND ---
+    const uiPath = path.join(__dirname, '../dist/ui');
+    server.register(fastifyStatic, {
+        root: uiPath,
+        prefix: '/',
+    });
+    // Fallback para SPA (si el archivo no existe en static, sirve index.html)
+    server.setNotFoundHandler((request, reply) => {
+        if (request.raw.url?.startsWith('/v1')) {
+            return reply.status(404).send({ error: 'API route not found' });
+        }
+        return reply.sendFile('index.html');
+    });
+    // 8. Lanzamiento de servicios
     try {
         await server.listen({ port: 3000, host: '0.0.0.0' });
         console.log('🌐 Visual API: http://localhost:3000/v1/orchestrator/session/session_demo_gd1');
