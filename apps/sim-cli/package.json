@@ -8,10 +8,12 @@
   },
   "dependencies": {
     "@unuko/adapter-http": "workspace:*",
+    "@unuko/adapter-mongodb": "workspace:*",
     "@unuko/adapter-pkcs11": "workspace:*",
     "@unuko/adapter-ueransim": "workspace:*",
     "@unuko/core": "workspace:*",
     "@unuko/workflows": "workspace:*",
+    "fastify": "^5.8.5",
     "xstate": "^5.31.1"
   },
   "devDependencies": {

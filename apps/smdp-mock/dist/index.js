@@ -24,6 +24,16 @@ app.post('/gsma/rsp2/es9plus/initiateAuthentication', (req, res) => {
         euiccCertificate: "MOCK_EUICC_CERT"
     });
 });
+// ES9+ getBoundProfilePackage
+app.post('/gsma/rsp2/es9plus/getBoundProfilePackage', (req, res) => {
+    const { transactionId } = req.body;
+    console.log(`[SMDP-MOCK] Received getBoundProfilePackage for transaction ${transactionId}`);
+    // Response mockeada con un profile package simple
+    res.json({
+        transactionId: transactionId,
+        boundProfilePackage: "MOCK_BOUND_PROFILE_PACKAGE_DATA"
+    });
+});
 app.listen(port, () => {
     console.log(`🚀 SM-DP+ Mock server running at http://localhost:${port}`);
 });

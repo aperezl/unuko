@@ -2,50 +2,57 @@ import { createSGP22Machine } from '@unuko/workflows';
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter } from '@unuko/adapter-http';
-import { MongoPersistenceAdapter } from '@unuko/adapter-mongodb'; // Asumiendo este nombre
+import { MongoPersistenceAdapter } from '@unuko/adapter-mongodb';
 import { createActor } from 'xstate';
+import fastify from 'fastify'; // Necesitas instalarlo: pnpm add fastify --filter sim-cli
+import {
+  HardwareAuditDecorator,
+  TransportAuditDecorator
+} from '@unuko/core';
 
 async function bootstrap() {
-  console.log('🚀 UNUKO Orchestrator - Starting Resilient SGP.22 Session');
+  console.log('🚀 UNUKO Orchestrator - Starting Resilient Product API');
 
-  // 1. Inicializar Persistencia (Sprint 5)
-  // En el futuro, este ID vendrá de Hummingbird
+  // 1. Inicializar Persistencia e Infraestructura API
+  const server = fastify();
   const persistence = new MongoPersistenceAdapter('mongodb://localhost:27017', 'unuko_db');
   await persistence.connect();
 
-  const sessionId = "session_demo_gd";
+  const sessionId = "session_demo_gd1";
 
-  // 2. Inicializar Adaptadores Físicos/Simulados
-  const hardware = new UeransimAdapter('127.0.0.1', 37412);
+  // 2. Inicializar Adaptadores y Decoradores de Auditoría
+  const rawHardware = new UeransimAdapter('127.0.0.1', 37412);
+  const hardware = new HardwareAuditDecorator(rawHardware, persistence, sessionId);
+
   const crypto = new PKCS11Adapter(
     '/opt/homebrew/lib/softhsm/libsofthsm2.so',
     '1234',
-    43394378 // Usamos tu ID de slot activo de SoftHSM2
+    0 // Tu Slot ID activo
   );
-  const transport = new HttpmTLSAdapter(crypto);
 
-  // 3. Intentar recuperar estado previo de MongoDB
+  const rawTransport = new HttpmTLSAdapter(crypto);
+  const transport = new TransportAuditDecorator(rawTransport, persistence, sessionId);
+
+  // 3. Recuperar estado previo
   const savedSnapshot = await persistence.loadSession(sessionId);
-  if (savedSnapshot) {
-    console.log('➔ Found existing session. Resuming from last known state...');
-  }
 
-  // 4. Inyectar dependencias y cargar snapshot si existe
+  // 4. Inyectar dependencias en la Máquina
   const machine = createSGP22Machine({
     hardware,
     crypto,
-    transport
+    transport,
+    audit: persistence
   });
 
   const actor = createActor(machine, {
     snapshot: savedSnapshot || undefined
   });
 
-  // 5. Suscribirse a cambios y persistir automáticamente
+  // 5. Suscribirse y Persistir
   actor.subscribe(async (state) => {
-    console.log(`[STATE CHANGE]: ${String(state.value)}`);
+    const currentState = typeof state.value === 'string' ? state.value : JSON.stringify(state.value);
+    console.log(`[STATE CHANGE]: ${currentState}`);
 
-    // Guardamos el snapshot en cada paso para que sea "inmortal"
     await persistence.saveSession(sessionId, actor.getPersistedSnapshot());
 
     if (state.context.error) {
@@ -54,15 +61,47 @@ async function bootstrap() {
 
     if (state.value === 'SUCCESS') {
       console.log('✅ Provisioning complete. Mission accomplished.');
-      // Opcional: persistence.archive(sessionId);
     }
   });
 
-  // 6. Arrancar o Reanudar
+  // --- 6. CAPA DE PRODUCTO: Endpoints para Hummingbird / Visualización ---
+
+  // Consultar el estado vivo de la sesión (Digital Twin)
+  server.get('/v1/orchestrator/session/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const snapshot = await persistence.loadSession(id);
+    const logs = await persistence.getAuditLogs(id);
+
+    if (!snapshot) return reply.status(404).send({ error: 'Session not found' });
+
+    return {
+      sessionId: id,
+      status: snapshot.value,
+      context: snapshot.context,
+      logs: logs.slice(-10), // Últimos 10 eventos de auditoría
+      updatedAt: new Date()
+    };
+  });
+
+  // Controlar la máquina remotamente (Pausar, Reintentar, Abortar)
+  server.post('/v1/orchestrator/session/:id/event', async (request, reply) => {
+    const { event } = request.body as { event: string };
+    actor.send({ type: event as any }); // Cast a any para permitir eventos dinámicos via API
+    return { status: 'event_processed', event };
+  });
+
+  // 7. Lanzamiento de servicios
+  try {
+    await server.listen({ port: 3000, host: '0.0.0.0' });
+    console.log('🌐 Visual API: http://localhost:3000/v1/orchestrator/session/session_demo_gd1');
+  } catch (err) {
+    console.error('Error starting Fastify:', err);
+  }
+
   actor.start();
 
-  // Si hemos recuperado, enviamos un evento para re-activar la lógica
   if (savedSnapshot) {
+    console.log('➔ Resuming session from MongoDB...');
     actor.send({ type: 'RESUME_WORKFLOW' });
   }
 }

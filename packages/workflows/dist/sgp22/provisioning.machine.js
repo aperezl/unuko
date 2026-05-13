@@ -7,6 +7,16 @@ export const createSGP22Machine = (ports) => {
         context: {
             step: 0,
             error: null,
+            transactionId: null,
+        },
+        entry: async ({ context }) => {
+            await ports.audit.log({
+                sessionId: 'unknown', // Session ID should ideally be in context
+                category: 'WORKFLOW',
+                direction: 'INTERNAL',
+                payload: { state: 'initializing', context },
+                description: 'Workflow Started'
+            });
         },
         states: {
             initializing: {
@@ -33,7 +43,6 @@ export const createSGP22Machine = (ports) => {
                         // 1. Obtenemos el certificado del dispositivo
                         await ports.crypto.getDeviceCertificate();
                         // 2. Ejecutamos la petición ES9+ (initiateAuthentication)
-                        // En una implementación real, aquí pasaríamos el euiccChallenge obtenido vía ports.hardware
                         const response = await ports.transport.post({
                             url: 'http://localhost:8080/gsma/rsp2/es9plus/initiateAuthentication',
                             body: {
@@ -43,7 +52,12 @@ export const createSGP22Machine = (ports) => {
                         });
                         return response;
                     }),
-                    onDone: 'downloading',
+                    onDone: {
+                        target: 'downloading',
+                        actions: assign({
+                            transactionId: ({ event }) => event.output.transactionId
+                        })
+                    },
                     onError: {
                         target: 'failure',
                         actions: assign({
@@ -56,12 +70,52 @@ export const createSGP22Machine = (ports) => {
                 }
             },
             downloading: {
-                on: { COMPLETE: 'installing' }
+                invoke: {
+                    src: fromPromise(async ({ input }) => {
+                        const { transactionId } = input;
+                        console.log(`[WORKFLOW] Requesting Profile Package for ${transactionId}...`);
+                        await ports.transport.post({
+                            url: 'http://localhost:8080/gsma/rsp2/es9plus/getBoundProfilePackage',
+                            body: {
+                                transactionId: transactionId
+                            }
+                        });
+                    }),
+                    input: ({ context }) => ({
+                        transactionId: context.transactionId
+                    }),
+                    onDone: 'installing',
+                    onError: {
+                        target: 'failure',
+                        actions: assign({
+                            error: ({ event }) => 'Download failed'
+                        })
+                    }
+                }
             },
             installing: {
-                on: { SUCCESS: 'done' }
+                invoke: {
+                    src: fromPromise(async () => {
+                        console.log(`[WORKFLOW] Installing Profile on eUICC...`);
+                        // Simulación de instalación enviando APDUs (Load / Install)
+                        await ports.hardware.transmit(Buffer.from('80E2910006BF3E035F2D01', 'hex'));
+                    }),
+                    onDone: 'done',
+                    onError: 'failure'
+                }
             },
-            done: { type: 'final' },
+            done: {
+                type: 'final',
+                entry: async () => {
+                    await ports.audit.log({
+                        sessionId: 'unknown',
+                        category: 'WORKFLOW',
+                        direction: 'INTERNAL',
+                        payload: { status: 'SUCCESS' },
+                        description: 'Provisioning Successfully Completed'
+                    });
+                }
+            },
             failure: {
                 on: { RETRY: 'initializing' }
             }
