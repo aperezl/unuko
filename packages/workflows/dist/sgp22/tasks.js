@@ -1,4 +1,5 @@
 import { fromPromise } from 'xstate';
+import { parseBERTLV } from './utils.js';
 export const tasks = {
     initialize: (ports) => fromPromise(async () => {
         await ports.crypto.initialize();
@@ -29,6 +30,25 @@ export const tasks = {
         const response = await ports.hardware.transmit(Buffer.from('80E2910002BF2D', 'hex'));
         return response; // Devolver el Buffer con la lista ASN.1
     }),
+    parseProfilesInfo: (buffer) => {
+        const root = parseBERTLV(buffer);
+        const response = root.find(t => t.tag === 'BF2D');
+        if (!response || !response.children)
+            return [];
+        return response.children
+            .filter(t => t.tag === 'E3')
+            .map(profileTLV => {
+            const children = profileTLV.children || [];
+            const iccid = children.find(c => c.tag === '5A')?.value.toString('hex').toUpperCase();
+            const stateRaw = children.find(c => c.tag === '9F70')?.value[0];
+            const name = children.find(c => c.tag === '92')?.value.toString('utf-8');
+            return {
+                iccid,
+                name: name || 'Unnamed Profile',
+                status: stateRaw === 1 ? 'enabled' : 'disabled'
+            };
+        });
+    },
     segmentBPP: (bpp) => {
         // Lógica simplificada de segmentación TLV para SGP.22
         // En una implementación completa, aquí buscaríamos el tag BF37

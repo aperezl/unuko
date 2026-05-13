@@ -32,11 +32,8 @@ export const createInventoryMachine = (ports: WorkflowPorts) => {
       parsing_profiles: {
         entry: assign({
           profiles: ({ event }: { event: any }) => {
-            // Aquí iría el parser ASN.1. Por ahora devolvemos un mock basado en el éxito del buffer.
-            console.log('Parseando perfiles del buffer:', event.output);
-            return [
-              { iccid: '8900000000000000001', name: 'Profile 1', status: 'enabled' }
-            ];
+            console.log('Parseando perfiles del buffer...');
+            return tasks.parseProfilesInfo(event.output);
           }
         }),
         always: 'done'

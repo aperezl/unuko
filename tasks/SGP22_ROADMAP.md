@@ -13,7 +13,7 @@ Este documento detalla el estado actual de las capacidades de Unuko RSP y los pa
 | | `DisableProfile` | `profile-mgmt.machine.ts` | 🔴 Pendiente | Lógica para deseleccionar el ISD-P activo sin borrar los datos. |
 | | `DeleteProfile` | `profile-mgmt.machine.ts` | 🔴 Pendiente | Acción crítica: requiere generación de notificación de borrado para el SM-DP+. |
 | | `SetNickname` | `profile-mgmt.machine.ts` | 🔴 Pendiente | Permitir la edición de alias de perfiles existentes. |
-| **Visibility**| `GetProfilesInfo` | `inventory.machine.ts` | 🟢 Parcial | Creada la máquina y la tarea APDU. Falta el parser ASN.1 completo. |
+| **Visibility**| `GetProfilesInfo` | `inventory.machine.ts` | 🟢 Completo | Implementado parser BER-TLV manual para extraer ICCID, Nombre y Estado. |
 | | `GetEUICCInfo` | `inventory.machine.ts` | 🔴 Pendiente | Consulta de capacidades y versiones de seguridad soportadas. |
 | **Notifications** | `List/Handle` | `notification.machine.ts` | 🔴 Pendiente | Cierre del ciclo: informar al SM-DP+ del éxito o fallo de las operaciones. |
 
@@ -27,9 +27,9 @@ Para evolucionar el proyecto, se recomienda seguir este orden de prioridad:
 1.  **Refactorizar `tasks.ts`**: Creada función `segmentBPP` que divide el paquete en trozos compatibles.
 2.  **Manejo de Respuestas**: La máquina gestiona el bucle de envío y valida el flujo.
 
-### Paso 2: Implementar el Inventario (Visibility)
-1.  **Crear `inventory.machine.ts`**: Esta máquina debe ejecutarse al inicio para detectar qué perfiles ya existen en la SIM.
-2.  **ASN.1 Parser**: Integrar una librería o utilidad para parsear las respuestas de la tarjeta, que vienen en formato DER/ASN.1 según el estándar GSMA.
+### Paso 2: Implementar el Inventario (Visibility) [COMPLETADO]
+1.  **Crear `inventory.machine.ts`**: Máquina operativa que lanza el comando y gestiona el flujo.
+2.  **ASN.1 Parser**: Implementado parser BER-TLV en `utils.ts` que extrae los datos reales de la eUICC.
 
 ### Paso 3: Gestión del Ciclo de Vida
 1.  **Crear `profile-mgmt.machine.ts`**: Definir los estados para `enabling`, `disabling` y `deleting`.

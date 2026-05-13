@@ -1,5 +1,6 @@
 import { fromPromise } from 'xstate';
 import { WorkflowPorts } from '../base/types.js';
+import { parseBERTLV } from './utils.js';
 
 export const tasks = {
   initialize: (ports: WorkflowPorts) => fromPromise(async () => {
@@ -35,6 +36,27 @@ export const tasks = {
     const response = await ports.hardware.transmit(Buffer.from('80E2910002BF2D', 'hex'));
     return response; // Devolver el Buffer con la lista ASN.1
   }),
+
+  parseProfilesInfo: (buffer: Buffer) => {
+    const root = parseBERTLV(buffer);
+    const response = root.find(t => t.tag === 'BF2D');
+    if (!response || !response.children) return [];
+
+    return response.children
+      .filter(t => t.tag === 'E3')
+      .map(profileTLV => {
+        const children = profileTLV.children || [];
+        const iccid = children.find(c => c.tag === '5A')?.value.toString('hex').toUpperCase();
+        const stateRaw = children.find(c => c.tag === '9F70')?.value[0];
+        const name = children.find(c => c.tag === '92')?.value.toString('utf-8');
+        
+        return {
+          iccid,
+          name: name || 'Unnamed Profile',
+          status: stateRaw === 1 ? 'enabled' : 'disabled'
+        };
+      });
+  },
 
   segmentBPP: (bpp: Buffer): string[] => {
     // Lógica simplificada de segmentación TLV para SGP.22

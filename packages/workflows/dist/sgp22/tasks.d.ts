@@ -12,6 +12,11 @@ export declare const tasks: {
         status?: import("@unuko/core").ChipStatus;
         error?: import("@unuko/core").TransportError;
     }, import("xstate").NonReducibleUnknown, import("xstate").EventObject>;
+    parseProfilesInfo: (buffer: Buffer) => {
+        iccid: string | undefined;
+        name: string;
+        status: string;
+    }[];
     segmentBPP: (bpp: Buffer) => string[];
     logEvent: (ports: WorkflowPorts, description: string, payload?: any) => Promise<void>;
 };
