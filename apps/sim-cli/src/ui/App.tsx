@@ -128,11 +128,15 @@ export default function App() {
       log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (log.payload && JSON.stringify(log.payload).toLowerCase().includes(searchTerm.toLowerCase()))
     )
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  // Auto-scroll removed temporarily
 
   const stats = {
     hardware: (data.logs || []).filter(l => l.category === 'HARDWARE').length,
     transport: (data.logs || []).filter(l => l.category === 'TRANSPORT').length,
+    workflow: (data.logs || []).filter(l => l.category === 'WORKFLOW').length,
+    notification: (data.logs || []).filter(l => l.category === 'NOTIFICATION').length,
     total: (data.logs || []).length,
     executionTime: "4.18", // Mocked as per design
   };
@@ -244,6 +248,20 @@ export default function App() {
               </button>
               
               <button 
+                onClick={() => setFilter('WORKFLOW')}
+                className={cn(
+                  "w-full flex items-center justify-between p-2.5 rounded-lg border transition-all",
+                  filter === 'WORKFLOW' ? "bg-fuchsia-500/20 border-fuchsia-500/40 text-fuchsia-100" : "bg-fuchsia-500/5 border-transparent hover:bg-fuchsia-500/10 text-fuchsia-300"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.5)]"></div>
+                  <span className="text-xs font-medium">WORKFLOW</span>
+                </div>
+                <span className="text-[10px] font-mono">{stats.workflow}</span>
+              </button>
+
+              <button 
                 onClick={() => setFilter('TRANSPORT')}
                 className={cn(
                   "w-full flex items-center justify-between p-2.5 rounded-lg border transition-all",
@@ -270,7 +288,20 @@ export default function App() {
                 </div>
                 <span className="text-[10px] font-mono">{stats.hardware}</span>
               </button>
-            </div>
+
+              <button 
+                onClick={() => setFilter('NOTIFICATION')}
+                className={cn(
+                  "w-full flex items-center justify-between p-2.5 rounded-lg border transition-all",
+                  filter === 'NOTIFICATION' ? "bg-sky-500/20 border-sky-500/40 text-sky-100" : "bg-sky-500/5 border-transparent hover:bg-sky-500/10 text-sky-300"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]"></div>
+                  <span className="text-xs font-medium">NOTIFICATION</span>
+                </div>
+                <span className="text-[10px] font-mono">{stats.notification}</span>
+              </button>            </div>
           </div>
         </aside>
 

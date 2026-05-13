@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Category = 'HARDWARE' | 'TRANSPORT' | 'SYSTEM' | 'ERROR';
+export type Category = 'HARDWARE' | 'TRANSPORT' | 'SYSTEM' | 'ERROR' | 'WORKFLOW' | 'NOTIFICATION';
 export type Direction = 'IN' | 'OUT' | 'NONE';
 
 export interface LogPayload {

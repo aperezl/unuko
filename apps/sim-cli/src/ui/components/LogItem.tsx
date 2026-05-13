@@ -37,7 +37,13 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
         <td className="px-6 py-3">
           <span className={cn(
             "px-2 py-0.5 rounded text-[10px] border uppercase font-bold tracking-tight",
-            log.category === 'TRANSPORT' ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+            {
+              'bg-indigo-500/10 text-indigo-400 border-indigo-500/20': log.category === 'TRANSPORT',
+              'bg-amber-500/10 text-amber-400 border-amber-500/20': log.category === 'HARDWARE',
+              'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20': log.category === 'WORKFLOW',
+              'bg-sky-500/10 text-sky-400 border-sky-500/20': log.category === 'NOTIFICATION',
+              'bg-slate-500/10 text-slate-400 border-slate-500/20': !['TRANSPORT', 'HARDWARE', 'WORKFLOW', 'NOTIFICATION'].includes(log.category)
+            }
           )}>
             {log.category}
           </span>
