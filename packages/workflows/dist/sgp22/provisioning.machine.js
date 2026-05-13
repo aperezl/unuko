@@ -41,17 +41,40 @@ export const createSGP22Machine = (ports) => {
             downloading: {
                 invoke: {
                     src: ({ context }) => tasks.downloadProfile(ports, context.transactionId),
-                    onDone: 'installing',
+                    onDone: {
+                        target: 'preparing_package',
+                        actions: assign({
+                            boundProfilePackage: ({ event }) => event.output
+                        })
+                    },
                     onError: {
                         target: 'evaluating_error',
                         actions: assign({ error: () => 'Download failed' })
                     }
                 }
             },
+            preparing_package: {
+                entry: assign({
+                    segments: ({ context }) => tasks.segmentBPP(context.boundProfilePackage),
+                    currentSegmentIndex: 0
+                }),
+                always: 'installing'
+            },
             installing: {
                 invoke: {
-                    src: tasks.installProfile(ports),
-                    onDone: 'done',
+                    src: ({ context }) => tasks.installSegment(ports, context.segments[context.currentSegmentIndex]),
+                    onDone: [
+                        {
+                            target: 'installing',
+                            guard: ({ context }) => context.currentSegmentIndex < context.segments.length - 1,
+                            actions: assign({
+                                currentSegmentIndex: ({ context }) => context.currentSegmentIndex + 1
+                            })
+                        },
+                        {
+                            target: 'done'
+                        }
+                    ],
                     onError: {
                         target: 'evaluating_error',
                         actions: assign({ error: () => 'Installation failed' })

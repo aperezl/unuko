@@ -15,15 +15,37 @@ export const tasks = {
         });
     }),
     downloadProfile: (ports, transactionId) => fromPromise(async () => {
-        await ports.transport.post({
+        const response = await ports.transport.post({
             url: 'http://localhost:8080/gsma/rsp2/es9plus/getBoundProfilePackage',
             body: { transactionId }
         });
+        return Buffer.from(response.boundProfilePackage, 'base64');
     }),
-    installProfile: (ports) => fromPromise(async () => {
-        // Critical point: READER_ERROR usually happens here
-        await ports.hardware.transmit(Buffer.from('80E2910006BF3E035F2D01', 'hex'));
+    installSegment: (ports, apdu) => fromPromise(async () => {
+        await ports.hardware.transmit(Buffer.from(apdu, 'hex'));
     }),
+    getProfilesInfo: (ports) => fromPromise(async () => {
+        // Comando SGP.22: GetProfilesInfo (Tag BF2D)
+        const response = await ports.hardware.transmit(Buffer.from('80E2910002BF2D', 'hex'));
+        return response; // Devolver el Buffer con la lista ASN.1
+    }),
+    segmentBPP: (bpp) => {
+        // Lógica simplificada de segmentación TLV para SGP.22
+        // En una implementación completa, aquí buscaríamos el tag BF37
+        const segments = [];
+        const maxChunk = 240;
+        let offset = 0;
+        while (offset < bpp.length) {
+            const isLast = offset + maxChunk >= bpp.length;
+            const chunk = bpp.subarray(offset, offset + maxChunk);
+            const p1 = isLast ? '80' : '00';
+            const p2 = Math.floor(offset / maxChunk).toString(16).padStart(2, '0');
+            const lc = chunk.length.toString(16).padStart(2, '0');
+            segments.push(`80E2${p1}${p2}${lc}${chunk.toString('hex').toUpperCase()}`);
+            offset += maxChunk;
+        }
+        return segments;
+    },
     // Helper for audit logging within tasks
     logEvent: async (ports, description, payload = {}) => {
         await ports.audit.log({

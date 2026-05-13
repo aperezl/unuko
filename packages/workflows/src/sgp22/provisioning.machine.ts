@@ -45,7 +45,12 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
       downloading: {
         invoke: {
           src: ({ context }: { context: ProvisioningContext }) => tasks.downloadProfile(ports, context.transactionId!),
-          onDone: 'installing',
+          onDone: {
+            target: 'preparing_package',
+            actions: assign({
+              boundProfilePackage: ({ event }: { event: any }) => event.output as Buffer
+            })
+          },
           onError: {
             target: 'evaluating_error',
             actions: assign({ error: () => 'Download failed' })
@@ -53,10 +58,30 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
         }
       },
 
+      preparing_package: {
+        entry: assign({
+          segments: ({ context }: { context: ProvisioningContext }) => tasks.segmentBPP(context.boundProfilePackage!),
+          currentSegmentIndex: 0
+        }),
+        always: 'installing'
+      },
+
       installing: {
         invoke: {
-          src: tasks.installProfile(ports),
-          onDone: 'done',
+          src: ({ context }: { context: ProvisioningContext }) => 
+            tasks.installSegment(ports, context.segments[context.currentSegmentIndex]),
+          onDone: [
+            {
+              target: 'installing',
+              guard: ({ context }: { context: ProvisioningContext }) => context.currentSegmentIndex < context.segments.length - 1,
+              actions: assign({
+                currentSegmentIndex: ({ context }: { context: ProvisioningContext }) => context.currentSegmentIndex + 1
+              })
+            },
+            {
+              target: 'done'
+            }
+          ],
           onError: {
             target: 'evaluating_error',
             actions: assign({ error: () => 'Installation failed' })
