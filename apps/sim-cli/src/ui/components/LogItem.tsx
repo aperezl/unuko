@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { LogEntry } from '../types.js';
 import { cn } from '../lib/utils.js';
+import { HexViewer } from './HexViewer';
 
 interface LogItemProps {
   log: LogEntry;
@@ -21,6 +22,21 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
   const statusText = isError 
     ? (log.payload.error || 'ERROR') 
     : (log.direction === 'OUT' ? 'SENT' : '200 OK');
+
+  // Detección y parseo robusto
+  let processedPayload = log.payload;
+  if (typeof log.payload === 'string' && (log.payload as any).trim().startsWith('{')) {
+    try {
+      processedPayload = JSON.parse(log.payload);
+    } catch (e) {
+      // Not JSON
+    }
+  }
+
+  const hexData = processedPayload?.apdu || processedPayload?.data || 
+                 (typeof processedPayload === 'string' && /^[0-9A-Fa-f]+$/.test(processedPayload) ? processedPayload : null);
+  
+  const isHardware = log.category === 'HARDWARE';
 
   return (
     <>
@@ -103,12 +119,18 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
                   
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[9px] uppercase font-bold text-slate-500 tracking-widest">Raw Payload Data</p>
+                      <p className="text-[9px] uppercase font-bold text-slate-500 tracking-widest">
+                        {hexData ? 'Hexadecimal Trace' : 'Raw Payload Data'}
+                      </p>
                       <span className="text-[9px] font-mono text-slate-600">ID: {log._id}</span>
                     </div>
-                    <pre className="text-[11px] text-slate-400 font-mono bg-[#05070a] p-4 rounded-lg border border-slate-800/50 overflow-x-auto">
-                      {JSON.stringify(log.payload, null, 2)}
-                    </pre>
+                    {hexData ? (
+                      <HexViewer data={hexData} />
+                    ) : (
+                      <pre className="text-[11px] text-slate-400 font-mono bg-[#05070a] p-4 rounded-lg border border-slate-800/50 overflow-x-auto">
+                        {JSON.stringify(processedPayload, null, 2)}
+                      </pre>
+                    )}
                   </div>
                 </div>
               </div>
