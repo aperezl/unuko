@@ -3,8 +3,8 @@ import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
 import { MongoPersistenceAdapter } from '@unuko/adapter-mongodb';
-import { createActor } from 'xstate';
-import fastify from 'fastify'; // Necesitas instalarlo: pnpm add fastify --filter sim-cli
+import { createActor, AnyActor } from 'xstate';
+import fastify from 'fastify';
 import {
   HardwareAuditDecorator,
   TransportAuditDecorator
@@ -19,63 +19,72 @@ const __dirname = path.dirname(__filename);
 async function bootstrap() {
   console.log('🚀 UNUKO Orchestrator - Starting Resilient Product API');
 
-  // 1. Inicializar Persistencia e Infraestructura API
   const server = fastify();
   const persistence = new MongoPersistenceAdapter('mongodb://localhost:27017', 'unuko_db');
   await persistence.connect();
 
-  const sessionId = "session_demo_gd1";
+  // Registro de actores activos en memoria
+  const activeActors = new Map<string, AnyActor>();
 
-  // 2. Inicializar Adaptadores y Decoradores de Auditoría
+  // Compartir adaptadores base (Hardware y Crypto)
   const rawHardware = new UeransimAdapter('127.0.0.1', 37412);
-  const hardware = new HardwareAuditDecorator(rawHardware, persistence, sessionId);
-
   const crypto = new PKCS11Adapter(
     '/opt/homebrew/lib/softhsm/libsofthsm2.so',
     '1234',
-    0 // Tu Slot ID activo
+    0
   );
-
   const rawTransport = new HttpmTLSAdapter(crypto);
-  const transport = new TransportAuditDecorator(rawTransport, persistence, sessionId);
+  const notification = new WebhookNotificationAdapter('http://localhost:3000/v1/orchestrator/alerts/null'); // Silent local loop
 
-  const notification = new WebhookNotificationAdapter('http://localhost:8081/alerts'); // Endpoint de Hummingbird o Slack
+  // Función para inicializar y arrancar una sesión
+  const startSession = async (sessionId: string, snapshot?: any) => {
+    console.log(`[SYSTEM]: Starting session ${sessionId}...`);
+    
+    const hardware = new HardwareAuditDecorator(rawHardware, persistence, sessionId);
+    const transport = new TransportAuditDecorator(rawTransport, persistence, sessionId);
 
-  // 3. Recuperar estado previo
-  const savedSnapshot = await persistence.loadSession(sessionId);
+    const machine = createSGP22Machine({
+      hardware,
+      crypto,
+      transport,
+      audit: persistence,
+      notification,
+      sessionId
+    });
 
-  // 4. Inyectar dependencias en la Máquina
-  const machine = createSGP22Machine({
-    hardware,
-    crypto,
-    transport,
-    audit: persistence,
-    notification,
-    sessionId
-  });
+    const actor = createActor(machine, {
+      snapshot: snapshot || undefined
+    });
 
-  const actor = createActor(machine, {
-    snapshot: savedSnapshot || undefined
-  });
+    actor.subscribe(async (state) => {
+      const currentState = typeof state.value === 'string' ? state.value : JSON.stringify(state.value);
+      console.log(`[${sessionId}]: ${currentState}`);
 
-  // 5. Suscribirse y Persistir
-  actor.subscribe(async (state) => {
-    const currentState = typeof state.value === 'string' ? state.value : JSON.stringify(state.value);
-    console.log(`[STATE CHANGE]: ${currentState}`);
+      await persistence.saveSession(sessionId, actor.getPersistedSnapshot());
 
-    await persistence.saveSession(sessionId, actor.getPersistedSnapshot());
+      if (state.value === 'SUCCESS' || state.value === 'FAILURE') {
+        activeActors.delete(sessionId);
+      }
+    });
 
-    if (state.context.error) {
-      console.error(`[CRITICAL ERROR]: ${state.context.error}`);
+    activeActors.set(sessionId, actor);
+    actor.start();
+
+    // Pequeño delay para asegurar que el primer guardado se procese antes de que el frontend consulte
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (snapshot) {
+      actor.send({ type: 'RESUME_WORKFLOW' });
     }
 
-    if (state.value === 'SUCCESS') {
-      console.log('✅ Provisioning complete. Mission accomplished.');
-    }
-  });
+    return actor;
+  };
 
-  // --- 6. CAPA DE PRODUCTO: Endpoints para Hummingbird / Visualización ---
+  // --- 6. CAPA DE PRODUCTO: Endpoints ---
   
+  // Endpoint mudo para alertas (evita ruidos de fetch failed)
+  server.all('/v1/orchestrator/alerts/null', async () => ({ status: 'ignored' }));
+
   // Listar todas las sesiones
   server.get('/v1/orchestrator/sessions', async () => {
     const sessions = await persistence.listSessions();
@@ -86,7 +95,36 @@ async function bootstrap() {
     })) || [];
   });
 
-  // Consultar el estado vivo de la sesión (Digital Twin)
+  // Crear una nueva sesión
+  server.post('/v1/orchestrator/session', async (request, reply) => {
+    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const sessionId = `SESSION-${randomSuffix}`;
+    
+    await startSession(sessionId);
+    
+    return { 
+      status: 'created', 
+      sessionId,
+      url: `/v1/orchestrator/session/${sessionId}`
+    };
+  });
+
+  // Eliminar una sesión
+  server.delete('/v1/orchestrator/session/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    
+    // Detener actor si está activo
+    const actor = activeActors.get(id);
+    if (actor) {
+      actor.stop();
+      activeActors.delete(id);
+    }
+    
+    await persistence.deleteSession(id);
+    return { status: 'deleted', sessionId: id };
+  });
+
+  // Consultar el estado vivo de la sesión
   server.get('/v1/orchestrator/session/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const snapshot = await persistence.loadSession(id);
@@ -98,15 +136,20 @@ async function bootstrap() {
       sessionId: id,
       status: snapshot.value,
       context: snapshot.context,
-      logs: logs.slice(-10), // Últimos 10 eventos de auditoría
+      logs: logs.slice(-20),
       updatedAt: new Date()
     };
   });
 
-  // Controlar la máquina remotamente (Pausar, Reintentar, Abortar)
+  // Controlar la máquina remotamente
   server.post('/v1/orchestrator/session/:id/event', async (request, reply) => {
+    const { id } = request.params as { id: string };
     const { event } = request.body as { event: string };
-    actor.send({ type: event as any }); // Cast a any para permitir eventos dinámicos via API
+    
+    const actor = activeActors.get(id);
+    if (!actor) return reply.status(404).send({ error: 'Active actor not found for this session' });
+
+    actor.send({ type: event as any });
     return { status: 'event_processed', event };
   });
 
@@ -117,7 +160,6 @@ async function bootstrap() {
     prefix: '/',
   });
 
-  // Fallback para SPA (si el archivo no existe en static, sirve index.html)
   server.setNotFoundHandler((request, reply) => {
     if (request.raw.url?.startsWith('/v1')) {
       return reply.status(404).send({ error: 'API route not found' });
@@ -125,19 +167,11 @@ async function bootstrap() {
     return reply.sendFile('index.html');
   });
 
-  // 8. Lanzamiento de servicios
   try {
     await server.listen({ port: 3000, host: '0.0.0.0' });
-    console.log('🌐 Visual API: http://localhost:3000/v1/orchestrator/session/session_demo_gd1');
+    console.log('🌐 UNUKO Digital Twin - Dashboard ready at http://localhost:3000');
   } catch (err) {
     console.error('Error starting Fastify:', err);
-  }
-
-  actor.start();
-
-  if (savedSnapshot) {
-    console.log('➔ Resuming session from MongoDB...');
-    actor.send({ type: 'RESUME_WORKFLOW' });
   }
 }
 

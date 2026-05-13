@@ -40,6 +40,34 @@ export default function App() {
     }
   }, [selectedSessionId]);
 
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/v1/orchestrator/session/${sessionId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        // Actualizar lista local inmediatamente
+        setSessions(prev => prev.filter(s => s.sessionId !== sessionId));
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+    }
+  };
+
+  const handleCreateSession = async () => {
+    try {
+      const response = await fetch('/v1/orchestrator/session', {
+        method: 'POST'
+      });
+      const json = await response.json();
+      if (json.sessionId) {
+        setSelectedSessionId(json.sessionId);
+      }
+    } catch (err) {
+      console.error('Failed to create new session:', err);
+    }
+  };
+
   // Fetch selected session data
   React.useEffect(() => {
     if (!selectedSessionId) {
@@ -50,10 +78,16 @@ export default function App() {
     const fetchData = async () => {
       try {
         const response = await fetch(`/v1/orchestrator/session/${selectedSessionId}`);
+        if (!response.ok) {
+          throw new Error(`Session data not found: ${response.status}`);
+        }
         const json = await response.json();
-        setData(json);
+        if (json && json.logs) {
+          setData(json);
+        }
       } catch (err) {
         console.error('Failed to fetch session data:', err);
+        // Do not reset data here, keep showing old data if available or loading screen if never fetched
       }
     };
 
@@ -63,10 +97,15 @@ export default function App() {
   }, [selectedSessionId]);
 
   if (!selectedSessionId) {
-    return <SessionList sessions={sessions} onSelect={setSelectedSessionId} />;
+    return <SessionList 
+      sessions={sessions} 
+      onSelect={setSelectedSessionId} 
+      onCreate={handleCreateSession} 
+      onDelete={handleDeleteSession}
+    />;
   }
 
-  if (!data) {
+  if (!data || !data.logs) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#0f172a] text-white">
         <div className="flex flex-col items-center gap-4">
@@ -83,18 +122,18 @@ export default function App() {
     );
   }
 
-  const filteredLogs = data.logs
+  const filteredLogs = (data.logs || [])
     .filter(log => filter === 'all' || log.category === filter)
     .filter(log => 
       log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      JSON.stringify(log.payload).toLowerCase().includes(searchTerm.toLowerCase())
+      (log.payload && JSON.stringify(log.payload).toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const stats = {
-    hardware: data.logs.filter(l => l.category === 'HARDWARE').length,
-    transport: data.logs.filter(l => l.category === 'TRANSPORT').length,
-    total: data.logs.length,
+    hardware: (data.logs || []).filter(l => l.category === 'HARDWARE').length,
+    transport: (data.logs || []).filter(l => l.category === 'TRANSPORT').length,
+    total: (data.logs || []).length,
     executionTime: "4.18", // Mocked as per design
   };
 

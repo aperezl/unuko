@@ -12,15 +12,43 @@ export class PKCS11Adapter {
         this.slotIndex = slotIndex;
         this.pkcs11 = new pkcs11js.PKCS11();
     }
+    initPromise = null;
     async initialize() {
-        this.pkcs11.load(this.libraryPath);
-        this.pkcs11.C_Initialize();
-        const slots = this.pkcs11.C_GetSlotList(true);
-        const slot = slots[this.slotIndex];
-        if (!slot)
-            throw new Error(`Slot at index ${this.slotIndex} not found`);
-        this.session = this.pkcs11.C_OpenSession(slot, pkcs11js.CKF_SERIAL_SESSION);
-        this.pkcs11.C_Login(this.session, pkcs11js.CKU_USER, this.pin);
+        if (this.initPromise)
+            return this.initPromise;
+        this.initPromise = (async () => {
+            try {
+                console.log('[PKCS11]: Initializing library...');
+                this.pkcs11.load(this.libraryPath);
+                this.pkcs11.C_Initialize();
+            }
+            catch (e) {
+                if (e.message?.includes('CRYPTOKI_ALREADY_INITIALIZED') || e.message?.includes('already loaded')) {
+                    console.log('[PKCS11]: Library already initialized, skipping C_Initialize');
+                }
+                else {
+                    console.warn('[PKCS11]: Initialization warning:', e.message);
+                }
+            }
+            const slots = this.pkcs11.C_GetSlotList(true);
+            const slot = slots[this.slotIndex];
+            if (!slot)
+                throw new Error(`Slot at index ${this.slotIndex} not found`);
+            this.session = this.pkcs11.C_OpenSession(slot, pkcs11js.CKF_SERIAL_SESSION);
+            try {
+                this.pkcs11.C_Login(this.session, pkcs11js.CKU_USER, this.pin);
+            }
+            catch (e) {
+                if (e.message?.includes('USER_ALREADY_LOGGED_IN')) {
+                    console.log('[PKCS11]: Already logged in');
+                }
+                else {
+                    throw e;
+                }
+            }
+            console.log('[PKCS11]: Session opened and logged in');
+        })();
+        return this.initPromise;
     }
     async getDeviceCertificate() {
         // En una implementación real, buscaríamos el objeto CKO_CERTIFICATE en el token

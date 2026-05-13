@@ -1,21 +1,49 @@
 import React from 'react';
 import { SessionSummary } from '../types.js';
 import { format } from 'date-fns';
-import { motion } from 'motion/react';
-import { History, ChevronRight, Activity, Clock, Database } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  History, 
+  ChevronRight, 
+  Activity, 
+  Clock, 
+  Database, 
+  Plus, 
+  Trash2, 
+  AlertTriangle, 
+  X 
+} from 'lucide-react';
 import { cn } from '../lib/utils.js';
 
 interface SessionListProps {
   sessions: SessionSummary[];
   onSelect: (id: string) => void;
+  onCreate: () => void;
+  onDelete: (id: string) => Promise<void>;
 }
 
-export const SessionList = ({ sessions, onSelect }: SessionListProps) => {
+export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionListProps) => {
+  const [sessionToDelete, setSessionToDelete] = React.useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const confirmDelete = async () => {
+    if (!sessionToDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(sessionToDelete);
+      setSessionToDelete(null);
+    } catch (err) {
+      console.error('Delete failed:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div className="flex-1 overflow-hidden flex flex-col p-6 bg-[#0f172a]">
+    <div className="flex-1 overflow-hidden flex flex-col p-6 bg-[#0f172a] relative">
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
         {/* Header Section */}
-        <header className="flex flex-col gap-2">
+        <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
               <History className="w-6 h-6 text-sky-400" />
@@ -25,6 +53,14 @@ export const SessionList = ({ sessions, onSelect }: SessionListProps) => {
               <p className="text-sm text-slate-400 font-mono">Traceability Engine Persistence</p>
             </div>
           </div>
+
+          <button 
+            onClick={onCreate}
+            className="flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-500/20 active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            New Simulation
+          </button>
         </header>
 
         {/* Stats Grid */}
@@ -73,15 +109,14 @@ export const SessionList = ({ sessions, onSelect }: SessionListProps) => {
           <div className="divide-y divide-slate-800/50">
             {sessions.length > 0 ? (
               sessions.map((session, index) => (
-                <motion.button
+                <motion.div
                   key={session.sessionId}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  onClick={() => onSelect(session.sessionId)}
                   className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-800/30 transition-all group text-left"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => onSelect(session.sessionId)}>
                     <div className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border",
                       session.status === 'done' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-sky-500/10 text-sky-400 border-sky-500/20"
@@ -105,9 +140,25 @@ export const SessionList = ({ sessions, onSelect }: SessionListProps) => {
                       <p className="text-[10px] text-slate-500 uppercase tracking-tighter">Last Activity</p>
                       <p className="text-xs font-mono text-slate-300">{format(new Date(session.updatedAt), 'yyyy-MM-dd HH:mm:ss')}</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-sky-500 group-hover:translate-x-1 transition-all" />
+                    <div className="flex items-center gap-2">
+                       <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSessionToDelete(session.sessionId);
+                        }}
+                        className="w-9 h-9 rounded-lg border border-slate-700 flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/50 hover:text-rose-400 text-slate-500 transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => onSelect(session.sessionId)}
+                        className="w-9 h-9 rounded-lg border border-slate-700 flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/50 hover:text-sky-400 text-slate-500 transition-all"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
-                </motion.button>
+                </motion.div>
               ))
             ) : (
               <div className="py-20 text-center flex flex-col items-center gap-4">
@@ -118,6 +169,68 @@ export const SessionList = ({ sessions, onSelect }: SessionListProps) => {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {sessionToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isDeleting && setSessionToDelete(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md glass-card rounded-3xl border border-slate-700 overflow-hidden shadow-2xl"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-rose-500" />
+                  </div>
+                  <button 
+                    onClick={() => setSessionToDelete(null)}
+                    disabled={isDeleting}
+                    className="p-1 text-slate-500 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <h3 className="text-xl font-bold text-white mb-2">Delete Session?</h3>
+                <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                  This will permanently remove <span className="text-white font-mono">{sessionToDelete}</span> and all its associated audit logs. This action cannot be undone.
+                </p>
+
+                <div className="flex gap-3">
+                  <button 
+                    disabled={isDeleting}
+                    onClick={() => setSessionToDelete(null)}
+                    className="flex-1 py-3 rounded-xl border border-slate-700 font-bold text-sm text-slate-300 hover:bg-slate-800 transition-all disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    disabled={isDeleting}
+                    onClick={confirmDelete}
+                    className="flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 font-bold text-sm text-white transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isDeleting ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      'Delete Forever'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

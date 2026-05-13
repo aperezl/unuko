@@ -36,6 +36,12 @@ export class MongoPersistenceAdapter {
             .sort({ updatedAt: -1 })
             .toArray();
     }
+    async deleteSession(sessionId) {
+        if (!this.db)
+            return;
+        await this.sessions?.deleteOne({ sessionId });
+        await this.db.collection('audit_logs').deleteMany({ sessionId });
+    }
     async log(entry) {
         if (!this.db)
             return;

@@ -175,6 +175,13 @@ export const createSGP22Machine = (ports: {
 
       failure: {
         entry: async ({ context }) => {
+          await ports.audit.log({
+            sessionId: ports.sessionId,
+            category: 'WORKFLOW',
+            direction: 'INTERNAL',
+            payload: { status: 'FAILURE', error: context.error },
+            description: `Provisioning Failed: ${context.error}`
+          });
           await ports.notification.notify({
             sessionId: ports.sessionId,
             code: 'PROVISIONING_FAILED',
