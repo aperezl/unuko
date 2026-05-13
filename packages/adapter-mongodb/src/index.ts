@@ -57,12 +57,11 @@ export class MongoPersistenceAdapter implements UniversalAuditPort {
     });
   }
 
-  async getAuditLogs(sessionId: string, limit: number = 10) {
+  async getAuditLogs(sessionId: string) {
     if (!this.db) return [];
     return this.db.collection('audit_logs')
       .find({ sessionId })
-      .sort({ timestamp: -1 })
-      .limit(limit)
+      .sort({ timestamp: 1 }) // Orden cronológico ascendente para el feed
       .toArray();
   }
 

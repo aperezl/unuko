@@ -60,9 +60,14 @@ async function bootstrap() {
       const currentState = typeof state.value === 'string' ? state.value : JSON.stringify(state.value);
       console.log(`[${sessionId}]: ${currentState}`);
 
-      await persistence.saveSession(sessionId, actor.getPersistedSnapshot());
+      const snapshot = actor.getSnapshot();
+      await persistence.saveSession(sessionId, {
+        value: snapshot.value,
+        context: snapshot.context,
+        status: snapshot.status
+      });
 
-      if (state.value === 'SUCCESS' || state.value === 'FAILURE') {
+      if (state.matches('done') || state.matches('failure')) {
         activeActors.delete(sessionId);
       }
     });
@@ -136,7 +141,7 @@ async function bootstrap() {
       sessionId: id,
       status: snapshot.value,
       context: snapshot.context,
-      logs: logs.slice(-20),
+      logs: logs,
       updatedAt: new Date()
     };
   });

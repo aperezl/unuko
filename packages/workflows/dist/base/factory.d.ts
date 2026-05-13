@@ -1,5 +1,11 @@
-import { WorkflowPorts } from '../base/types.js';
-export declare const createSGP22Machine: (ports: WorkflowPorts) => import("xstate").StateMachine<any, {
+import { WorkflowBaseContext, WorkflowPorts } from './types.js';
+interface UnukoWorkflowConfig<TContext extends WorkflowBaseContext> {
+    id: string;
+    initial: string;
+    context: TContext;
+    states: any;
+}
+export declare const createUnukoMachine: <TContext extends WorkflowBaseContext>(config: UnukoWorkflowConfig<TContext>, ports: WorkflowPorts) => import("xstate").StateMachine<any, {
     type: "RETRY";
 } | {
     type: "CANCEL";
@@ -45,3 +51,4 @@ export declare const createSGP22Machine: (ports: WorkflowPorts) => import("xstat
         };
     };
 }>;
+export {};

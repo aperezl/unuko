@@ -12,7 +12,7 @@ export declare class MongoPersistenceAdapter implements UniversalAuditPort {
     listSessions(): Promise<import("mongodb").WithId<import("mongodb").Document>[] | undefined>;
     deleteSession(sessionId: string): Promise<void>;
     log(entry: Omit<AuditEntry, 'timestamp'>): Promise<void>;
-    getAuditLogs(sessionId: string, limit?: number): Promise<import("mongodb").WithId<import("mongodb").Document>[]>;
+    getAuditLogs(sessionId: string): Promise<import("mongodb").WithId<import("mongodb").Document>[]>;
     getSessionFlow(sessionId: string): Promise<{
         sessionId: any;
         imsi: any;
