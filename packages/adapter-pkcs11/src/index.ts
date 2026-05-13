@@ -1,5 +1,5 @@
 import { UniversalCryptoPort } from '@unuko/core';
-import * as pkcs11js from 'pkcs11js';
+import pkcs11js from 'pkcs11js';
 
 export class PKCS11Adapter implements UniversalCryptoPort {
   private pkcs11: pkcs11js.PKCS11;
@@ -19,8 +19,9 @@ export class PKCS11Adapter implements UniversalCryptoPort {
 
     const slots = this.pkcs11.C_GetSlotList(true);
     const slot = slots[this.slotIndex];
+    if (!slot) throw new Error(`Slot at index ${this.slotIndex} not found`);
 
-    this.session = this.pkcs11.C_OpenSession(slot, pkcs11js.CKF_SERIAL_SESSION | pkcs11js.CKF_RW_SESSION);
+    this.session = this.pkcs11.C_OpenSession(slot, pkcs11js.CKF_SERIAL_SESSION);
     this.pkcs11.C_Login(this.session, pkcs11js.CKU_USER, this.pin);
   }
 

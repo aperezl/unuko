@@ -1,1 +1,1 @@
-export * from './sgp22/provisioning.machine';
+export * from './sgp22/provisioning.machine.js';

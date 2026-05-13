@@ -12,6 +12,7 @@ export const createSGP22Machine = (ports: {
 }) => {
   return createMachine({
     id: 'sgp22-provisioning',
+    initial: 'initializing',
     types: {} as {
       context: { step: number; error: string | null };
       events: { type: 'COMPLETE' } | { type: 'SUCCESS' } | { type: 'RETRY' };
@@ -49,10 +50,10 @@ export const createSGP22Machine = (ports: {
             // 2. Ejecutamos la petición ES9+ (initiateAuthentication)
             // En una implementación real, aquí pasaríamos el euiccChallenge obtenido vía ports.hardware
             const response = await ports.transport.post<{ transactionId: string; serverSignedData: any }>({
-              url: 'https://smdp.unuko.com/gsma/rsp2/es9plus/initiateAuthentication',
+              url: 'http://localhost:8080/gsma/rsp2/es9plus/initiateAuthentication',
               body: {
                 euiccChallenge: Buffer.from('unuko-challenge').toString('base64'),
-                smdpAddress: 'smdp.unuko.com'
+                smdpAddress: 'localhost'
               }
             });
 

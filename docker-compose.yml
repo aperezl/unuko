@@ -31,3 +31,13 @@ services:
       - gnb_ip=127.0.0.1
     ports:
       - "37412:37412" # Puerto de control para la eUICC virtual
+
+  smdp-mock:
+    build:
+      context: .
+      dockerfile: apps/smdp-mock/Dockerfile
+    container_name: smdp-mock
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
