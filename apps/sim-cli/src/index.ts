@@ -75,6 +75,16 @@ async function bootstrap() {
   });
 
   // --- 6. CAPA DE PRODUCTO: Endpoints para Hummingbird / Visualización ---
+  
+  // Listar todas las sesiones
+  server.get('/v1/orchestrator/sessions', async () => {
+    const sessions = await persistence.listSessions();
+    return sessions?.map(s => ({
+      sessionId: s.sessionId,
+      status: s.status,
+      updatedAt: s.updatedAt
+    })) || [];
+  });
 
   // Consultar el estado vivo de la sesión (Digital Twin)
   server.get('/v1/orchestrator/session/:id', async (request, reply) => {

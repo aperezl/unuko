@@ -43,6 +43,12 @@ export interface SessionContext {
   transactionId: string;
 }
 
+export interface SessionSummary {
+  sessionId: string;
+  status: string;
+  updatedAt: string;
+}
+
 export interface SessionData {
   sessionId: string;
   status: 'done' | 'pending' | 'failed' | 'working';

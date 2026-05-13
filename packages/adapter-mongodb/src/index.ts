@@ -37,6 +37,12 @@ export class MongoPersistenceAdapter implements UniversalAuditPort {
     return data ? data.snapshot : null;
   }
 
+  async listSessions() {
+    return this.sessions?.find({})
+      .sort({ updatedAt: -1 })
+      .toArray();
+  }
+
   async log(entry: Omit<AuditEntry, 'timestamp'>) {
     if (!this.db) return;
     await this.db.collection('audit_logs').insertOne({

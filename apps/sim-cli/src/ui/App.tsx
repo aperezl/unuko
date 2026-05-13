@@ -4,24 +4,52 @@
  */
 
 import React from 'react';
-import { SessionData } from './types.js';
+import { SessionData, SessionSummary } from './types.js';
 import { LogItem } from './components/LogItem.js';
 import { motion } from 'motion/react';
-import { FileJson, ListFilter, Search, Download, LayoutGrid, Network } from 'lucide-react';
+import { FileJson, ListFilter, Search, Download, LayoutGrid, Network, ArrowLeft } from 'lucide-react';
 import { cn } from './lib/utils.js';
 import { VisualFlow } from './components/VisualFlow.js';
+import { SessionList } from './components/SessionList.js';
 
 export default function App() {
+  const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
   const [data, setData] = React.useState<SessionData | null>(null);
   const [filter, setFilter] = React.useState<string>('all');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedLogId, setSelectedLogId] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<'table' | 'flow'>('table');
 
+  // Fetch session list
   React.useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await fetch('/v1/orchestrator/sessions');
+        const json = await response.json();
+        setSessions(json);
+      } catch (err) {
+        console.error('Failed to fetch sessions:', err);
+      }
+    };
+
+    if (!selectedSessionId) {
+      fetchSessions();
+      const interval = setInterval(fetchSessions, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedSessionId]);
+
+  // Fetch selected session data
+  React.useEffect(() => {
+    if (!selectedSessionId) {
+      setData(null);
+      return;
+    }
+
     const fetchData = async () => {
       try {
-        const response = await fetch('/v1/orchestrator/session/session_demo_gd1');
+        const response = await fetch(`/v1/orchestrator/session/${selectedSessionId}`);
         const json = await response.json();
         setData(json);
       } catch (err) {
@@ -32,7 +60,11 @@ export default function App() {
     fetchData();
     const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedSessionId]);
+
+  if (!selectedSessionId) {
+    return <SessionList sessions={sessions} onSelect={setSelectedSessionId} />;
+  }
 
   if (!data) {
     return (
@@ -40,6 +72,12 @@ export default function App() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-slate-400 font-mono text-xs uppercase tracking-widest">Initializing Digital Twin...</p>
+          <button 
+            onClick={() => setSelectedSessionId(null)}
+            className="mt-4 text-[10px] text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-widest border border-slate-800 px-4 py-2 rounded-full"
+          >
+            Cancel and Return
+          </button>
         </div>
       </div>
     );
@@ -60,12 +98,17 @@ export default function App() {
     executionTime: "4.18", // Mocked as per design
   };
 
-
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden bg-[#0f172a] text-slate-200">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 glass-card border-b border-slate-700/50 flex-shrink-0">
         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setSelectedSessionId(null)}
+            className="w-10 h-10 rounded-xl border border-slate-700 flex items-center justify-center hover:bg-slate-800 transition-all group"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+          </button>
           <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
             <motion.div
               animate={{ rotate: [0, 360] }}
@@ -114,7 +157,7 @@ export default function App() {
           <div className="h-8 w-[1px] bg-slate-700"></div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Transaction ID</p>
-            <p className="text-sm font-medium font-mono text-sky-400">{data.context.transactionId}</p>
+            <p className="text-sm font-medium font-mono text-sky-400">{data.context.transactionId || 'NOT_ASSIGNED'}</p>
           </div>
         </div>
       </header>

@@ -31,6 +31,11 @@ export class MongoPersistenceAdapter {
         const data = await this.sessions?.findOne({ sessionId });
         return data ? data.snapshot : null;
     }
+    async listSessions() {
+        return this.sessions?.find({})
+            .sort({ updatedAt: -1 })
+            .toArray();
+    }
     async log(entry) {
         if (!this.db)
             return;
