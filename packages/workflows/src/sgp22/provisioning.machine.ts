@@ -1,9 +1,14 @@
 import { createMachine, assign, fromPromise } from 'xstate';
-import type { UniversalHardwarePort, UniversalCryptoPort } from '@unuko/core';
+import type {
+  UniversalHardwarePort,
+  UniversalCryptoPort,
+  UniversalTransportPort
+} from '@unuko/core';
 
 export const createSGP22Machine = (ports: {
   hardware: UniversalHardwarePort,
-  crypto: UniversalCryptoPort
+  crypto: UniversalCryptoPort,
+  transport: UniversalTransportPort,
 }) => {
   return createMachine({
     id: 'sgp22-provisioning',
@@ -11,6 +16,7 @@ export const createSGP22Machine = (ports: {
       context: { step: number; error: string | null };
       events: { type: 'COMPLETE' } | { type: 'SUCCESS' } | { type: 'RETRY' };
     },
+
     context: {
       step: 0,
       error: null,
@@ -26,7 +32,6 @@ export const createSGP22Machine = (ports: {
           onError: {
             target: 'failure',
             actions: assign({
-              // NO tipamos el evento en los argumentos, lo validamos dentro
               error: ({ event }) => {
                 const error = event.error;
                 return error instanceof Error ? error.message : 'Unknown initialization error';
@@ -38,8 +43,20 @@ export const createSGP22Machine = (ports: {
       authenticating: {
         invoke: {
           src: fromPromise(async () => {
-            const cert = await ports.crypto.getDeviceCertificate();
-            return { success: true, cert };
+            // 1. Obtenemos el certificado del dispositivo
+            await ports.crypto.getDeviceCertificate();
+
+            // 2. Ejecutamos la petición ES9+ (initiateAuthentication)
+            // En una implementación real, aquí pasaríamos el euiccChallenge obtenido vía ports.hardware
+            const response = await ports.transport.post<{ transactionId: string; serverSignedData: any }>({
+              url: 'https://smdp.unuko.com/gsma/rsp2/es9plus/initiateAuthentication',
+              body: {
+                euiccChallenge: Buffer.from('unuko-challenge').toString('base64'),
+                smdpAddress: 'smdp.unuko.com'
+              }
+            });
+
+            return response;
           }),
           onDone: 'downloading',
           onError: {

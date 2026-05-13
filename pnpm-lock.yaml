@@ -17,6 +17,9 @@ importers:
 
   apps/sim-cli:
     dependencies:
+      '@unuko/adapter-http':
+        specifier: workspace:*
+        version: link:../../packages/adapter-http
       '@unuko/adapter-pkcs11':
         specifier: workspace:*
         version: link:../../packages/adapter-pkcs11
@@ -32,6 +35,19 @@ importers:
       xstate:
         specifier: ^5.31.1
         version: 5.31.1
+
+  packages/adapter-http:
+    dependencies:
+      '@unuko/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.41
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
   packages/adapter-pkcs11:
     dependencies:

@@ -7,6 +7,7 @@
     "@unuko/workflows": "workspace:*",
     "@unuko/adapter-ueransim": "workspace:*",
     "@unuko/adapter-pkcs11": "workspace:*",
+    "@unuko/adapter-http": "workspace:*",
     "xstate": "^5.31.1"
   }
 }

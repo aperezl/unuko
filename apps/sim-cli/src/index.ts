@@ -1,12 +1,13 @@
 import { createSGP22Machine } from '@unuko/workflows';
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
+import { HttpmTLSAdapter } from '@unuko/adapter-http';
 import { createActor } from 'xstate';
 
 async function bootstrap() {
-  console.log('🚀 Iniciando Orquestador Unuko...');
+  console.log('🚀 UNUKO Orchestrator - Starting SGP.22 PoC');
 
-  // 1. Instanciar Adaptadores (Puertos)
+  // 1. Inicializar Adaptadores (Ports)
   const hardware = new UeransimAdapter('127.0.0.1', 37412);
   const crypto = new PKCS11Adapter(
     '/opt/homebrew/lib/softhsm/libsofthsm2.so',
@@ -14,20 +15,31 @@ async function bootstrap() {
     0
   );
 
-  // 2. Crear Máquina de Estados con Puertos Inyectados
-  const machine = createSGP22Machine({ hardware, crypto });
+  // El adaptador HTTP inyecta el crypto para firmar el mTLS
+  const transport = new HttpmTLSAdapter(crypto);
+
+  // 2. Inyectar dependencias en la Máquina
+  const machine = createSGP22Machine({
+    hardware,
+    crypto,
+    transport
+  });
 
   const actor = createActor(machine);
 
+  // 3. Suscribirse a cambios de estado
   actor.subscribe((state) => {
-    console.log(`[STATE]: ${state.value}`);
+    console.log(`[STATE CHANGE]: ${String(state.value)}`);
     if (state.context.error) {
-      console.error(`[ERROR]: ${state.context.error}`);
+      console.error(`[CRITICAL ERROR]: ${state.context.error}`);
     }
   });
 
-  // 3. Ejecutar Workflow
+  // 4. Arrancar
   actor.start();
 }
 
-bootstrap().catch(console.error);
+bootstrap().catch((err) => {
+  console.error('Fatal bootstrap error:', err);
+  process.exit(1);
+});

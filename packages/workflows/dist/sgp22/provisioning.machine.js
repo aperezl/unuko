@@ -21,7 +21,6 @@ const createSGP22Machine = (ports) => {
                     onError: {
                         target: 'failure',
                         actions: (0, xstate_1.assign)({
-                            // NO tipamos el evento en los argumentos, lo validamos dentro
                             error: ({ event }) => {
                                 const error = event.error;
                                 return error instanceof Error ? error.message : 'Unknown initialization error';
@@ -33,8 +32,18 @@ const createSGP22Machine = (ports) => {
             authenticating: {
                 invoke: {
                     src: (0, xstate_1.fromPromise)(async () => {
-                        const cert = await ports.crypto.getDeviceCertificate();
-                        return { success: true, cert };
+                        // 1. Obtenemos el certificado del dispositivo
+                        await ports.crypto.getDeviceCertificate();
+                        // 2. Ejecutamos la petición ES9+ (initiateAuthentication)
+                        // En una implementación real, aquí pasaríamos el euiccChallenge obtenido vía ports.hardware
+                        const response = await ports.transport.post({
+                            url: 'https://smdp.unuko.com/gsma/rsp2/es9plus/initiateAuthentication',
+                            body: {
+                                euiccChallenge: Buffer.from('unuko-challenge').toString('base64'),
+                                smdpAddress: 'smdp.unuko.com'
+                            }
+                        });
+                        return response;
                     }),
                     onDone: 'downloading',
                     onError: {

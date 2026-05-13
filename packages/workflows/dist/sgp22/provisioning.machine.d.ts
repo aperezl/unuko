@@ -1,7 +1,8 @@
-import type { UniversalHardwarePort, UniversalCryptoPort } from '@unuko/core';
+import type { UniversalHardwarePort, UniversalCryptoPort, UniversalTransportPort } from '@unuko/core';
 export declare const createSGP22Machine: (ports: {
     hardware: UniversalHardwarePort;
     crypto: UniversalCryptoPort;
+    transport: UniversalTransportPort;
 }) => import("xstate").StateMachine<{
     step: number;
     error: string | null;
