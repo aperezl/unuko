@@ -8,7 +8,7 @@ services:
       - "27017:27017"
 
   open5gs-hss:
-    image: herlesinc/open5gs:latest
+    image: openverso/open5gs-webui:2.7.0
     container_name: open5gs-hss
     depends_on:
       - mongodb
@@ -17,14 +17,14 @@ services:
       - ./config/hss.yaml:/opt/open5gs/etc/open5gs/hss.yaml
 
   open5gs-smf:
-    image: herlesinc/open5gs:latest
+    image: openverso/open5gs-webui:2.7.0
     container_name: open5gs-smf
     depends_on:
       - mongodb
     command: open5gs-smfd
 
   ueransim:
-    image: herlesinc/ueransim:latest
+    image: free5gc/ueransim:latest
     container_name: ueransim
     privileged: true
     environment:

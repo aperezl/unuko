@@ -2,12 +2,20 @@
   "name": "sim-cli",
   "version": "0.1.0",
   "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
   "dependencies": {
+    "@unuko/adapter-http": "workspace:*",
+    "@unuko/adapter-pkcs11": "workspace:*",
+    "@unuko/adapter-ueransim": "workspace:*",
     "@unuko/core": "workspace:*",
     "@unuko/workflows": "workspace:*",
-    "@unuko/adapter-ueransim": "workspace:*",
-    "@unuko/adapter-pkcs11": "workspace:*",
-    "@unuko/adapter-http": "workspace:*",
     "xstate": "^5.31.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

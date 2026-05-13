@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "noEmit": true // Es una app, a veces solo queremos ejecutarla con ts-node o esrun
+    "noEmit": false,
+    "composite": false
   },
   "include": [
     "src/**/*"

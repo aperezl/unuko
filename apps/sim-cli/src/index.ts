@@ -12,7 +12,7 @@ async function bootstrap() {
   const crypto = new PKCS11Adapter(
     '/opt/homebrew/lib/softhsm/libsofthsm2.so',
     '1234',
-    0
+    43394378
   );
 
   // El adaptador HTTP inyecta el crypto para firmar el mTLS
