@@ -54,10 +54,12 @@ export default function App() {
     }
   };
 
-  const handleCreateSession = async () => {
+  const handleCreateSession = async (workflow: string = 'provisioning') => {
     try {
       const response = await fetch('/v1/orchestrator/session', {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflow })
       });
       const json = await response.json();
       if (json.sessionId) {
@@ -210,20 +212,58 @@ export default function App() {
         {/* Sidebar */}
         <aside className="md:col-span-3 flex flex-col gap-4 overflow-y-auto pr-1">
           <div className="glass-card rounded-2xl p-4 flex flex-col gap-3">
-            <h2 className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Overview</h2>
+            <h2 className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Workflow Status</h2>
             <div className="space-y-3">
+              {/* Segmented Progress Widget */}
+              {data.context.segments && data.context.segments.length > 0 && (
+                <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[10px] text-sky-300 font-bold uppercase">Installation Progress</p>
+                    <span className="text-[10px] font-mono text-sky-400">
+                      {Math.round(((data.context.currentSegmentIndex || 0) / data.context.segments.length) * 100)}%
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-sky-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${((data.context.currentSegmentIndex || 0) / data.context.segments.length) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-[9px] text-slate-500 mt-2 font-mono">
+                    Segment {data.context.currentSegmentIndex} of {data.context.segments.length}
+                  </p>
+                </div>
+              )}
+
+              {/* Profile Inventory Widget */}
+              {data.context.profiles && data.context.profiles.length > 0 && (
+                <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                  <p className="text-[10px] text-indigo-300 font-bold uppercase mb-3">Detected Profiles</p>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 scrollbar-hide">
+                    {data.context.profiles.map((p, i) => (
+                      <div key={i} className="p-2 rounded-lg bg-slate-900/50 border border-slate-800 flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-white truncate max-w-[100px]">{p.name}</span>
+                          <span className="text-[8px] font-mono text-slate-500">{p.iccid.substring(0, 10)}...</span>
+                        </div>
+                        <span className={cn(
+                          "text-[8px] px-1.5 py-0.5 rounded uppercase font-bold",
+                          p.status === 'enabled' ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-700 text-slate-400"
+                        )}>
+                          {p.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 transition-all hover:bg-slate-800/50">
                 <p className="text-xs text-slate-400 mb-1">Total Events</p>
                 <div className="flex items-baseline gap-2">
                   <p className="text-2xl font-bold">{stats.total}</p>
                   <span className="text-xs font-normal text-slate-500 lowercase">Steps</span>
-                </div>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 transition-all hover:bg-slate-800/50">
-                <p className="text-xs text-slate-400 mb-1">Execution Time</p>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold">{stats.executionTime}</p>
-                  <span className="text-xs font-normal text-slate-500 lowercase">Seconds</span>
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 transition-all hover:bg-slate-800/50">

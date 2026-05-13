@@ -1,4 +1,9 @@
-import { createSGP22Machine } from '@unuko/workflows';
+import { 
+  createSGP22Machine, 
+  createInventoryMachine, 
+  createProfileMgmtMachine, 
+  createNotificationMachine 
+} from '@unuko/workflows';
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
@@ -37,13 +42,22 @@ async function bootstrap() {
   const notification = new WebhookNotificationAdapter('http://localhost:3000/v1/orchestrator/alerts/null'); // Silent local loop
 
   // Función para inicializar y arrancar una sesión
-  const startSession = async (sessionId: string, snapshot?: any) => {
-    console.log(`[SYSTEM]: Starting session ${sessionId}...`);
+  const startSession = async (sessionId: string, workflow: string = 'provisioning', snapshot?: any) => {
+    console.log(`[SYSTEM]: Starting ${workflow} session ${sessionId}...`);
     
     const hardware = new HardwareAuditDecorator(rawHardware, persistence, sessionId);
     const transport = new TransportAuditDecorator(rawTransport, persistence, sessionId);
 
-    const machine = createSGP22Machine({
+    const machineMap: Record<string, any> = {
+      provisioning: createSGP22Machine,
+      inventory: createInventoryMachine,
+      'profile-mgmt': createProfileMgmtMachine,
+      notification: createNotificationMachine
+    };
+
+    const factory = machineMap[workflow] || createSGP22Machine;
+
+    const machine = factory({
       hardware,
       crypto,
       transport,
@@ -102,14 +116,16 @@ async function bootstrap() {
 
   // Crear una nueva sesión
   server.post('/v1/orchestrator/session', async (request, reply) => {
+    const { workflow } = (request.body as any) || { workflow: 'provisioning' };
     const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
     const sessionId = `SESSION-${randomSuffix}`;
     
-    await startSession(sessionId);
+    await startSession(sessionId, workflow);
     
     return { 
       status: 'created', 
       sessionId,
+      workflow,
       url: `/v1/orchestrator/session/${sessionId}`
     };
   });

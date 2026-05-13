@@ -41,17 +41,29 @@ export interface SessionContext {
   step: number;
   error: string | null;
   transactionId: string;
+  // Provisioning
+  segments?: string[];
+  currentSegmentIndex?: number;
+  // Inventory
+  profiles?: any[];
+  // Notifications
+  notifications?: any[];
+  currentNotificationIndex?: number;
+  // Common
+  iccid?: string;
+  action?: string;
 }
 
 export interface SessionSummary {
   sessionId: string;
   status: string;
+  workflow?: string;
   updatedAt: string;
 }
 
 export interface SessionData {
   sessionId: string;
-  status: 'done' | 'pending' | 'failed' | 'working';
+  status: string;
   context: SessionContext;
   logs: LogEntry[];
   updatedAt: string;

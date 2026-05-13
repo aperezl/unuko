@@ -2,28 +2,30 @@ import React from 'react';
 import { SessionSummary } from '../types.js';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  History, 
-  ChevronRight, 
-  Activity, 
-  Clock, 
-  Database, 
-  Plus, 
-  Trash2, 
-  AlertTriangle, 
-  X 
+import {
+  History,
+  ChevronRight,
+  Activity,
+  Clock,
+  Database,
+  Plus,
+  Trash2,
+  AlertTriangle,
+  X,
+  Download
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
 
 interface SessionListProps {
   sessions: SessionSummary[];
   onSelect: (id: string) => void;
-  onCreate: () => void;
+  onCreate: (workflow: string) => void;
   onDelete: (id: string) => Promise<void>;
 }
 
 export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionListProps) => {
   const [sessionToDelete, setSessionToDelete] = React.useState<string | null>(null);
+  const [showWorkflowSelector, setShowWorkflowSelector] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const confirmDelete = async () => {
@@ -54,8 +56,8 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
             </div>
           </div>
 
-          <button 
-            onClick={onCreate}
+          <button
+            onClick={() => setShowWorkflowSelector(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-500/20 active:scale-95"
           >
             <Plus className="w-4 h-4" />
@@ -75,7 +77,7 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
             </div>
           </div>
           <div className="glass-card p-4 rounded-2xl flex items-center gap-4">
-             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
               <Activity className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
@@ -84,7 +86,7 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
             </div>
           </div>
           <div className="glass-card p-4 rounded-2xl flex items-center gap-4">
-             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <Clock className="w-5 h-5 text-amber-400" />
             </div>
             <div>
@@ -101,8 +103,8 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
           <div className="px-6 py-4 border-b border-slate-800/50 bg-slate-900/40 flex justify-between items-center">
             <h2 className="text-xs uppercase font-bold tracking-widest text-slate-500">Persistence Feed</h2>
             <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-[10px] font-mono text-slate-400 uppercase">MongoDB Connected</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-mono text-slate-400 uppercase">MongoDB Connected</span>
             </div>
           </div>
 
@@ -141,7 +143,7 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
                       <p className="text-xs font-mono text-slate-300">{format(new Date(session.updatedAt), 'yyyy-MM-dd HH:mm:ss')}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                       <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSessionToDelete(session.sessionId);
@@ -150,7 +152,7 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => onSelect(session.sessionId)}
                         className="w-9 h-9 rounded-lg border border-slate-700 flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/50 hover:text-sky-400 text-slate-500 transition-all"
                       >
@@ -174,14 +176,14 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
       <AnimatePresence>
         {sessionToDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => !isDeleting && setSessionToDelete(null)}
               className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -192,7 +194,7 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
                   <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
                     <AlertTriangle className="w-6 h-6 text-rose-500" />
                   </div>
-                  <button 
+                  <button
                     onClick={() => setSessionToDelete(null)}
                     disabled={isDeleting}
                     className="p-1 text-slate-500 hover:text-white transition-colors"
@@ -207,14 +209,14 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
                 </p>
 
                 <div className="flex gap-3">
-                  <button 
+                  <button
                     disabled={isDeleting}
                     onClick={() => setSessionToDelete(null)}
                     className="flex-1 py-3 rounded-xl border border-slate-700 font-bold text-sm text-slate-300 hover:bg-slate-800 transition-all disabled:opacity-50"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     disabled={isDeleting}
                     onClick={confirmDelete}
                     className="flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 font-bold text-sm text-white transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
@@ -225,6 +227,74 @@ export const SessionList = ({ sessions, onSelect, onCreate, onDelete }: SessionL
                       'Delete Forever'
                     )}
                   </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Workflow Selector Modal */}
+      <AnimatePresence>
+        {showWorkflowSelector && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowWorkflowSelector(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-2xl glass-card rounded-3xl border border-slate-700 overflow-hidden shadow-2xl"
+            >
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Select Protocol Flow</h3>
+                    <p className="text-slate-400 text-sm">GSMA SGP.22 Consumer RSP State Machines</p>
+                  </div>
+                  <button
+                    onClick={() => setShowWorkflowSelector(false)}
+                    className="p-2 text-slate-500 hover:text-white transition-colors bg-slate-800 rounded-xl"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { id: 'provisioning', title: 'Full Provisioning', desc: 'Complete BPP download and segmented installation.', icon: Download, color: 'sky' },
+                    { id: 'inventory', title: 'eUICC Inventory', desc: 'Retrieve and parse installed profiles from the card.', icon: Database, color: 'indigo' },
+                    { id: 'profile-mgmt', title: 'Profile Management', desc: 'Enable, Disable or Delete existing profiles.', icon: Activity, color: 'emerald' },
+                    { id: 'notification', title: 'Notification Handle', desc: 'Process pending events and notify SM-DP+.', icon: AlertTriangle, color: 'amber' },
+                  ].map((wf) => (
+                    <button
+                      key={wf.id}
+                      onClick={() => {
+                        onCreate(wf.id);
+                        setShowWorkflowSelector(false);
+                      }}
+                      className="group flex flex-col gap-3 p-5 rounded-2xl border border-slate-700 bg-slate-900/50 hover:bg-slate-800 hover:border-sky-500/50 transition-all text-left"
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                        wf.color === 'sky' ? "bg-sky-500/10 text-sky-400 group-hover:bg-sky-500 group-hover:text-white" :
+                          wf.color === 'indigo' ? "bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white" :
+                            wf.color === 'emerald' ? "bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white" :
+                              "bg-amber-500/10 text-amber-400 group-hover:bg-amber-500 group-hover:text-white"
+                      )}>
+                        <wf.icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-white group-hover:text-sky-400 transition-colors">{wf.title}</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed mt-1">{wf.desc}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
             </motion.div>
