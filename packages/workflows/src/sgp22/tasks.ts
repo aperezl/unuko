@@ -37,6 +37,66 @@ export const tasks = {
     return response; // Devolver el Buffer con la lista ASN.1
   }),
 
+  manageProfile: (ports: WorkflowPorts, iccid: string, action: 'enable' | 'disable' | 'delete') => fromPromise(async () => {
+    const tags = { enable: 'BF31', disable: 'BF32', delete: 'BF33' };
+    const tag = tags[action];
+    
+    // Construir TLV: [Tag] [Len] [5A] [Len] [ICCID]
+    const iccidBuffer = Buffer.from(iccid, 'hex');
+    const iccidTlv = Buffer.concat([
+      Buffer.from('5A', 'hex'), 
+      Buffer.from([iccidBuffer.length]), 
+      iccidBuffer
+    ]);
+    
+    const payload = Buffer.concat([
+      Buffer.from(tag, 'hex'), 
+      Buffer.from([iccidTlv.length]), 
+      iccidTlv
+    ]);
+    
+    const lc = payload.length.toString(16).padStart(2, '0');
+    const apdu = `80E29100${lc}${payload.toString('hex').toUpperCase()}`;
+    
+    await ports.hardware.transmit(Buffer.from(apdu, 'hex'));
+  }),
+
+  listNotifications: (ports: WorkflowPorts) => fromPromise(async () => {
+    // Comando SGP.22: ListNotifications (Tag BF28)
+    const response = await ports.hardware.transmit(Buffer.from('80E2910002BF28', 'hex'));
+    return response;
+  }),
+
+  handleNotification: (ports: WorkflowPorts, seqNumber: string) => fromPromise(async () => {
+    await ports.transport.post({
+      url: 'http://localhost:8080/gsma/rsp2/es9plus/handleNotification',
+      body: {
+        pendingNotification: {
+          seqNumber,
+          notificationAddress: 'localhost'
+        }
+      }
+    });
+  }),
+
+  parseNotificationsInfo: (buffer: Buffer) => {
+    const root = parseBERTLV(buffer);
+    const response = root.find(t => t.tag === 'BF28');
+    if (!response || !response.children) return [];
+
+    // Cada hijo es un PendingNotification (ej: Tag BF2E o similar)
+    return response.children.map(notifTLV => {
+      const children = notifTLV.children || [];
+      const seqNumber = children.find(c => c.tag === '80')?.value.toString('hex');
+      const event = children.find(c => c.tag === '81')?.value[0]; // Bitmask de eventos
+      
+      return {
+        seqNumber,
+        event: event === 1 ? 'install' : (event === 2 ? 'delete' : 'other'),
+      };
+    });
+  },
+
   parseProfilesInfo: (buffer: Buffer) => {
     const root = parseBERTLV(buffer);
     const response = root.find(t => t.tag === 'BF2D');

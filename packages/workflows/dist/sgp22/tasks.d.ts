@@ -12,6 +12,18 @@ export declare const tasks: {
         status?: import("@unuko/core").ChipStatus;
         error?: import("@unuko/core").TransportError;
     }, import("xstate").NonReducibleUnknown, import("xstate").EventObject>;
+    manageProfile: (ports: WorkflowPorts, iccid: string, action: "enable" | "disable" | "delete") => import("xstate").PromiseActorLogic<void, import("xstate").NonReducibleUnknown, import("xstate").EventObject>;
+    listNotifications: (ports: WorkflowPorts) => import("xstate").PromiseActorLogic<{
+        success: boolean;
+        data?: import("@unuko/core").RAPDU;
+        status?: import("@unuko/core").ChipStatus;
+        error?: import("@unuko/core").TransportError;
+    }, import("xstate").NonReducibleUnknown, import("xstate").EventObject>;
+    handleNotification: (ports: WorkflowPorts, seqNumber: string) => import("xstate").PromiseActorLogic<void, import("xstate").NonReducibleUnknown, import("xstate").EventObject>;
+    parseNotificationsInfo: (buffer: Buffer) => {
+        seqNumber: string | undefined;
+        event: string;
+    }[];
     parseProfilesInfo: (buffer: Buffer) => {
         iccid: string | undefined;
         name: string;

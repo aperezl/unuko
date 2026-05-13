@@ -11,3 +11,16 @@ export const initialInventoryContext = {
     error: null,
     retryCount: 0
 };
+export const initialProfileMgmtContext = {
+    iccid: '',
+    action: 'enable',
+    refreshRequired: false,
+    error: null,
+    retryCount: 0
+};
+export const initialNotificationContext = {
+    notifications: [],
+    currentNotificationIndex: 0,
+    error: null,
+    retryCount: 0
+};
