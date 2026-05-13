@@ -9,6 +9,9 @@ COPY tsconfig.json ./
 # Instalar pnpm
 RUN npm install -g pnpm
 
+# Instalar dependencias para node-gyp (requerido por pkcs11js)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 # Instalar dependencias
 RUN pnpm install --filter @unuko/smdp-mock
 
