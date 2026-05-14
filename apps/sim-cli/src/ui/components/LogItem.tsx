@@ -4,6 +4,9 @@ import {
   ChevronDown,
   AlertCircle,
   CheckCircle2,
+  Copy,
+  Check,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogEntry } from '../types';
@@ -16,7 +19,33 @@ interface LogItemProps {
   onClick: () => void;
 }
 
+const CopyButton = ({ text, label }: { text: string; label?: string }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button 
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-slate-900/60 border border-slate-800/60 hover:bg-slate-800 hover:border-slate-700 transition-all group"
+    >
+      {copied ? (
+        <Check className="w-3 h-3 text-emerald-500" />
+      ) : (
+        <Copy className="w-3 h-3 text-slate-500 group-hover:text-slate-300" />
+      )}
+      {label && <span className="text-[9px] font-black uppercase text-slate-600 group-hover:text-slate-400 tracking-widest">{label}</span>}
+    </button>
+  );
+};
+
 export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
+  const [activeTab, setActiveTab] = React.useState<'response' | 'request' | 'headers'>('response');
   const isError = log.payload?.error || log.payload?.success === false;
 
   const statusText = isError 
@@ -33,10 +62,14 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
     }
   }
 
-  const hexData = processedPayload?.apdu || processedPayload?.data || 
-                 (typeof processedPayload === 'string' && /^[0-9A-Fa-f]+$/.test(processedPayload) ? processedPayload : null);
-  
-  const isHardware = log.category === 'HARDWARE';
+  // Extract structured data if available
+  const requestBody = processedPayload?.body || (log.direction === 'OUT' ? processedPayload : null);
+  const responseBody = processedPayload?.response || (log.direction === 'IN' ? processedPayload : null);
+  const headers = processedPayload?.headers || null;
+  const url = processedPayload?.url || null;
+
+  const hexData = responseBody?.apdu || responseBody?.data || 
+                 (typeof responseBody === 'string' && /^[0-9A-Fa-f]+$/.test(responseBody) ? responseBody : null);
 
   return (
     <>
@@ -87,7 +120,7 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
               <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 opacity-40" />
             )}
             <span className={cn(
-              "text-[9px] font-black uppercase tracking-widest",
+              "text-[10px] font-black uppercase tracking-widest",
               isError ? "text-rose-600" : "text-emerald-700"
             )}>
               {statusText}
@@ -101,33 +134,76 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
         <tr>
           <td colSpan={5} className="px-4 py-0 border-none">
             <div className="overflow-hidden pb-4 pt-1">
-              <div className="bg-black/40 rounded-sm border border-slate-800/60 p-3 shadow-inner">
-                {log.payload.url && (
-                  <div className="mb-2">
-                    <p className="text-[7px] uppercase font-black text-slate-700 mb-0.5 tracking-widest">Signal URI</p>
-                    <code className="text-[9px] text-sky-600 bg-black/40 px-1.5 py-0.5 rounded-sm border border-sky-900/30 block break-all font-mono">
-                      {log.payload.url}
-                    </code>
+              <div className="bg-black/40 rounded-sm border border-slate-800/60 shadow-inner flex flex-col">
+                
+                {/* URL Bar */}
+                {url && (
+                  <div className="px-4 py-2 border-b border-slate-800/60 bg-slate-900/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3 truncate">
+                      <p className="text-[7px] uppercase font-black text-slate-700 tracking-widest flex-shrink-0">Signal URI</p>
+                      <code className="text-[10px] text-sky-600 bg-black/40 px-2 py-0.5 rounded-sm border border-sky-900/30 truncate font-mono">
+                        {url}
+                      </code>
+                    </div>
+                    <CopyButton text={url} label="Copy URL" />
                   </div>
                 )}
-                
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[7px] uppercase font-black text-slate-700 tracking-widest">
-                      {hexData ? 'Forensic Hex Trace' : 'Data Buffer'}
-                    </p>
-                    <span className="text-[7px] font-mono text-slate-800">SEQUENCE_ID: {log._id}</span>
+
+                {/* Tabs Header */}
+                <div className="flex items-center border-b border-slate-800/60 bg-slate-900/10 px-2">
+                  {[
+                    { id: 'response', label: 'Response Body' },
+                    { id: 'request', label: 'Request Body' },
+                    { id: 'headers', label: 'Network Headers' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={(e) => { e.stopPropagation(); setActiveTab(tab.id as any); }}
+                      className={cn(
+                        "px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-colors relative",
+                        activeTab === tab.id ? "text-sky-500" : "text-slate-600 hover:text-slate-400"
+                      )}
+                    >
+                      {tab.label}
+                      {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500" />}
+                    </button>
+                  ))}
+                  <div className="flex-1" />
+                  <div className="pr-2">
+                    <CopyButton 
+                      text={JSON.stringify(
+                        activeTab === 'response' ? responseBody : 
+                        activeTab === 'request' ? requestBody : 
+                        headers, 
+                        null, 2
+                      )} 
+                    />
                   </div>
-                  {hexData ? (
-                    <div className="scale-[0.95] origin-top-left">
+                </div>
+                
+                {/* Content Area */}
+                <div className="p-4 bg-black/20 min-h-[100px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[7px] uppercase font-black text-slate-700 tracking-widest">
+                      {activeTab === 'response' && hexData ? 'Forensic Hex Trace' : 'Source Object'}
+                    </p>
+                    <span className="text-[7px] font-mono text-slate-800 uppercase">BLOCK_SEQ: {log._id}</span>
+                  </div>
+
+                  {activeTab === 'response' && hexData ? (
+                    <div className="scale-[0.98] origin-top-left overflow-x-auto">
                       <HexViewer data={hexData} />
                     </div>
                   ) : (
-                    <pre className="text-[10px] text-slate-500 font-mono bg-black/60 p-3 rounded-sm border border-slate-900 overflow-x-auto scrollbar-hide">
-                      {JSON.stringify(processedPayload, null, 2)}
+                    <pre className="text-[10px] text-slate-500 font-mono bg-black/40 p-4 rounded-sm border border-slate-900/50 overflow-x-auto">
+                      {activeTab === 'response' && responseBody ? JSON.stringify(responseBody, null, 2) : 
+                       activeTab === 'request' && requestBody ? JSON.stringify(requestBody, null, 2) :
+                       activeTab === 'headers' && headers ? JSON.stringify(headers, null, 2) :
+                       '// NO DATA AVAILABLE FOR THIS SEGMENT'}
                     </pre>
                   )}
                 </div>
+
               </div>
             </div>
           </td>

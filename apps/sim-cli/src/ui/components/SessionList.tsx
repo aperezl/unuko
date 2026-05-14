@@ -51,7 +51,7 @@ export const SessionList = ({ sessions, onCreate, onDelete }: SessionListProps) 
 
   return (
     <div className="h-full flex flex-col p-6 bg-transparent relative overflow-hidden">
-      <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
+      <div className="max-w-6xl mx-auto w-full flex flex-col gap-6 flex-1 min-h-0">
         {/* Header - Compact */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -118,9 +118,9 @@ export const SessionList = ({ sessions, onCreate, onDelete }: SessionListProps) 
           </div>
         </div>
 
-        {/* List Section - Tabular and Sharper */}
-        <div className="bg-slate-950/60 rounded-sm overflow-hidden border border-slate-800/60 flex flex-col flex-1">
-          <div className="px-6 py-3 border-b border-slate-800/60 bg-slate-900/40 flex justify-between items-center">
+        {/* List Section - Tabular and Sharper with Scroll */}
+        <div className="bg-slate-950/60 rounded-sm border border-slate-800/60 flex flex-col flex-1 min-h-0 overflow-hidden mb-6">
+          <div className="px-6 py-3 border-b border-slate-800/60 bg-slate-900/40 flex justify-between items-center flex-shrink-0">
             <div className="flex items-center gap-2">
               <Filter className="w-3.5 h-3.5 text-slate-600" />
               <h2 className="text-[11px] uppercase font-black tracking-widest text-slate-500">Telemetry Feed</h2>
@@ -131,7 +131,7 @@ export const SessionList = ({ sessions, onCreate, onDelete }: SessionListProps) 
             </div>
           </div>
 
-          <div className="divide-y divide-slate-800/40 overflow-y-auto">
+          <div className="divide-y divide-slate-800/40 overflow-y-auto flex-1 scrollbar-hide">
             {filteredSessions.length > 0 ? (
               filteredSessions.map((session, index) => (
                 <div
