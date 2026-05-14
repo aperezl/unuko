@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import yaml from 'js-yaml';
+import { useNavigate } from 'react-router-dom';
 import { 
   Save, 
   Play, 
@@ -20,7 +21,7 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface WorkflowEditorProps {
-  onExecute: (definition: any) => void;
+  onExecute: (definition: any) => Promise<string | void>;
 }
 
 const DEFAULT_WORKFLOW = `id: custom-workflow
@@ -55,6 +56,7 @@ const AVAILABLE_TASKS = [
 ];
 
 export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
+  const navigate = useNavigate();
   const [code, setCode] = useState(DEFAULT_WORKFLOW);
   const [fileName, setFileName] = useState('new-workflow.yaml');
   const [library, setLibrary] = useState<{ name: string; content: string }[]>([]);
@@ -102,16 +104,17 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
     localStorage.setItem('unuko-workflows', JSON.stringify(newLibrary));
   };
 
-  const handleExecute = () => {
+  const handleExecute = async () => {
     if (markers.some(m => m.severity === 8)) { // 8 is Error in Monaco
       setStatus({ type: 'error', message: 'Cannot execute workflow with syntax errors' });
       return;
     }
     try {
       const definition = yaml.load(code);
-      onExecute(definition);
-      setStatus({ type: 'success', message: 'Executing dynamic workflow...' });
-      setTimeout(() => setStatus({ type: 'idle', message: '' }), 3000);
+      const sessionId = await onExecute(definition);
+      if (sessionId) {
+        navigate(`/session/${sessionId}`);
+      }
     } catch (e: any) {
       setStatus({ type: 'error', message: `Execution failed: ${e.message}` });
     }
