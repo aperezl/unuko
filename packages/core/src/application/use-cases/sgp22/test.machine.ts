@@ -1,4 +1,4 @@
-import { WorkflowPorts } from '../base/types';
+import { WorkflowPorts } from '../../../domain/models/workflow.types';
 import { createUnukoMachine } from '../base/factory';
 import { tasks, utils } from './tasks';
 import { ProvisioningContext, initialContext } from './types';

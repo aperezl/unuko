@@ -4,7 +4,7 @@ import {
   UniversalHardwarePort, 
   UniversalCryptoPort, 
   UniversalTransportPort 
-} from '@unuko/core';
+} from '../ports/out';
 import { z } from 'zod';
 import { PromiseActorLogic } from 'xstate';
 

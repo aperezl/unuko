@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { TaskDefinition } from './types';
+import { TaskDefinition } from '../../../domain/models/workflow.types';
 
 export function generateWorkflowSchema(taskDefinitions: TaskDefinition[]) {
   const taskIds = taskDefinitions.map(t => t.id);

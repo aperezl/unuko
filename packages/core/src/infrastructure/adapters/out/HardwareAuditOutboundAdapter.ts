@@ -1,7 +1,7 @@
-import { UniversalHardwarePort, APDU, ChipStatus, TransportError } from '../ports/hardware.port';
-import { UniversalAuditPort } from '../ports/audit.port';
+import { UniversalHardwarePort, APDU, ChipStatus, TransportError } from '../../../domain/ports/out/hardware.port';
+import { UniversalAuditPort } from '../../../domain/ports/out/audit.port';
 
-export class HardwareAuditDecorator implements UniversalHardwarePort {
+export class HardwareAuditOutboundAdapter implements UniversalHardwarePort {
   constructor(
     private decorated: UniversalHardwarePort,
     private audit: UniversalAuditPort,

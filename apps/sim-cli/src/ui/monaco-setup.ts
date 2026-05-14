@@ -1,7 +1,7 @@
 import { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.main';
 import { configureMonacoYaml } from 'monaco-yaml';
-import { unukoEngine } from '@unuko/workflows';
+import { unukoEngine } from '@unuko/core';
 
 window.MonacoEnvironment = {
   getWorker(_, label) {

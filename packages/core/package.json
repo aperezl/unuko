@@ -3,10 +3,17 @@
   "type": "module",
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
-    "dev": "tsup src/index.ts --format esm --dts --watch"
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "xstate": "^5.0.0",
+    "zod": "^3.24.0",
+    "zod-to-json-schema": "^3.24.1"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

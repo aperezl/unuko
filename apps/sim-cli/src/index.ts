@@ -1,11 +1,11 @@
-import { 
-  createSGP22Machine, 
-  createInventoryMachine, 
-  createProfileMgmtMachine, 
+import {
+  createSGP22Machine,
+  createInventoryMachine,
+  createProfileMgmtMachine,
   createNotificationMachine,
   createTestMachine,
   unukoEngine
-} from '@unuko/workflows';
+} from '@unuko/core';
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
@@ -13,8 +13,8 @@ import { MongoPersistenceAdapter } from '@unuko/adapter-mongodb';
 import { createActor, AnyActor } from 'xstate';
 import fastify from 'fastify';
 import {
-  HardwareAuditDecorator,
-  TransportAuditDecorator
+  HardwareAuditOutboundAdapter,
+  TransportAuditOutboundAdapter
 } from '@unuko/core';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
@@ -46,9 +46,9 @@ async function bootstrap() {
   // Función para inicializar y arrancar una sesión
   const startSession = async (sessionId: string, workflow: string = 'provisioning', snapshot?: any, workflowDefinition?: any) => {
     console.log(`[SYSTEM]: Starting ${workflowDefinition ? 'dynamic' : workflow} session ${sessionId}...`);
-    
-    const hardware = new HardwareAuditDecorator(rawHardware, persistence, sessionId);
-    const transport = new TransportAuditDecorator(rawTransport, persistence, sessionId);
+
+    const hardware = new HardwareAuditOutboundAdapter(rawHardware, persistence, sessionId);
+    const transport = new TransportAuditOutboundAdapter(rawTransport, persistence, sessionId);
 
     let machine;
     if (workflowDefinition) {
@@ -113,7 +113,7 @@ async function bootstrap() {
   };
 
   // --- 6. CAPA DE PRODUCTO: Endpoints ---
-  
+
   // Endpoint mudo para alertas (evita ruidos de fetch failed)
   server.all('/v1/orchestrator/alerts/null', async () => ({ status: 'ignored' }));
 
@@ -132,11 +132,11 @@ async function bootstrap() {
     const { workflow, workflowDefinition } = (request.body as any) || { workflow: 'provisioning' };
     const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
     const sessionId = `SESSION-${randomSuffix}`;
-    
+
     await startSession(sessionId, workflow, undefined, workflowDefinition);
-    
-    return { 
-      status: 'created', 
+
+    return {
+      status: 'created',
       sessionId,
       workflow: workflowDefinition ? 'dynamic' : workflow,
       url: `/v1/orchestrator/session/${sessionId}`
@@ -146,14 +146,14 @@ async function bootstrap() {
   // Eliminar una sesión
   server.delete('/v1/orchestrator/session/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    
+
     // Detener actor si está activo
     const actor = activeActors.get(id);
     if (actor) {
       actor.stop();
       activeActors.delete(id);
     }
-    
+
     await persistence.deleteSession(id);
     return { status: 'deleted', sessionId: id };
   });
@@ -179,7 +179,7 @@ async function bootstrap() {
   server.post('/v1/orchestrator/session/:id/event', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { event } = request.body as { event: string };
-    
+
     const actor = activeActors.get(id);
     if (!actor) return reply.status(404).send({ error: 'Active actor not found for this session' });
 

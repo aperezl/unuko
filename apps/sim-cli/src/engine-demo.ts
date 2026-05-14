@@ -1,8 +1,8 @@
 import fs from 'fs';
 import yaml from 'js-yaml';
 import { createActor } from 'xstate';
-import { unukoEngine } from '@unuko/workflows';
-import { WorkflowPorts } from '@unuko/workflows';
+import { unukoEngine } from '@unuko/core';
+import { WorkflowPorts } from '@unuko/core';
 
 // Mock ports for the demo
 const mockPorts: WorkflowPorts = {

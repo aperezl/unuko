@@ -1,6 +1,6 @@
 import { setup, assign } from 'xstate';
 import { z } from 'zod';
-import { WorkflowPorts, WorkflowBaseContext, TaskDefinition } from './types';
+import { WorkflowPorts, WorkflowBaseContext, TaskDefinition } from '../../../domain/models/workflow.types';
 import { tasks as sgp22Tasks } from '../sgp22/tasks';
 import { generateWorkflowSchema } from './schema';
 
@@ -38,7 +38,9 @@ const resolveInputs = (inputs: any, context: any, event: any): any => {
   return resolved;
 };
 
-export class WorkflowEngine {
+import { IWorkflowEngine } from '../../../domain/ports/in/workflow.port';
+
+export class WorkflowEngine implements IWorkflowEngine {
   private registry: Record<string, TaskDefinition> = {};
 
   constructor() {

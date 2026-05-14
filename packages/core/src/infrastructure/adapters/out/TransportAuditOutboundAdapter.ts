@@ -1,7 +1,7 @@
-import { UniversalTransportPort, TransportRequest } from '../ports/transport.port';
-import { UniversalAuditPort } from '../ports/audit.port';
+import { UniversalTransportPort, TransportRequest } from '../../../domain/ports/out/transport.port';
+import { UniversalAuditPort } from '../../../domain/ports/out/audit.port';
 
-export class TransportAuditDecorator implements UniversalTransportPort {
+export class TransportAuditOutboundAdapter implements UniversalTransportPort {
   constructor(
     private decorated: UniversalTransportPort,
     private audit: UniversalAuditPort,

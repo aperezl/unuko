@@ -6,7 +6,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "turbo run test"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +16,8 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.7.0",
     "tsup": "^8.5.1",
-    "turbo": "^2.9.12"
+    "turbo": "^2.9.12",
+    "vitest": "^4.1.6"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

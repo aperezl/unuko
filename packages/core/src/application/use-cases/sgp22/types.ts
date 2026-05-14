@@ -1,4 +1,4 @@
-import { WorkflowBaseContext } from '../base/types';
+import { WorkflowBaseContext } from '../../../domain/models/workflow.types';
 
 export interface ProvisioningContext extends WorkflowBaseContext {
   step: number;

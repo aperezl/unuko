@@ -1,4 +1,4 @@
-import { calculateProgress } from '@unuko/core';
+import { calculateProgress } from '../../domain/logic/progress';
 
 export const getVisualProgress = (state: any) => {
   // XState nos da los 'tags' y el valor jerárquico

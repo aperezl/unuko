@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import yaml from 'js-yaml';
 import { useNavigate } from 'react-router-dom';
-import { unukoEngine } from '@unuko/workflows';
+import { unukoEngine } from '@unuko/core';
 import {
   Save,
   Play,

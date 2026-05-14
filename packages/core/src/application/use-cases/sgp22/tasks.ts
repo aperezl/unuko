@@ -1,7 +1,7 @@
 import { fromPromise } from 'xstate';
 import { z } from 'zod';
-import { WorkflowPorts, TaskDefinition } from '../base/types';
-import { parseBERTLV } from './utils';
+import { WorkflowPorts, TaskDefinition } from '../../../domain/models/workflow.types';
+import { parseBERTLV } from '../../../infrastructure/mappers/sgp22-tlv.mapper';
 
 export const tasks: Record<string, TaskDefinition> = {
   initialize: {
@@ -76,8 +76,8 @@ export const tasks: Record<string, TaskDefinition> = {
       action: z.enum(['enable', 'disable', 'delete']).describe('Action to perform')
     }),
     handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
-      const tags = { enable: 'BF31', disable: 'BF32', delete: 'BF33' };
-      const tag = tags[input.action];
+      const tags = { enable: 'BF31', disable: 'BF32', delete: 'BF33' } as const;
+      const tag = tags[input.action as keyof typeof tags];
       const iccidBuffer = Buffer.from(input.iccid, 'hex');
       const iccidTlv = Buffer.concat([
         Buffer.from('5A', 'hex'), 
