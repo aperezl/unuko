@@ -11,6 +11,7 @@ import { FileJson, ListFilter, Search, Download, LayoutGrid, Network, ArrowLeft 
 import { cn } from './lib/utils';
 import { VisualFlow } from './components/VisualFlow';
 import { SessionList } from './components/SessionList';
+import { WorkflowEditor } from './components/WorkflowEditor';
 
 export default function App() {
   const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
@@ -20,6 +21,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedLogId, setSelectedLogId] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<'table' | 'flow'>('table');
+  const [activeView, setActiveView] = React.useState<'dashboard' | 'designer'>('dashboard');
 
   // Fetch session list
   React.useEffect(() => {
@@ -54,16 +56,17 @@ export default function App() {
     }
   };
 
-  const handleCreateSession = async (workflow: string = 'provisioning') => {
+  const handleCreateSession = async (workflow: string = 'provisioning', workflowDefinition?: any) => {
     try {
       const response = await fetch('/v1/orchestrator/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflow })
+        body: JSON.stringify({ workflow, workflowDefinition })
       });
       const json = await response.json();
       if (json.sessionId) {
         setSelectedSessionId(json.sessionId);
+        setActiveView('dashboard');
       }
     } catch (err) {
       console.error('Failed to create new session:', err);
@@ -99,12 +102,51 @@ export default function App() {
   }, [selectedSessionId]);
 
   if (!selectedSessionId) {
-    return <SessionList 
-      sessions={sessions} 
-      onSelect={setSelectedSessionId} 
-      onCreate={handleCreateSession} 
-      onDelete={handleDeleteSession}
-    />;
+    return (
+      <div className="h-screen w-full flex flex-col bg-[#0f172a]">
+        <header className="h-16 border-b border-slate-800 flex items-center justify-between px-8 flex-shrink-0 bg-slate-900/50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+              <Network className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-sm font-bold tracking-tight text-white uppercase tracking-widest">Unuko Orchestrator</h1>
+          </div>
+          <nav className="flex items-center gap-2">
+            <button 
+              onClick={() => setActiveView('dashboard')}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                activeView === 'dashboard' ? "bg-sky-500 text-white" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+              )}
+            >
+              Sessions
+            </button>
+            <button 
+              onClick={() => setActiveView('designer')}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                activeView === 'designer' ? "bg-sky-500 text-white" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+              )}
+            >
+              Designer
+            </button>
+          </nav>
+          <div className="w-40" /> {/* Spacer */}
+        </header>
+        <div className="flex-1 overflow-hidden">
+          {activeView === 'dashboard' ? (
+            <SessionList 
+              sessions={sessions} 
+              onSelect={setSelectedSessionId} 
+              onCreate={handleCreateSession} 
+              onDelete={handleDeleteSession}
+            />
+          ) : (
+            <WorkflowEditor onExecute={(def) => handleCreateSession('dynamic', def)} />
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (!data || !data.logs) {
@@ -126,10 +168,13 @@ export default function App() {
 
   const filteredLogs = (data.logs || [])
     .filter(log => filter === 'all' || log.category === filter)
-    .filter(log => 
-      log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (log.payload && JSON.stringify(log.payload).toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    .filter(log => {
+      const desc = log.description || '';
+      const payloadStr = log.payload ? JSON.stringify(log.payload) : '';
+      const search = searchTerm.toLowerCase();
+      
+      return desc.toLowerCase().includes(search) || payloadStr.toLowerCase().includes(search);
+    })
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   // Auto-scroll removed temporarily

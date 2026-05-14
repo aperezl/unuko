@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsup src/index.ts --format esm --dts --clean"
   },
   "dependencies": {
     "@unuko/core": "workspace:*",

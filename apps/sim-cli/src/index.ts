@@ -3,7 +3,8 @@ import {
   createInventoryMachine, 
   createProfileMgmtMachine, 
   createNotificationMachine,
-  createTestMachine
+  createTestMachine,
+  unukoEngine
 } from '@unuko/workflows';
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
@@ -43,30 +44,40 @@ async function bootstrap() {
   const notification = new WebhookNotificationAdapter('http://localhost:3000/v1/orchestrator/alerts/null'); // Silent local loop
 
   // Función para inicializar y arrancar una sesión
-  const startSession = async (sessionId: string, workflow: string = 'provisioning', snapshot?: any) => {
-    console.log(`[SYSTEM]: Starting ${workflow} session ${sessionId}...`);
+  const startSession = async (sessionId: string, workflow: string = 'provisioning', snapshot?: any, workflowDefinition?: any) => {
+    console.log(`[SYSTEM]: Starting ${workflowDefinition ? 'dynamic' : workflow} session ${sessionId}...`);
     
     const hardware = new HardwareAuditDecorator(rawHardware, persistence, sessionId);
     const transport = new TransportAuditDecorator(rawTransport, persistence, sessionId);
 
-    const machineMap: Record<string, any> = {
-      provisioning: createSGP22Machine,
-      inventory: createInventoryMachine,
-      'profile-mgmt': createProfileMgmtMachine,
-      notification: createNotificationMachine,
-      'test-services': createTestMachine
-    };
-
-    const factory = machineMap[workflow] || createSGP22Machine;
-
-    const machine = factory({
-      hardware,
-      crypto,
-      transport,
-      audit: persistence,
-      notification,
-      sessionId
-    });
+    let machine;
+    if (workflowDefinition) {
+      machine = unukoEngine.createMachine(workflowDefinition, {
+        hardware,
+        crypto,
+        transport,
+        audit: persistence,
+        notification,
+        sessionId
+      });
+    } else {
+      const machineMap: Record<string, any> = {
+        provisioning: createSGP22Machine,
+        inventory: createInventoryMachine,
+        'profile-mgmt': createProfileMgmtMachine,
+        notification: createNotificationMachine,
+        'test-services': createTestMachine
+      };
+      const factory = machineMap[workflow] || createSGP22Machine;
+      machine = factory({
+        hardware,
+        crypto,
+        transport,
+        audit: persistence,
+        notification,
+        sessionId
+      });
+    }
 
     const actor = createActor(machine, {
       snapshot: snapshot || undefined
@@ -118,16 +129,16 @@ async function bootstrap() {
 
   // Crear una nueva sesión
   server.post('/v1/orchestrator/session', async (request, reply) => {
-    const { workflow } = (request.body as any) || { workflow: 'provisioning' };
+    const { workflow, workflowDefinition } = (request.body as any) || { workflow: 'provisioning' };
     const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
     const sessionId = `SESSION-${randomSuffix}`;
     
-    await startSession(sessionId, workflow);
+    await startSession(sessionId, workflow, undefined, workflowDefinition);
     
     return { 
       status: 'created', 
       sessionId,
-      workflow,
+      workflow: workflowDefinition ? 'dynamic' : workflow,
       url: `/v1/orchestrator/session/${sessionId}`
     };
   });

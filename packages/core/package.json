@@ -2,8 +2,8 @@
   "name": "@unuko/core",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc -w"
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
