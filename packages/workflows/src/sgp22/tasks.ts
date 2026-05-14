@@ -1,6 +1,6 @@
 import { fromPromise } from 'xstate';
-import { WorkflowPorts } from '../base/types.js';
-import { parseBERTLV } from './utils.js';
+import { WorkflowPorts } from '../base/types';
+import { parseBERTLV } from './utils';
 
 export const tasks = {
   initialize: (ports: WorkflowPorts) => fromPromise(async () => {

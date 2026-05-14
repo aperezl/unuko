@@ -1,5 +1,5 @@
-import { UniversalTransportPort, TransportRequest } from '../ports/transport.port.js';
-import { UniversalAuditPort } from '../ports/audit.port.js';
+import { UniversalTransportPort, TransportRequest } from '../ports/transport.port';
+import { UniversalAuditPort } from '../ports/audit.port';
 
 export class TransportAuditDecorator implements UniversalTransportPort {
   constructor(

@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import { LogEntry } from '../types.js';
-import { cn } from '../lib/utils.js';
+import { LogEntry } from '../types';
+import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { 
   Globe, 

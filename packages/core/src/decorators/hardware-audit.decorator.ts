@@ -1,5 +1,5 @@
-import { UniversalHardwarePort, APDU, ChipStatus, TransportError } from '../ports/hardware.port.js';
-import { UniversalAuditPort } from '../ports/audit.port.js';
+import { UniversalHardwarePort, APDU, ChipStatus, TransportError } from '../ports/hardware.port';
+import { UniversalAuditPort } from '../ports/audit.port';
 
 export class HardwareAuditDecorator implements UniversalHardwarePort {
   constructor(

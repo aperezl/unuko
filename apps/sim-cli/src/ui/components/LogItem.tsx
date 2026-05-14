@@ -6,8 +6,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogEntry } from '../types.js';
-import { cn } from '../lib/utils.js';
+import { LogEntry } from '../types';
+import { cn } from '../lib/utils';
 import { HexViewer } from './HexViewer';
 
 interface LogItemProps {

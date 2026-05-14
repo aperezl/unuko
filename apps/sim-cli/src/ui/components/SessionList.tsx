@@ -1,5 +1,5 @@
 import React from 'react';
-import { SessionSummary } from '../types.js';
+import { SessionSummary } from '../types';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -14,7 +14,7 @@ import {
   X,
   Download
 } from 'lucide-react';
-import { cn } from '../lib/utils.js';
+import { cn } from '../lib/utils';
 
 interface SessionListProps {
   sessions: SessionSummary[];

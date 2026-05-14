@@ -1,8 +1,7 @@
-import { assign } from 'xstate';
-import { WorkflowPorts } from '../base/types.js';
-import { createUnukoMachine } from '../base/factory.js';
-import { tasks } from './tasks.js';
-import { ProvisioningContext, initialContext } from './types.js';
+import { WorkflowPorts } from '../base/types';
+import { createUnukoMachine } from '../base/factory';
+import { tasks } from './tasks';
+import { ProvisioningContext, initialContext } from './types';
 
 export const createTestMachine = (ports: WorkflowPorts) => {
   return createUnukoMachine<ProvisioningContext>({

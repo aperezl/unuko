@@ -1,8 +1,8 @@
 import { assign } from 'xstate';
-import { WorkflowPorts } from '../base/types.js';
-import { createUnukoMachine } from '../base/factory.js';
-import { tasks } from './tasks.js';
-import { NotificationContext, initialNotificationContext } from './types.js';
+import { WorkflowPorts } from '../base/types';
+import { createUnukoMachine } from '../base/factory';
+import { tasks } from './tasks';
+import { NotificationContext, initialNotificationContext } from './types';
 
 export const createNotificationMachine = (ports: WorkflowPorts) => {
   return createUnukoMachine<NotificationContext>({

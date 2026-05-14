@@ -4,13 +4,13 @@
  */
 
 import React from 'react';
-import { SessionData, SessionSummary } from './types.js';
-import { LogItem } from './components/LogItem.js';
+import { SessionData, SessionSummary } from './types';
+import { LogItem } from './components/LogItem';
 import { motion } from 'motion/react';
 import { FileJson, ListFilter, Search, Download, LayoutGrid, Network, ArrowLeft } from 'lucide-react';
-import { cn } from './lib/utils.js';
-import { VisualFlow } from './components/VisualFlow.js';
-import { SessionList } from './components/SessionList.js';
+import { cn } from './lib/utils';
+import { VisualFlow } from './components/VisualFlow';
+import { SessionList } from './components/SessionList';
 
 export default function App() {
   const [sessions, setSessions] = React.useState<SessionSummary[]>([]);

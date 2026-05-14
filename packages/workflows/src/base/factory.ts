@@ -1,6 +1,6 @@
 import { setup, assign } from 'xstate';
 import { AlertSeverity } from '@unuko/core';
-import { WorkflowBaseContext, WorkflowPorts, StandardWorkflowEvent } from './types.js';
+import { WorkflowBaseContext, WorkflowPorts, StandardWorkflowEvent } from './types';
 
 interface UnukoWorkflowConfig<TContext extends WorkflowBaseContext> {
   id: string;

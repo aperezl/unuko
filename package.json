@@ -12,6 +12,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.33.2",
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.7.0",
     "tsup": "^8.5.1",
     "turbo": "^2.9.12"
@@ -22,6 +23,7 @@
     ]
   },
   "dependencies": {
+    "js-yaml": "^4.1.1",
     "pkcs11js": "^2.1.6"
   }
 }

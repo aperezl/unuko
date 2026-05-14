@@ -1,0 +1,22 @@
+id: iot-test-workflow
+initial: init_sim
+states:
+  init_sim:
+    invoke:
+      src: sgp22/initialize
+      onDone: auth_smdp
+  auth_smdp:
+    invoke:
+      src: sgp22/authenticate
+      onDone:
+        target: download_profile
+        assign:
+          transactionId: "${event.output.transactionId}"
+  download_profile:
+    invoke:
+      src: sgp22/downloadProfile
+      input:
+        transactionId: "${context.transactionId}"
+      onDone: done
+  done:
+    type: final

@@ -43,4 +43,4 @@ export class HttpmTLSAdapter implements UniversalTransportPort {
   }
 }
 
-export * from './WebhookNotificationAdapter.js';
+export * from './WebhookNotificationAdapter';
