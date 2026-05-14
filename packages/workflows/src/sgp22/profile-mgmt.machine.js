@@ -1,7 +1,7 @@
 import { assign } from 'xstate';
-import { createUnukoMachine } from '../base/factory.js';
-import { tasks } from './tasks.js';
-import { initialProfileMgmtContext } from './types.js';
+import { createUnukoMachine } from '../base/factory';
+import { tasks } from './tasks';
+import { initialProfileMgmtContext } from './types';
 export const createProfileMgmtMachine = (ports) => {
     return createUnukoMachine({
         id: 'sgp22-profile-mgmt',

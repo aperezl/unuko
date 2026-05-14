@@ -1,7 +1,7 @@
 import { assign } from 'xstate';
-import { createUnukoMachine } from '../base/factory.js';
-import { tasks } from './tasks.js';
-import { initialContext } from './types.js';
+import { createUnukoMachine } from '../base/factory';
+import { tasks } from './tasks';
+import { initialContext } from './types';
 export const createSGP22Machine = (ports) => {
     return createUnukoMachine({
         id: 'sgp22-provisioning',

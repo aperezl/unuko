@@ -1,7 +1,7 @@
 import { assign } from 'xstate';
-import { createUnukoMachine } from '../base/factory.js';
-import { tasks } from './tasks.js';
-import { initialNotificationContext } from './types.js';
+import { createUnukoMachine } from '../base/factory';
+import { tasks } from './tasks';
+import { initialNotificationContext } from './types';
 export const createNotificationMachine = (ports) => {
     return createUnukoMachine({
         id: 'sgp22-notifications',

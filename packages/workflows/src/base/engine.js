@@ -1,5 +1,5 @@
 import { setup, assign } from 'xstate';
-import { tasks as sgp22Tasks } from '../sgp22/tasks.js';
+import { tasks as sgp22Tasks } from '../sgp22/tasks';
 /**
  * Simple expression resolver for ${context.path} or ${event.path}
  */

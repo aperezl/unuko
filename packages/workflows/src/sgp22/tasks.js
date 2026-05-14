@@ -1,5 +1,5 @@
 import { fromPromise } from 'xstate';
-import { parseBERTLV } from './utils.js';
+import { parseBERTLV } from './utils';
 export const tasks = {
     initialize: (ports) => fromPromise(async () => {
         await ports.crypto.initialize();

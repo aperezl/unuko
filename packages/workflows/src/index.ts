@@ -5,3 +5,4 @@ export * from './sgp22/notification.machine';
 export * from './sgp22/test.machine';
 export * from './sgp22/types';
 export * from './base/engine';
+export * from './base/types';
