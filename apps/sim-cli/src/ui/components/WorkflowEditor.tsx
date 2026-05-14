@@ -43,16 +43,16 @@ states:
 `;
 
 const AVAILABLE_TASKS = [
-  { id: 'sgp22/initialize', desc: 'Initialize crypto and hardware' },
-  { id: 'sgp22/authenticate', desc: 'ES9+ Initiate Authentication' },
-  { id: 'sgp22/downloadProfile', desc: 'ES9+ Get Bound Profile Package' },
-  { id: 'sgp22/installSegment', desc: 'Transmit APDU segment to eUICC' },
-  { id: 'sgp22/getProfilesInfo', desc: 'Query eUICC for profile list' },
-  { id: 'sgp22/manageProfile', desc: 'Enable/Disable/Delete profile' },
-  { id: 'sgp22/listNotifications', desc: 'List pending notifications' },
-  { id: 'sgp22/handleNotification', desc: 'Handle ES9+ notification' },
-  { id: 'sgp22/registerSubscriber', desc: 'Register in 5G Core (Open5GS)' },
-  { id: 'sgp22/enableConnectivity', desc: 'Trigger UERANSIM attach' },
+  { id: 'sgp22/initialize', desc: 'Init hardware' },
+  { id: 'sgp22/authenticate', desc: 'ES9+ Auth' },
+  { id: 'sgp22/downloadProfile', desc: 'ES9+ Get BPP' },
+  { id: 'sgp22/installSegment', desc: 'APDU Segment' },
+  { id: 'sgp22/getProfilesInfo', desc: 'List Profiles' },
+  { id: 'sgp22/manageProfile', desc: 'Enable/Disable' },
+  { id: 'sgp22/listNotifications', desc: 'List Notifs' },
+  { id: 'sgp22/handleNotification', desc: 'Handle ES9+' },
+  { id: 'sgp22/registerSubscriber', desc: '5G Core Reg' },
+  { id: 'sgp22/enableConnectivity', desc: 'UE Attach' },
 ];
 
 export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
@@ -74,8 +74,6 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
-    
-    // Listen for validation markers (errors, warnings)
     monaco.editor.onDidChangeMarkers(() => {
       const model = editor.getModel();
       if (model) {
@@ -87,14 +85,14 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
 
   const handleSave = () => {
     try {
-      yaml.load(code); // Validate YAML
+      yaml.load(code);
       const newLibrary = [...library.filter(f => f.name !== fileName), { name: fileName, content: code }];
       setLibrary(newLibrary);
       localStorage.setItem('unuko-workflows', JSON.stringify(newLibrary));
-      setStatus({ type: 'success', message: 'Workflow saved successfully' });
-      setTimeout(() => setStatus({ type: 'idle', message: '' }), 3000);
+      setStatus({ type: 'success', message: 'Saved' });
+      setTimeout(() => setStatus({ type: 'idle', message: '' }), 2000);
     } catch (e: any) {
-      setStatus({ type: 'error', message: `Invalid YAML: ${e.message}` });
+      setStatus({ type: 'error', message: `YAML Error` });
     }
   };
 
@@ -105,8 +103,8 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
   };
 
   const handleExecute = async () => {
-    if (markers.some(m => m.severity === 8)) { // 8 is Error in Monaco
-      setStatus({ type: 'error', message: 'Cannot execute workflow with syntax errors' });
+    if (markers.some(m => m.severity === 8)) {
+      setStatus({ type: 'error', message: 'Syntax Errors' });
       return;
     }
     try {
@@ -116,115 +114,96 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
         navigate(`/session/${sessionId}`);
       }
     } catch (e: any) {
-      setStatus({ type: 'error', message: `Execution failed: ${e.message}` });
+      setStatus({ type: 'error', message: `Execution failed` });
     }
   };
 
   return (
     <div className="flex h-full bg-[#020617] text-slate-200 overflow-hidden font-sans">
-      {/* Left Sidebar - Library */}
-      <div className="w-64 border-r border-slate-800/50 flex flex-col bg-slate-950/50 backdrop-blur-xl">
-        <div className="p-4 border-b border-slate-800/50 flex items-center justify-between">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Workflow Library</h3>
+      {/* Sidebar - Compact */}
+      <div className="w-48 border-r border-slate-800/60 flex flex-col bg-slate-950/40">
+        <div className="p-3 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/10">
+          <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-600">Library</h3>
           <button 
             onClick={() => { setFileName('new-workflow.yaml'); setCode(DEFAULT_WORKFLOW); }}
-            className="p-1.5 hover:bg-sky-500/10 rounded-lg transition-all group"
-            title="New Workflow"
+            className="p-1 hover:bg-sky-500/10 rounded-sm transition-colors"
           >
-            <FileCode className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform" />
+            <FileCode className="w-3.5 h-3.5 text-sky-500" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
           {library.map((f) => (
             <div 
               key={f.name}
               className={cn(
-                "group flex items-center justify-between p-3 rounded-xl text-xs cursor-pointer transition-all duration-300",
+                "group flex items-center justify-between p-2 rounded-sm text-[11px] cursor-pointer transition-colors",
                 fileName === f.name 
-                  ? "bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/30 shadow-lg shadow-sky-500/5" 
-                  : "hover:bg-slate-900/80 text-slate-400 hover:text-slate-200"
+                  ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" 
+                  : "hover:bg-slate-900/60 text-slate-500 hover:text-slate-300"
               )}
               onClick={() => { setFileName(f.name); setCode(f.content); }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 truncate">
                 <div className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-all",
-                  fileName === f.name ? "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]" : "bg-slate-700"
+                  "w-1 h-1 rounded-full",
+                  fileName === f.name ? "bg-sky-400" : "bg-slate-800"
                 )} />
-                <span className="truncate font-medium">{f.name}</span>
+                <span className="truncate font-bold tracking-tight">{f.name}</span>
               </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); handleDelete(f.name); }}
-                className="opacity-0 group-hover:opacity-100 p-1.5 hover:text-rose-400 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 transition-colors"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3 h-3" />
               </button>
             </div>
           ))}
           {library.length === 0 && (
-            <div className="py-10 text-center space-y-3 px-4">
-              <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center mx-auto border border-slate-800">
-                <Code2 className="w-5 h-5 text-slate-700" />
-              </div>
-              <p className="text-[10px] text-slate-600 leading-relaxed uppercase tracking-tight">No saved workflows found. Create your first one above.</p>
-            </div>
+            <p className="text-[9px] text-slate-700 uppercase tracking-tight text-center py-10 px-4">No local workflows</p>
           )}
         </div>
       </div>
 
-      {/* Center - Monaco Editor Area */}
+      {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#020617]">
-        {/* Toolbar */}
-        <div className="h-14 border-b border-slate-800/50 flex items-center justify-between px-6 bg-slate-950/20 backdrop-blur-md">
-          <div className="flex items-center gap-6">
+        <div className="h-10 border-b border-slate-800/60 flex items-center justify-between px-4 bg-slate-950/20">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-slate-500" />
+              <Terminal className="w-3.5 h-3.5 text-slate-700" />
               <input 
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
-                className="bg-transparent border-none focus:ring-0 text-sm font-bold font-mono text-white w-48 placeholder-slate-600"
+                className="bg-transparent border-none focus:ring-0 text-[11px] font-bold font-mono text-slate-300 w-40 placeholder-slate-800"
               />
             </div>
-            <AnimatePresence mode="wait">
-              {status.message && (
-                <motion.div 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  className={cn(
-                    "flex items-center gap-2 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-sm",
-                    status.type === 'success' 
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/5" 
-                      : "bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/5"
-                  )}
-                >
-                  {status.type === 'success' ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                  {status.message}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {status.message && (
+              <div className={cn(
+                "px-2 py-0.5 rounded-sm border text-[9px] font-black uppercase tracking-widest",
+                status.type === 'success' ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" : "bg-rose-500/5 text-rose-500 border-rose-500/20"
+              )}>
+                {status.message}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button 
               onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-xl text-xs font-bold transition-all border border-slate-800 shadow-xl"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 rounded-sm text-[10px] font-black uppercase tracking-widest border border-slate-800 transition-colors"
             >
-              <Save className="w-3.5 h-3.5 text-slate-400" />
+              <Save className="w-3 h-3 text-slate-500" />
               Save
             </button>
             <button 
               onClick={handleExecute}
-              className="flex items-center gap-2 px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-sky-600/20 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-sky-700 hover:bg-sky-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest transition-colors active:scale-95 shadow-lg shadow-sky-900/20"
             >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              Run Workflow
+              <Play className="w-3 h-3 fill-current" />
+              Execute
             </button>
           </div>
         </div>
 
-        {/* Monaco Editor Container */}
-        <div className="flex-1 relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 via-transparent to-indigo-500/5 pointer-events-none" />
+        <div className="flex-1 relative">
           <Editor
             height="100%"
             path={fileName}
@@ -235,16 +214,15 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             onChange={(val) => setCode(val || '')}
             options={{
               minimap: { enabled: false },
-              fontSize: 14,
+              fontSize: 13,
               fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
               lineNumbers: 'on',
-              roundedSelection: true,
+              roundedSelection: false,
               scrollBeyondLastLine: false,
               readOnly: false,
-              padding: { top: 24, bottom: 24 },
+              padding: { top: 12, bottom: 12 },
               cursorSmoothCaretAnimation: 'on',
               smoothScrolling: true,
-              contextmenu: true,
               renderLineHighlight: 'all',
               fontLigatures: true,
             }}
@@ -252,50 +230,43 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
         </div>
       </div>
 
-      {/* Right Sidebar - Debug & Info */}
-      <div className="w-80 border-l border-slate-800/50 flex flex-col bg-slate-950/80 backdrop-blur-2xl">
-        <div className="flex border-b border-slate-800/50">
+      {/* Right Sidebar - Diagnostics */}
+      <div className="w-64 border-l border-slate-800/60 flex flex-col bg-slate-950/40">
+        <div className="flex border-b border-slate-800/60 bg-slate-900/10">
           <button 
             onClick={() => setActiveTab('errors')}
             className={cn(
-              "flex-1 py-4 text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2",
-              activeTab === 'errors' ? "text-sky-400 border-b-2 border-sky-400" : "text-slate-500 hover:text-slate-300"
+              "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2",
+              activeTab === 'errors' ? "text-sky-500 border-b border-sky-500" : "text-slate-600 hover:text-slate-400"
             )}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
-            Diagnostics
-            {markers.length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[8px] flex items-center justify-center animate-pulse">
-                {markers.length}
-              </span>
-            )}
+            Issues {markers.length > 0 && `(${markers.length})`}
           </button>
           <button 
             onClick={() => setActiveTab('tasks')}
             className={cn(
-              "flex-1 py-4 text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2",
-              activeTab === 'tasks' ? "text-sky-400 border-b-2 border-sky-400" : "text-slate-500 hover:text-slate-300"
+              "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2",
+              activeTab === 'tasks' ? "text-sky-500 border-b border-sky-500" : "text-slate-600 hover:text-slate-400"
             )}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            API Specs
+            Registry
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-3 scrollbar-hide">
           {activeTab === 'errors' ? (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {markers.length > 0 ? (
                 markers.map((m, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                  <div 
                     key={i}
                     className={cn(
-                      "p-4 rounded-2xl border transition-all cursor-pointer hover:bg-slate-900/50",
+                      "p-3 rounded-sm border transition-colors cursor-pointer",
                       m.severity === 8 
-                        ? "bg-rose-500/5 border-rose-500/20 text-rose-300" 
-                        : "bg-amber-500/5 border-amber-500/20 text-amber-300"
+                        ? "bg-rose-500/5 border-rose-500/10 text-rose-500" 
+                        : "bg-amber-500/5 border-amber-500/10 text-amber-500"
                     )}
                     onClick={() => {
                       if (editorRef.current) {
@@ -305,67 +276,39 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
                       }
                     }}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "mt-0.5 w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0",
-                        m.severity === 8 ? "bg-rose-500/20" : "bg-amber-500/20"
-                      )}>
-                        <AlertCircle className="w-2.5 h-2.5" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[11px] leading-relaxed font-medium">
-                          {m.message}
-                        </p>
-                        <p className="text-[9px] font-mono opacity-50 uppercase">
-                          Line {m.startLineNumber}, Col {m.startColumn}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
+                    <p className="text-[10px] leading-tight font-bold mb-1">{m.message}</p>
+                    <p className="text-[8px] font-mono opacity-50 uppercase tracking-tighter">Line {m.startLineNumber}</p>
+                  </div>
                 ))
               ) : (
-                <div className="py-20 text-center flex flex-col items-center gap-4">
-                  <div className="w-12 h-12 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-emerald-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-200">No Issues Detected</h4>
-                    <p className="text-[10px] text-slate-500 mt-1 px-6">YAML schema validation is active and healthy.</p>
-                  </div>
+                <div className="py-20 text-center flex flex-col items-center gap-2 opacity-30">
+                  <CheckCircle className="w-6 h-6 text-emerald-600" />
+                  <p className="text-[9px] font-black uppercase tracking-widest">No issues</p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-3">
-              <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4">Core SGP.22 Tasks</h4>
+            <div className="space-y-1.5">
+              <h4 className="text-[9px] font-black uppercase text-slate-700 tracking-widest mb-3 px-1">SGP.22 Services</h4>
               {AVAILABLE_TASKS.map((t) => (
                 <div 
                   key={t.id} 
-                  className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 hover:border-sky-500/30 transition-all group cursor-pointer"
-                  onClick={() => {
-                    // Could implement auto-insert here
-                  }}
+                  className="p-2 rounded-sm bg-slate-900/40 border border-slate-800/40 hover:border-sky-500/20 transition-colors group cursor-pointer"
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold text-sky-400 font-mono tracking-tight">{t.id}</span>
-                    <Zap className="w-3 h-3 text-slate-600 group-hover:text-amber-500 transition-colors" />
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[10px] font-bold text-sky-600 font-mono tracking-tighter group-hover:text-sky-500">{t.id}</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 leading-tight">{t.desc}</p>
+                  <p className="text-[9px] text-slate-600 font-medium uppercase tracking-tighter leading-none">{t.desc}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Bottom Debug Info */}
-        <div className="p-4 border-t border-slate-800/50 bg-slate-900/30">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] font-black uppercase text-slate-600 tracking-widest">Environment</span>
-            <span className="text-[9px] font-mono text-emerald-500 uppercase">Production-Ready</span>
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-black/40 border border-slate-800">
-             <Settings className="w-3 h-3 text-slate-600 animate-spin-slow" />
-             <span className="text-[9px] font-mono text-slate-500">unuko-orchestrator-v1.0.4</span>
+        <div className="p-3 border-t border-slate-800/60 bg-slate-900/20">
+          <div className="flex items-center justify-between">
+            <span className="text-[8px] font-black uppercase text-slate-700 tracking-widest">Build</span>
+            <span className="text-[9px] font-mono text-emerald-800 uppercase font-black">v1.0.4-REL</span>
           </div>
         </div>
       </div>

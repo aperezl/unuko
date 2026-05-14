@@ -19,21 +19,14 @@ const NavItem = ({ to, icon: Icon, label, active }: { to: string, icon: any, lab
   <Link 
     to={to}
     className={cn(
-      "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden",
+      "group flex items-center gap-2 px-3 py-2 rounded-sm transition-colors duration-150 relative",
       active 
-        ? "bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/20" 
-        : "text-slate-500 hover:text-slate-200 hover:bg-slate-900/50"
+        ? "bg-sky-500/10 text-sky-400 border-l-2 border-sky-500" 
+        : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/40"
     )}
   >
-    {active && (
-      <motion.div 
-        layoutId="active-nav"
-        className="absolute left-0 w-1 h-6 bg-sky-500 rounded-r-full"
-      />
-    )}
-    <Icon className={cn("w-5 h-5 transition-transform group-hover:scale-110", active && "text-sky-400")} />
-    <span className="text-xs font-bold uppercase tracking-widest">{label}</span>
-    {active && <ChevronRight className="w-3 h-3 ml-auto opacity-50" />}
+    <Icon className={cn("w-4 h-4 transition-colors", active && "text-sky-400")} />
+    <span className="text-[12px] font-bold uppercase tracking-wider">{label}</span>
   </Link>
 );
 
@@ -43,21 +36,21 @@ export const Layout = () => {
 
   return (
     <div className="h-screen w-full flex bg-[#020617] text-slate-200 overflow-hidden font-sans">
-      {/* Persistent Sidebar */}
-      <aside className="w-64 border-r border-slate-800/50 flex flex-col bg-slate-950/50 backdrop-blur-2xl z-20">
-        <div className="p-8 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/20 ring-1 ring-white/20">
-            <Network className="w-6 h-6 text-white" />
+      {/* Sidebar - More compact and sharp */}
+      <aside className="w-52 border-r border-slate-800/60 flex flex-col bg-slate-950/80 z-20">
+        <div className="p-4 border-b border-slate-800/60 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-sm bg-sky-600 flex items-center justify-center shadow-sm ring-1 ring-white/10">
+            <Network className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-black tracking-tighter text-white uppercase leading-none">Unuko</h1>
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em] mt-1">Orchestrator</p>
+            <h1 className="text-[13px] font-black tracking-tight text-white uppercase leading-none">Unuko</h1>
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">RSP Engine</p>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-2">
-          <div className="px-4 mb-4">
-            <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Main Engine</span>
+        <nav className="flex-1 px-2 py-3 space-y-1">
+          <div className="px-3 mb-2 mt-2">
+            <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Orchestration</span>
           </div>
           <NavItem 
             to="/sessions" 
@@ -72,8 +65,8 @@ export const Layout = () => {
             active={location.pathname.startsWith('/designer')} 
           />
           
-          <div className="px-4 mt-10 mb-4">
-            <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Digital Twin</span>
+          <div className="px-3 mt-6 mb-2">
+            <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Platform</span>
           </div>
           <NavItem 
             to="/inventory" 
@@ -89,63 +82,58 @@ export const Layout = () => {
           />
         </nav>
 
-        <div className="p-6 border-t border-slate-800/50">
+        <div className="p-3 border-t border-slate-800/60 bg-black/20">
           <NavItem 
             to="/settings" 
             icon={Settings} 
             label="Settings" 
             active={location.pathname.startsWith('/settings')} 
           />
-          <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-black border border-slate-800">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest">System Status</span>
+          <div className="mt-4 p-2 rounded-sm border border-slate-800/50 bg-slate-900/20">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+              <span className="text-[9px] font-bold uppercase text-slate-600 tracking-widest">System</span>
             </div>
-            <p className="text-[10px] font-bold text-emerald-400/80">All services operational</p>
+            <p className="text-[10px] font-medium text-emerald-500/60 uppercase">Operational</p>
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Area - Reduced TopBar and sharper elements */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Persistent TopBar */}
-        <header className="h-20 border-b border-slate-800/50 flex items-center justify-between px-8 bg-slate-950/20 backdrop-blur-md z-10">
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
-            <div className="relative w-full group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-sky-400 transition-colors" />
+        <header className="h-12 border-b border-slate-800/60 flex items-center justify-between px-6 bg-slate-950/40 z-10">
+          <div className="flex items-center gap-4 flex-1 max-w-lg">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />
               <input 
                 type="text" 
-                placeholder="Search sessions, traces or assets..."
+                placeholder="Global search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-800/50 rounded-2xl pl-12 pr-4 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500/50 transition-all placeholder-slate-600"
+                className="w-full bg-slate-900/40 border border-slate-800/60 rounded-sm pl-10 pr-3 py-1.5 text-[12px] font-medium focus:outline-none focus:border-sky-500/40 transition-colors placeholder-slate-700"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center hover:bg-slate-800 transition-all relative">
-              <Bell className="w-5 h-5 text-slate-400" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-sky-500 rounded-full border-2 border-slate-900" />
+          <div className="flex items-center gap-3">
+            <button className="w-8 h-8 rounded-sm border border-slate-800/60 flex items-center justify-center hover:bg-slate-900 transition-colors relative text-slate-500 hover:text-slate-300">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-sky-500 rounded-full" />
             </button>
-            <div className="h-8 w-px bg-slate-800 mx-2" />
-            <div className="flex items-center gap-3 pl-2">
+            <div className="h-6 w-px bg-slate-800 mx-1" />
+            <div className="flex items-center gap-2 pl-1">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-black text-white">Admin Operator</p>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Level 4 Access</p>
+                <p className="text-[11px] font-bold text-slate-300 leading-tight">Administrator</p>
+                <p className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter">Root Access</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 p-0.5 shadow-lg shadow-sky-500/10">
-                <div className="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center overflow-hidden">
-                  <User className="w-6 h-6 text-sky-400" />
-                </div>
+              <div className="w-8 h-8 rounded-sm bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+                <User className="w-4 h-4 text-slate-400" />
               </div>
             </div>
           </div>
         </header>
 
-        {/* Dynamic Page Content */}
         <main className="flex-1 overflow-hidden relative">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(56,189,248,0.08),transparent)] pointer-events-none" />
           <Outlet />
         </main>
       </div>
