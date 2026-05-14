@@ -226,7 +226,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             height="100%"
             path={fileName}
             defaultLanguage="yaml"
-            theme="vs-dark"
+            theme="unuko-dark"
             value={code}
             onMount={handleEditorMount}
             onChange={(val) => setCode(val || '')}
