@@ -1,7 +1,7 @@
 import { assign } from 'xstate';
 import { WorkflowPorts } from '../base/types';
 import { createUnukoMachine } from '../base/factory';
-import { tasks } from './tasks';
+import { tasks, utils } from './tasks';
 import { InventoryContext, initialInventoryContext } from './types';
 
 export const createInventoryMachine = (ports: WorkflowPorts) => {
@@ -12,7 +12,7 @@ export const createInventoryMachine = (ports: WorkflowPorts) => {
     states: {
       fetching_profiles: {
         invoke: {
-          src: tasks.getProfilesInfo(ports),
+          src: tasks.getProfilesInfo.handler(ports),
           onDone: {
             target: 'parsing_profiles',
             actions: assign({
@@ -33,7 +33,7 @@ export const createInventoryMachine = (ports: WorkflowPorts) => {
         entry: assign({
           profiles: ({ event }: { event: any }) => {
             console.log('Parseando perfiles del buffer...');
-            return tasks.parseProfilesInfo(event.output);
+            return utils.parseProfilesInfo(event.output);
           }
         }),
         always: 'done'

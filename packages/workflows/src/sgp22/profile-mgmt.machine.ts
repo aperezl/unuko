@@ -1,7 +1,7 @@
 import { assign } from 'xstate';
 import { WorkflowPorts } from '../base/types';
 import { createUnukoMachine } from '../base/factory';
-import { tasks } from './tasks';
+import { tasks, utils } from './tasks';
 import { ProfileMgmtContext, initialProfileMgmtContext } from './types';
 
 export const createProfileMgmtMachine = (ports: WorkflowPorts) => {
@@ -11,9 +11,9 @@ export const createProfileMgmtMachine = (ports: WorkflowPorts) => {
     context: initialProfileMgmtContext,
     states: {
       executing_action: {
-        entry: ({ context }: { context: ProfileMgmtContext }) => tasks.logEvent(ports, `Iniciando acción: ${context.action}`, { iccid: context.iccid }),
+        entry: ({ context }: { context: ProfileMgmtContext }) => utils.logEvent(ports, `Iniciando acción: ${context.action}`, { iccid: context.iccid }),
         invoke: {
-          src: tasks.manageProfile(ports),
+          src: tasks.manageProfile.handler(ports),
           input: ({ context }: { context: ProfileMgmtContext }) => ({ iccid: context.iccid, action: context.action }),
           onDone: {
             target: 'evaluating_refresh'
@@ -41,7 +41,7 @@ export const createProfileMgmtMachine = (ports: WorkflowPorts) => {
 
       refreshing: {
         invoke: {
-          src: tasks.logEventInvoke(ports),
+          src: tasks.logEventInvoke.handler(ports),
           input: { description: 'Simulando Profile Refresh (REUICC)' },
           onDone: 'done'
         }

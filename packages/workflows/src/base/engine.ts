@@ -1,6 +1,8 @@
 import { setup, assign } from 'xstate';
-import { WorkflowPorts, WorkflowBaseContext } from './types';
+import { z } from 'zod';
+import { WorkflowPorts, WorkflowBaseContext, TaskDefinition } from './types';
 import { tasks as sgp22Tasks } from '../sgp22/tasks';
+import { generateWorkflowSchema } from './schema';
 
 /**
  * Simple expression resolver for ${context.path} or ${event.path}
@@ -37,24 +39,78 @@ const resolveInputs = (inputs: any, context: any, event: any): any => {
 };
 
 export class WorkflowEngine {
-  private registry: Record<string, any> = {};
+  private registry: Record<string, TaskDefinition> = {};
 
   constructor() {
     // Pre-populate with built-in tasks
     this.registerSGP22Tasks();
   }
 
-  register(id: string, task: any) {
-    this.registry[id] = task;
+  register(task: TaskDefinition) {
+    this.registry[task.id] = task;
+  }
+
+  getTaskDefinitions(): TaskDefinition[] {
+    return Object.values(this.registry);
+  }
+
+  getSchema() {
+    return generateWorkflowSchema(this.getTaskDefinitions());
   }
 
   private registerSGP22Tasks() {
-    Object.entries(sgp22Tasks).forEach(([name, task]) => {
-      this.register(`sgp22/${name}`, task);
+    Object.values(sgp22Tasks).forEach((task) => {
+      this.register(task);
     });
   }
 
+  /**
+   * Validates the workflow configuration using Zod
+   */
+  validate(config: any) {
+    const stateNames = Object.keys(config.states || {});
+    
+    const workflowSchema = z.object({
+      id: z.string(),
+      initial: z.string().refine((val: string) => stateNames.includes(val) || ['done', 'failure'].includes(val), {
+        message: `Initial state "${config.initial}" does not exist in states list.`
+      }),
+      states: z.record(z.object({
+        type: z.enum(['final', 'parallel', 'compound', 'atomic']).optional(),
+        invoke: z.object({
+          src: z.string().refine((val: string) => !!this.registry[val], {
+            message: "Task is not registered."
+          }),
+          input: z.any().optional(),
+          onDone: z.any().optional(),
+          onError: z.any().optional()
+        }).optional().superRefine((invoke, ctx) => {
+          if (!invoke) return;
+          const task = this.registry[invoke.src];
+          if (task && task.input) {
+            const result = task.input.safeParse(invoke.input || {});
+            if (!result.success) {
+              result.error.issues.forEach(issue => {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  path: ['input', ...issue.path],
+                  message: `Task "${invoke.src}" input error: ${issue.message}`
+                });
+              });
+            }
+          }
+        }),
+        on: z.record(z.any()).optional()
+      }))
+    });
+
+    return workflowSchema.parse(config);
+  }
+
   createMachine(yamlConfig: any, ports: WorkflowPorts) {
+    // Optional: Validate config at runtime
+    // this.validate(yamlConfig);
+
     const { id, initial, states: yamlStates } = yamlConfig;
     
     const states: any = {};
@@ -76,8 +132,8 @@ export class WorkflowEngine {
 
     // We wrap tasks to inject 'ports' automatically
     const actors: any = {};
-    Object.entries(this.registry).forEach(([name, taskFn]) => {
-      actors[name] = (taskFn as any)(ports);
+    Object.entries(this.registry).forEach(([id, taskDef]) => {
+      actors[id] = taskDef.handler(ports);
     });
 
     return setup({

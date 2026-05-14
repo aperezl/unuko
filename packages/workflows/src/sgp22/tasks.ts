@@ -1,94 +1,195 @@
 import { fromPromise } from 'xstate';
-import { WorkflowPorts } from '../base/types';
+import { z } from 'zod';
+import { WorkflowPorts, TaskDefinition } from '../base/types';
 import { parseBERTLV } from './utils';
 
-export const tasks = {
-  initialize: (ports: WorkflowPorts) => fromPromise(async () => {
-    await ports.crypto.initialize();
-    await ports.hardware.reset();
-  }),
+export const tasks: Record<string, TaskDefinition> = {
+  initialize: {
+    id: 'sgp22/initialize',
+    description: 'Initializes crypto and hardware ports',
+    handler: (ports: WorkflowPorts) => fromPromise(async () => {
+      await ports.crypto.initialize();
+      await ports.hardware.reset();
+    })
+  },
 
-  authenticate: (ports: WorkflowPorts) => fromPromise(async () => {
-    await ports.crypto.getDeviceCertificate();
-    return await ports.transport.post<{ transactionId: string }>({
-      url: 'http://localhost:8080/gsma/rsp2/es9plus/initiateAuthentication',
-      body: {
-        euiccChallenge: Buffer.from('unuko-challenge').toString('base64'),
-        smdpAddress: 'localhost'
-      }
-    });
-  }),
-
-  downloadProfile: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { transactionId: string } }) => {
-    const response = await ports.transport.post<{ boundProfilePackage: string }>({
-      url: 'http://localhost:8080/gsma/rsp2/es9plus/getBoundProfilePackage',
-      body: { transactionId: input.transactionId }
-    });
-    return Buffer.from(response.boundProfilePackage, 'base64');
-  }),
-
-  installSegment: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { apdu: string } }) => {
-    await ports.hardware.transmit(Buffer.from(input.apdu, 'hex'));
-  }),
-
-  getProfilesInfo: (ports: WorkflowPorts) => fromPromise(async () => {
-    // Comando SGP.22: GetProfilesInfo (Tag BF2D)
-    const response = await ports.hardware.transmit(Buffer.from('80E2910002BF2D', 'hex'));
-    return response; // Devolver el Buffer con la lista ASN.1
-  }),
-
-  manageProfile: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { iccid: string, action: 'enable' | 'disable' | 'delete' } }) => {
-    const tags = { enable: 'BF31', disable: 'BF32', delete: 'BF33' };
-    const tag = tags[input.action];
-    
-    // Construir TLV: [Tag] [Len] [5A] [Len] [ICCID]
-    const iccidBuffer = Buffer.from(input.iccid, 'hex');
-    const iccidTlv = Buffer.concat([
-      Buffer.from('5A', 'hex'), 
-      Buffer.from([iccidBuffer.length]), 
-      iccidBuffer
-    ]);
-    
-    const payload = Buffer.concat([
-      Buffer.from(tag, 'hex'), 
-      Buffer.from([iccidTlv.length]), 
-      iccidTlv
-    ]);
-    
-    const lc = payload.length.toString(16).padStart(2, '0');
-    const apdu = `80E29100${lc}${payload.toString('hex').toUpperCase()}`;
-    
-    await ports.hardware.transmit(Buffer.from(apdu, 'hex'));
-  }),
-
-  listNotifications: (ports: WorkflowPorts) => fromPromise(async () => {
-    // Comando SGP.22: ListNotifications (Tag BF28)
-    const response = await ports.hardware.transmit(Buffer.from('80E2910002BF28', 'hex'));
-    return response;
-  }),
-
-  handleNotification: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { seqNumber: string } }) => {
-    await ports.transport.post({
-      url: 'http://localhost:8080/gsma/rsp2/es9plus/handleNotification',
-      body: {
-        pendingNotification: {
-          seqNumber: input.seqNumber,
-          notificationAddress: 'localhost'
+  authenticate: {
+    id: 'sgp22/authenticate',
+    description: 'Initiates SGP.22 authentication with SM-DP+',
+    input: z.object({
+      smdpAddress: z.string().default('localhost').describe('The SM-DP+ server address'),
+      euiccChallenge: z.string().optional().describe('Optional challenge from eUICC')
+    }),
+    handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
+      await ports.crypto.getDeviceCertificate();
+      return await ports.transport.post<{ transactionId: string }>({
+        url: `http://${input?.smdpAddress || 'localhost'}:8080/gsma/rsp2/es9plus/initiateAuthentication`,
+        body: {
+          euiccChallenge: input?.euiccChallenge || Buffer.from('unuko-challenge').toString('base64'),
+          smdpAddress: input?.smdpAddress || 'localhost'
         }
-      }
-    });
-  }),
+      });
+    })
+  },
 
+  downloadProfile: {
+    id: 'sgp22/downloadProfile',
+    description: 'Downloads a Bound Profile Package (BPP) from SM-DP+',
+    input: z.object({
+      transactionId: z.string().describe('The transaction ID from authenticate task'),
+      smdpAddress: z.string().default('localhost').describe('The SM-DP+ server address')
+    }),
+    handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
+      const response = await ports.transport.post<{ boundProfilePackage: string }>({
+        url: `http://${input?.smdpAddress || 'localhost'}:8080/gsma/rsp2/es9plus/getBoundProfilePackage`,
+        body: { transactionId: input.transactionId }
+      });
+      return Buffer.from(response.boundProfilePackage, 'base64');
+    })
+  },
+
+  installSegment: {
+    id: 'sgp22/installSegment',
+    description: 'Transmits a BPP segment to the eUICC',
+    input: z.object({
+      apdu: z.string().describe('Hexadecimal APDU string to transmit')
+    }),
+    handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
+      await ports.hardware.transmit(Buffer.from(input.apdu, 'hex'));
+    })
+  },
+
+  getProfilesInfo: {
+    id: 'sgp22/getProfilesInfo',
+    description: 'Lists installed profiles on the eUICC',
+    handler: (ports: WorkflowPorts) => fromPromise(async () => {
+      const response = await ports.hardware.transmit(Buffer.from('80E2910002BF2D', 'hex'));
+      return response;
+    })
+  },
+
+  manageProfile: {
+    id: 'sgp22/manageProfile',
+    description: 'Enables, disables, or deletes a profile',
+    input: z.object({
+      iccid: z.string().describe('Hexadecimal ICCID of the profile'),
+      action: z.enum(['enable', 'disable', 'delete']).describe('Action to perform')
+    }),
+    handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
+      const tags = { enable: 'BF31', disable: 'BF32', delete: 'BF33' };
+      const tag = tags[input.action];
+      const iccidBuffer = Buffer.from(input.iccid, 'hex');
+      const iccidTlv = Buffer.concat([
+        Buffer.from('5A', 'hex'), 
+        Buffer.from([iccidBuffer.length]), 
+        iccidBuffer
+      ]);
+      const payload = Buffer.concat([
+        Buffer.from(tag, 'hex'), 
+        Buffer.from([iccidTlv.length]), 
+        iccidTlv
+      ]);
+      const lc = payload.length.toString(16).padStart(2, '0');
+      const apdu = `80E29100${lc}${payload.toString('hex').toUpperCase()}`;
+      await ports.hardware.transmit(Buffer.from(apdu, 'hex'));
+    })
+  },
+
+  listNotifications: {
+    id: 'sgp22/listNotifications',
+    description: 'Lists pending notifications on the eUICC',
+    handler: (ports: WorkflowPorts) => fromPromise(async () => {
+      const response = await ports.hardware.transmit(Buffer.from('80E2910002BF28', 'hex'));
+      return response;
+    })
+  },
+
+  handleNotification: {
+    id: 'sgp22/handleNotification',
+    description: 'Processes a pending notification with the SM-DP+',
+    input: z.object({
+      seqNumber: z.string().describe('Sequence number of the notification'),
+      smdpAddress: z.string().default('localhost').describe('The SM-DP+ server address')
+    }),
+    handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
+      await ports.transport.post({
+        url: `http://${input?.smdpAddress || 'localhost'}:8080/gsma/rsp2/es9plus/handleNotification`,
+        body: {
+          pendingNotification: {
+            seqNumber: input.seqNumber,
+            notificationAddress: input?.smdpAddress || 'localhost'
+          }
+        }
+      });
+    })
+  },
+
+  logEventInvoke: {
+    id: 'sgp22/logEventInvoke',
+    description: 'Logs an event to the audit port',
+    input: z.object({
+      description: z.string().describe('Human readable description of the event'),
+      payload: z.any().optional().describe('Optional data payload to log')
+    }),
+    handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
+      await ports.audit.log({
+        sessionId: ports.sessionId,
+        category: 'WORKFLOW',
+        direction: 'INTERNAL',
+        payload: input.payload || {},
+        description: input.description
+      });
+    })
+  },
+
+  registerSubscriber: {
+    id: 'sgp22/registerSubscriber',
+    description: 'Registers a subscriber in the 5G Core (Open5GS)',
+    input: z.object({
+      iccid: z.string().describe('ICCID of the subscriber to register'),
+      coreUrl: z.string().default('http://localhost:9999').describe('URL of the 5G Core API')
+    }),
+    handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
+      return await ports.transport.post({
+        url: `${input.coreUrl}/nsmf-pdusess/v1/subscribers`,
+        body: {
+          iccid: input.iccid,
+          imsi: `21407${input.iccid.substring(0, 10)}`,
+          status: 'ACTIVE'
+        }
+      });
+    })
+  },
+
+  enableConnectivity: {
+    id: 'sgp22/enableConnectivity',
+    description: 'Triggers UE Attach via UERANSIM',
+    handler: (ports: WorkflowPorts) => fromPromise(async () => {
+      await ports.hardware.transmit(Buffer.from('FFFFFFFF00', 'hex'));
+    })
+  }
+};
+
+// Pure utility functions (not tasks)
+export const utils = {
+  logEvent: async (ports: WorkflowPorts, description: string, payload: any = {}) => {
+    await ports.audit.log({
+      sessionId: ports.sessionId,
+      category: 'WORKFLOW',
+      direction: 'INTERNAL',
+      payload,
+      description
+    });
+  },
   parseNotificationsInfo: (buffer: Buffer) => {
     const root = parseBERTLV(buffer);
     const response = root.find(t => t.tag === 'BF28');
     if (!response || !response.children) return [];
 
-    // Cada hijo es un PendingNotification (ej: Tag BF2E o similar)
     return response.children.map(notifTLV => {
       const children = notifTLV.children || [];
       const seqNumber = children.find(c => c.tag === '80')?.value.toString('hex');
-      const event = children.find(c => c.tag === '81')?.value[0]; // Bitmask de eventos
+      const event = children.find(c => c.tag === '81')?.value[0];
       
       return {
         seqNumber,
@@ -119,8 +220,6 @@ export const tasks = {
   },
 
   segmentBPP: (bpp: Buffer): string[] => {
-    // Lógica simplificada de segmentación TLV para SGP.22
-    // En una implementación completa, aquí buscaríamos el tag BF37
     const segments: string[] = [];
     const maxChunk = 240;
     let offset = 0;
@@ -136,45 +235,5 @@ export const tasks = {
       offset += maxChunk;
     }
     return segments;
-  },
-
-  // Helper for audit logging within tasks
-  logEvent: async (ports: WorkflowPorts, description: string, payload: any = {}) => {
-    await ports.audit.log({
-      sessionId: ports.sessionId,
-      category: 'WORKFLOW',
-      direction: 'INTERNAL',
-      payload,
-      description
-    });
-  },
-
-  logEventInvoke: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { description: string, payload?: any } }) => {
-    await ports.audit.log({
-      sessionId: ports.sessionId,
-      category: 'WORKFLOW',
-      direction: 'INTERNAL',
-      payload: input.payload || {},
-      description: input.description
-    });
-  }),
-
-  registerSubscriber: (ports: WorkflowPorts) => fromPromise(async ({ input }: { input: { iccid: string } }) => {
-    // Registro en el Core 5G (Open5GS)
-    // Simulamos una llamada al SMF/HSS para dar de alta el nuevo perfil
-    return await ports.transport.post({
-      url: 'http://localhost:9999/nsmf-pdusess/v1/subscribers',
-      body: {
-        iccid: input.iccid,
-        imsi: `21407${input.iccid.substring(0, 10)}`,
-        status: 'ACTIVE'
-      }
-    });
-  }),
-
-  enableConnectivity: (ports: WorkflowPorts) => fromPromise(async () => {
-    // Comando para que UERANSIM inicie el Attach
-    // Usamos el hardware port para enviar un comando ficticio de "Power On"
-    await ports.hardware.transmit(Buffer.from('FFFFFFFF00', 'hex'));
-  })
+  }
 };

@@ -5,6 +5,16 @@ import {
   UniversalCryptoPort, 
   UniversalTransportPort 
 } from '@unuko/core';
+import { z } from 'zod';
+import { PromiseActorLogic } from 'xstate';
+
+export interface TaskDefinition<I = any, O = any> {
+  id: string;
+  description?: string;
+  input?: z.ZodType<I>;
+  output?: z.ZodType<O>;
+  handler: (ports: WorkflowPorts) => PromiseActorLogic<O, I, any>;
+}
 
 export interface WorkflowBaseContext {
   error: string | null;

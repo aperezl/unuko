@@ -1,7 +1,7 @@
 import { assign } from 'xstate';
 import { WorkflowPorts } from '../base/types';
 import { createUnukoMachine } from '../base/factory';
-import { tasks } from './tasks';
+import { tasks, utils } from './tasks';
 import { ProvisioningContext, initialContext } from './types';
 
 export const createSGP22Machine = (ports: WorkflowPorts) => {
@@ -11,9 +11,9 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
     context: initialContext,
     states: {
       initializing: {
-        entry: () => tasks.logEvent(ports, 'Workflow Started/Restarted', { state: 'initializing' }),
+        entry: () => utils.logEvent(ports, 'Workflow Started/Restarted', { state: 'initializing' }),
         invoke: {
-          src: tasks.initialize(ports),
+          src: tasks.initialize.handler(ports),
           onDone: 'authenticating',
           onError: {
             target: 'evaluating_error',
@@ -26,7 +26,7 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
 
       authenticating: {
         invoke: {
-          src: tasks.authenticate(ports),
+          src: tasks.authenticate.handler(ports),
           onDone: {
             target: 'downloading',
             actions: assign({
@@ -44,7 +44,7 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
 
       downloading: {
         invoke: {
-          src: tasks.downloadProfile(ports),
+          src: tasks.downloadProfile.handler(ports),
           input: ({ context }: { context: ProvisioningContext }) => ({ transactionId: context.transactionId! }),
           onDone: {
             target: 'preparing_package',
@@ -61,7 +61,7 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
 
       preparing_package: {
         entry: assign({
-          segments: ({ context }: { context: ProvisioningContext }) => tasks.segmentBPP(context.boundProfilePackage!),
+          segments: ({ context }: { context: ProvisioningContext }) => utils.segmentBPP(context.boundProfilePackage!),
           currentSegmentIndex: 0
         }),
         always: 'installing'
@@ -69,7 +69,7 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
 
       installing: {
         invoke: {
-          src: tasks.installSegment(ports),
+          src: tasks.installSegment.handler(ports),
           input: ({ context }: { context: ProvisioningContext }) => ({ apdu: context.segments[context.currentSegmentIndex] }),
           onDone: [
             {
@@ -91,9 +91,9 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
       },
 
       registering_in_core: {
-        entry: () => tasks.logEvent(ports, 'Registering subscriber in Open5GS Core', { state: 'registering_in_core' }),
+        entry: () => utils.logEvent(ports, 'Registering subscriber in Open5GS Core', { state: 'registering_in_core' }),
         invoke: {
-          src: tasks.registerSubscriber(ports),
+          src: tasks.registerSubscriber.handler(ports),
           input: ({ context }: { context: ProvisioningContext }) => ({ iccid: context.iccid || 'MOCK_ICCID' }),
           onDone: 'activating_connectivity',
           onError: 'activating_connectivity' // Continuamos aunque falle el registro para demo
@@ -101,9 +101,9 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
       },
 
       activating_connectivity: {
-        entry: () => tasks.logEvent(ports, 'Activating UERANSIM UE Connectivity', { state: 'activating_connectivity' }),
+        entry: () => utils.logEvent(ports, 'Activating UERANSIM UE Connectivity', { state: 'activating_connectivity' }),
         invoke: {
-          src: tasks.enableConnectivity(ports),
+          src: tasks.enableConnectivity.handler(ports),
           onDone: 'done',
           onError: 'done'
         }
@@ -111,7 +111,7 @@ export const createSGP22Machine = (ports: WorkflowPorts) => {
 
       done: {
         type: 'final',
-        entry: () => tasks.logEvent(ports, 'Workflow Completed Successfully')
+        entry: () => utils.logEvent(ports, 'Workflow Completed Successfully')
       },
 
       evaluating_error: {

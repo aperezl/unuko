@@ -1,7 +1,7 @@
 import { assign } from 'xstate';
 import { WorkflowPorts } from '../base/types';
 import { createUnukoMachine } from '../base/factory';
-import { tasks } from './tasks';
+import { tasks, utils } from './tasks';
 import { NotificationContext, initialNotificationContext } from './types';
 
 export const createNotificationMachine = (ports: WorkflowPorts) => {
@@ -12,7 +12,7 @@ export const createNotificationMachine = (ports: WorkflowPorts) => {
     states: {
       fetching_notifications: {
         invoke: {
-          src: tasks.listNotifications(ports),
+          src: tasks.listNotifications.handler(ports),
           onDone: {
             target: 'parsing_notifications'
           },
@@ -27,7 +27,7 @@ export const createNotificationMachine = (ports: WorkflowPorts) => {
 
       parsing_notifications: {
         entry: assign({
-          notifications: ({ event }: { event: any }) => tasks.parseNotificationsInfo(event.output),
+          notifications: ({ event }: { event: any }) => utils.parseNotificationsInfo(event.output),
           currentNotificationIndex: 0
         }),
         always: [
@@ -43,7 +43,7 @@ export const createNotificationMachine = (ports: WorkflowPorts) => {
 
       processing: {
         invoke: {
-          src: tasks.handleNotification(ports),
+          src: tasks.handleNotification.handler(ports),
           input: ({ context }: { context: NotificationContext }) => ({
             seqNumber: context.notifications[context.currentNotificationIndex].seqNumber
           }),

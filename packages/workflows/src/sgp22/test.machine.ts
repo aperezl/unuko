@@ -1,6 +1,6 @@
 import { WorkflowPorts } from '../base/types';
 import { createUnukoMachine } from '../base/factory';
-import { tasks } from './tasks';
+import { tasks, utils } from './tasks';
 import { ProvisioningContext, initialContext } from './types';
 
 export const createTestMachine = (ports: WorkflowPorts) => {
@@ -10,18 +10,18 @@ export const createTestMachine = (ports: WorkflowPorts) => {
     context: initialContext,
     states: {
       testing_smdp: {
-        entry: () => tasks.logEvent(ports, 'Step 1: Testing SM-DP+ Connection'),
+        entry: () => utils.logEvent(ports, 'Step 1: Testing SM-DP+ Connection'),
         invoke: {
-          src: tasks.authenticate(ports),
+          src: tasks.authenticate.handler(ports),
           onDone: 'testing_open5gs',
           onError: 'testing_open5gs'
         }
       },
 
       testing_open5gs: {
-        entry: () => tasks.logEvent(ports, 'Step 2: Testing Open5GS Registration'),
+        entry: () => utils.logEvent(ports, 'Step 2: Testing Open5GS Registration'),
         invoke: {
-          src: tasks.registerSubscriber(ports),
+          src: tasks.registerSubscriber.handler(ports),
           input: { iccid: 'TEST-ICCID' },
           onDone: 'testing_ueransim',
           onError: 'testing_ueransim'
@@ -29,9 +29,9 @@ export const createTestMachine = (ports: WorkflowPorts) => {
       },
 
       testing_ueransim: {
-        entry: () => tasks.logEvent(ports, 'Step 3: Testing UERANSIM APDU Interface'),
+        entry: () => utils.logEvent(ports, 'Step 3: Testing UERANSIM APDU Interface'),
         invoke: {
-          src: tasks.enableConnectivity(ports),
+          src: tasks.enableConnectivity.handler(ports),
           onDone: 'done',
           onError: 'done'
         }
@@ -39,7 +39,7 @@ export const createTestMachine = (ports: WorkflowPorts) => {
 
       done: {
         type: 'final',
-        entry: () => tasks.logEvent(ports, 'Full Service Test Completed')
+        entry: () => utils.logEvent(ports, 'Full Service Test Completed')
       }
     }
   }, ports);
