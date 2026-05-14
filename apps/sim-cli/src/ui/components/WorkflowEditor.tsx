@@ -139,6 +139,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
         <div className="flex-1">
           <Editor
             height="100%"
+            path={fileName}
             defaultLanguage="yaml"
             theme="vs-dark"
             value={code}
