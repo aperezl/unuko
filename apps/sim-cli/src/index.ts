@@ -203,7 +203,10 @@ async function bootstrap() {
 
   try {
     await server.listen({ port: 3000, host: '0.0.0.0' });
-    console.log('🌐 UNUKO Digital Twin - Dashboard ready at http://localhost:3000');
+    console.log('\n---');
+    console.log('🌐 UNUKO Digital Twin - Backend ready at http://localhost:3000');
+    console.log('✨ For Live Reload (HMR), use: http://localhost:5173');
+    console.log('---\n');
   } catch (err) {
     console.error('Error starting Fastify:', err);
   }

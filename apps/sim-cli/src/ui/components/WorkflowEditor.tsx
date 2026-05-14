@@ -3,16 +3,16 @@ import Editor, { OnMount } from '@monaco-editor/react';
 import yaml from 'js-yaml';
 import { useNavigate } from 'react-router-dom';
 import { unukoEngine } from '@unuko/workflows';
-import { 
-  Save, 
-  Play, 
-  Trash2, 
-  FileCode, 
-  CheckCircle, 
-  AlertCircle, 
-  Terminal, 
-  Settings, 
-  BookOpen, 
+import {
+  Save,
+  Play,
+  Trash2,
+  FileCode,
+  CheckCircle,
+  AlertCircle,
+  Terminal,
+  Settings,
+  BookOpen,
   ChevronRight,
   ShieldAlert,
   Zap,
@@ -99,7 +99,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
         monacoRef.current.editor.setModelMarkers(model, 'unuko', []);
         return;
       }
-      
+
       try {
         unukoEngine.validate(parsed);
         monacoRef.current.editor.setModelMarkers(model, 'unuko', []);
@@ -109,11 +109,11 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             let lineNumber = 1;
             let column = 1;
             let endColumn = 100;
-            
+
             if (issue.path && issue.path.length > 0) {
               const lines = currentCode.split('\n');
               let currentLineIdx = 0;
-              
+
               for (const pathSegment of issue.path) {
                 const key = String(pathSegment);
                 // Search for the key starting from the current line index
@@ -187,7 +187,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
       <div className="w-48 border-r border-slate-800/60 flex flex-col bg-slate-950/40">
         <div className="p-3 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/10">
           <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-600">Library</h3>
-          <button 
+          <button
             onClick={() => { setFileName('new-workflow.yaml'); setCode(DEFAULT_WORKFLOW); }}
             className="p-1 hover:bg-sky-500/10 rounded-sm transition-colors"
           >
@@ -196,12 +196,12 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
           {library.map((f) => (
-            <div 
+            <div
               key={f.name}
               className={cn(
                 "group flex items-center justify-between p-2 rounded-sm text-[11px] cursor-pointer transition-colors",
-                fileName === f.name 
-                  ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" 
+                fileName === f.name
+                  ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
                   : "hover:bg-slate-900/60 text-slate-500 hover:text-slate-300"
               )}
               onClick={() => { setFileName(f.name); setCode(f.content); }}
@@ -213,7 +213,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
                 )} />
                 <span className="truncate font-bold tracking-tight">{f.name}</span>
               </div>
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); handleDelete(f.name); }}
                 className="opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 transition-colors"
               >
@@ -233,7 +233,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Terminal className="w-3.5 h-3.5 text-slate-700" />
-              <input 
+              <input
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
                 className="bg-transparent border-none focus:ring-0 text-[11px] font-bold font-mono text-slate-300 w-40 placeholder-slate-800"
@@ -249,14 +249,14 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={handleSave}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 rounded-sm text-[10px] font-black uppercase tracking-widest border border-slate-800 transition-colors"
             >
               <Save className="w-3 h-3 text-slate-500" />
               Save
             </button>
-            <button 
+            <button
               onClick={handleExecute}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-sky-700 hover:bg-sky-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest transition-colors active:scale-95 shadow-lg shadow-sky-900/20"
             >
@@ -287,8 +287,8 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
               scrollBeyondLastLine: false,
               readOnly: false,
               padding: { top: 12, bottom: 12 },
-              cursorSmoothCaretAnimation: 'on',
-              smoothScrolling: true,
+              cursorSmoothCaretAnimation: 'off',
+              smoothScrolling: false,
               renderLineHighlight: 'all',
               fontLigatures: true,
             }}
@@ -299,7 +299,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
       {/* Right Sidebar - Diagnostics */}
       <div className="w-64 border-l border-slate-800/60 flex flex-col bg-slate-950/40">
         <div className="flex border-b border-slate-800/60 bg-slate-900/10">
-          <button 
+          <button
             onClick={() => setActiveTab('errors')}
             className={cn(
               "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2",
@@ -309,7 +309,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             <ShieldAlert className="w-3.5 h-3.5" />
             Issues {markers.length > 0 && `(${markers.length})`}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('tasks')}
             className={cn(
               "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2",
@@ -326,12 +326,12 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             <div className="space-y-2">
               {markers.length > 0 ? (
                 markers.map((m, i) => (
-                  <div 
+                  <div
                     key={i}
                     className={cn(
                       "p-3 rounded-sm border transition-colors cursor-pointer",
-                      m.severity === 8 
-                        ? "bg-rose-500/5 border-rose-500/10 text-rose-500" 
+                      m.severity === 8
+                        ? "bg-rose-500/5 border-rose-500/10 text-rose-500"
                         : "bg-amber-500/5 border-amber-500/10 text-amber-500"
                     )}
                     onClick={() => {
@@ -357,8 +357,8 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             <div className="space-y-1.5">
               <h4 className="text-[9px] font-black uppercase text-slate-700 tracking-widest mb-3 px-1">SGP.22 Services</h4>
               {AVAILABLE_TASKS.map((t) => (
-                <div 
-                  key={t.id} 
+                <div
+                  key={t.id}
                   className="p-2 rounded-sm bg-slate-900/40 border border-slate-800/40 hover:border-sky-500/20 transition-colors group cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-0.5">
