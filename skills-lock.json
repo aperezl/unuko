@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "slidev-monaco-editor": {
+      "source": "yoanbernabeu/slidev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/code/slidev-monaco-editor/SKILL.md",
+      "computedHash": "e3ca933fa67896e93e68a25a1cef8f058cfc5245e8173349c4d80724097532f1"
+    }
+  }
+}
