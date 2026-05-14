@@ -44,9 +44,19 @@ export function generateWorkflowSchema(taskDefinitions: TaskDefinition[]) {
           };
           
           if (task.input) {
-            branch.properties.input = zodToJsonSchema(task.input, { target: 'jsonSchema7' });
-            // Add a specific description for the task's input
-            branch.properties.input.description = `Input parameters for ${task.id}`;
+            const inputSchema: any = zodToJsonSchema(task.input, { target: 'jsonSchema7' });
+            
+            // Delete description to ensure Monaco merges this exactly with the base 'input'
+            // This prevents the duplicate 'input' entry in the autocomplete list.
+            delete inputSchema.description;
+
+            // Extract default values by parsing an empty object
+            const parseResult = task.input.safeParse({});
+            if (parseResult.success && Object.keys(parseResult.data).length > 0) {
+              inputSchema.default = parseResult.data;
+            }
+
+            branch.properties.input = inputSchema;
           } else {
             // Explicitly disallow 'input' if the task doesn't take any
             branch.properties.input = false;

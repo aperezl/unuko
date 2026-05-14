@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import yaml from 'js-yaml';
 import { useNavigate } from 'react-router-dom';
+import { unukoEngine } from '@unuko/workflows';
 import { 
   Save, 
   Play, 
@@ -64,6 +65,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
   const [markers, setMarkers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'errors' | 'tasks'>('errors');
   const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('unuko-workflows');
@@ -74,6 +76,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
     monaco.editor.onDidChangeMarkers(() => {
       const model = editor.getModel();
       if (model) {
@@ -81,6 +84,66 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
         setMarkers(currentMarkers);
       }
     });
+    // Run initial validation
+    validateBusinessRules(code);
+  };
+
+  const validateBusinessRules = (currentCode: string) => {
+    if (!editorRef.current || !monacoRef.current) return;
+    const model = editorRef.current.getModel();
+    if (!model) return;
+
+    try {
+      const parsed = yaml.load(currentCode);
+      if (!parsed || typeof parsed !== 'object') {
+        monacoRef.current.editor.setModelMarkers(model, 'unuko', []);
+        return;
+      }
+      
+      try {
+        unukoEngine.validate(parsed);
+        monacoRef.current.editor.setModelMarkers(model, 'unuko', []);
+      } catch (zodError: any) {
+        if (zodError.issues) {
+          const customMarkers = zodError.issues.map((issue: any) => {
+            let lineNumber = 1;
+            let column = 1;
+            let endColumn = 100;
+            
+            if (issue.path && issue.path.length > 0) {
+              const lines = currentCode.split('\n');
+              let currentLineIdx = 0;
+              
+              for (const pathSegment of issue.path) {
+                const key = String(pathSegment);
+                // Search for the key starting from the current line index
+                const nextIdx = lines.findIndex((l, i) => i >= currentLineIdx && l.match(new RegExp(`^\\s*${key}:`)));
+                if (nextIdx !== -1) {
+                  currentLineIdx = nextIdx;
+                  lineNumber = currentLineIdx + 1;
+                  column = lines[currentLineIdx].indexOf(key) + 1;
+                  endColumn = lines[currentLineIdx].length + 1;
+                }
+              }
+            }
+
+            return {
+              severity: monacoRef.current.MarkerSeverity.Error,
+              message: issue.message,
+              startLineNumber: lineNumber,
+              startColumn: column,
+              endLineNumber: lineNumber,
+              endColumn: endColumn,
+              source: 'unuko-engine'
+            };
+          });
+          monacoRef.current.editor.setModelMarkers(model, 'unuko', customMarkers);
+        }
+      }
+    } catch (e) {
+      // YAML parse errors are handled by monaco-yaml natively
+      monacoRef.current.editor.setModelMarkers(model, 'unuko', []);
+    }
   };
 
   const handleSave = () => {
@@ -211,7 +274,10 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             theme="unuko-dark"
             value={code}
             onMount={handleEditorMount}
-            onChange={(val) => setCode(val || '')}
+            onChange={(val) => {
+              setCode(val || '');
+              validateBusinessRules(val || '');
+            }}
             options={{
               minimap: { enabled: false },
               fontSize: 13,

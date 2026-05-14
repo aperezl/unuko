@@ -69,10 +69,22 @@ export class WorkflowEngine {
    */
   validate(config: any) {
     const stateNames = Object.keys(config.states || {});
+    const validStates = [...stateNames, 'done', 'failure'];
+
+    const transitionValidator = z.any().superRefine((val, ctx) => {
+      if (val === undefined || val === null) return;
+      const target = typeof val === 'string' ? val : val.target;
+      if (target && !validStates.includes(target)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Target state "${target}" does not exist in states list.`
+        });
+      }
+    });
     
     const workflowSchema = z.object({
       id: z.string(),
-      initial: z.string().refine((val: string) => stateNames.includes(val) || ['done', 'failure'].includes(val), {
+      initial: z.string().refine((val: string) => validStates.includes(val), {
         message: `Initial state "${config.initial}" does not exist in states list.`
       }),
       states: z.record(z.object({
@@ -82,8 +94,8 @@ export class WorkflowEngine {
             message: "Task is not registered."
           }),
           input: z.any().optional(),
-          onDone: z.any().optional(),
-          onError: z.any().optional()
+          onDone: transitionValidator.optional(),
+          onError: transitionValidator.optional()
         }).optional().superRefine((invoke, ctx) => {
           if (!invoke) return;
           const task = this.registry[invoke.src];
@@ -100,7 +112,7 @@ export class WorkflowEngine {
             }
           }
         }),
-        on: z.record(z.any()).optional()
+        on: z.record(transitionValidator).optional()
       }))
     });
 
