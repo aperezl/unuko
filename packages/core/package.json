@@ -8,12 +8,14 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/js-yaml": "^4.0.9"
   },
   "dependencies": {
     "xstate": "^5.0.0",
     "zod": "^3.24.0",
-    "zod-to-json-schema": "^3.24.1"
+    "zod-to-json-schema": "^3.24.1",
+    "js-yaml": "^4.1.1"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

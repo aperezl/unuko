@@ -3,7 +3,8 @@ import {
   NotificationPort, 
   UniversalHardwarePort, 
   UniversalCryptoPort, 
-  UniversalTransportPort 
+  UniversalTransportPort,
+  UniversalNetworkPort 
 } from '../ports/out';
 import { z } from 'zod';
 import { PromiseActorLogic } from 'xstate';
@@ -28,6 +29,7 @@ export interface WorkflowPorts {
   hardware: UniversalHardwarePort;
   crypto: UniversalCryptoPort;
   transport: UniversalTransportPort;
+  network: UniversalNetworkPort;
   sessionId: string;
 }
 

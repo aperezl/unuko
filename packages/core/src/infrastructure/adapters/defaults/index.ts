@@ -4,6 +4,7 @@ import { ConsoleNotificationAdapter } from './ConsoleNotificationAdapter';
 import { MockHardwareAdapter } from './MockHardwareAdapter';
 import { MockCryptoAdapter } from './MockCryptoAdapter';
 import { FetchTransportAdapter } from './FetchTransportAdapter';
+import { MockNetworkAdapter } from './MockNetworkAdapter';
 
 /**
  * Crea un conjunto de puertos con implementaciones por defecto (consola y mocks).
@@ -16,6 +17,7 @@ export function createDefaultPorts(sessionId: string): WorkflowPorts {
     notification: new ConsoleNotificationAdapter(),
     hardware: new MockHardwareAdapter(),
     crypto: new MockCryptoAdapter(),
-    transport: new FetchTransportAdapter()
+    transport: new FetchTransportAdapter(),
+    network: new MockNetworkAdapter()
   };
 }

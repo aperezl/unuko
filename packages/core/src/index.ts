@@ -5,6 +5,7 @@ export * from './domain/ports/out/index';
 
 // Application Layer - Use Cases
 export * from './domain/models/workflow.types';
+export * from './domain/models/network.types';
 export * from './application/use-cases/base/engine';
 export * from './application/use-cases/base/factory';
 export * from './application/use-cases/base/schema';
