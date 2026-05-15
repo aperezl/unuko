@@ -5,6 +5,15 @@ import { MockHardwareAdapter } from './MockHardwareAdapter';
 import { MockCryptoAdapter } from './MockCryptoAdapter';
 import { FetchTransportAdapter } from './FetchTransportAdapter';
 import { MockNetworkAdapter } from './MockNetworkAdapter';
+import { JsonPersistenceAdapter } from './JsonPersistenceAdapter';
+
+export * from './ConsoleAuditAdapter';
+export * from './ConsoleNotificationAdapter';
+export * from './MockHardwareAdapter';
+export * from './MockCryptoAdapter';
+export * from './FetchTransportAdapter';
+export * from './MockNetworkAdapter';
+export * from './JsonPersistenceAdapter';
 
 /**
  * Crea un conjunto de puertos con implementaciones por defecto (consola y mocks).

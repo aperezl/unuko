@@ -1,7 +1,7 @@
 import { UniversalAuditPort, AuditEntry } from '../../../domain/ports/out/audit.port';
 
 export class ConsoleAuditAdapter implements UniversalAuditPort {
-  async log(entry: Omit<AuditEntry, 'timestamp'>): Promise<void> {
+  async log(entry: Omit<AuditEntry, 'timestamp' | '_id'>): Promise<void> {
     const timestamp = new Date().toISOString();
     console.log(`[AUDIT] [${timestamp}] [${entry.category}] [${entry.direction}] - ${entry.sessionId}`);
     if (entry.description) {

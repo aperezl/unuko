@@ -1,7 +1,8 @@
 import { MongoClient, Db, Collection } from 'mongodb';
-import { UniversalAuditPort, AuditEntry, calculateProgress } from '@unuko/core';
+import { randomUUID } from 'crypto';
+import { UniversalAuditPort, AuditEntry, calculateProgress, UniversalPersistencePort, SessionSnapshot } from '@unuko/core';
 
-export class MongoPersistenceAdapter implements UniversalAuditPort {
+export class MongoPersistenceAdapter implements UniversalAuditPort, UniversalPersistencePort {
   private client: MongoClient;
   private db?: Db;
   private sessions?: Collection;
@@ -18,8 +19,9 @@ export class MongoPersistenceAdapter implements UniversalAuditPort {
     await this.sessions.createIndex({ sessionId: 1 }, { unique: true });
   }
 
-  async saveSession(sessionId: string, snapshot: any) {
-    return this.sessions?.updateOne(
+  async saveSession(sessionId: string, snapshot: SessionSnapshot): Promise<void> {
+    if (!this.sessions) return;
+    await this.sessions.updateOne(
       { sessionId },
       {
         $set: {
@@ -32,27 +34,29 @@ export class MongoPersistenceAdapter implements UniversalAuditPort {
     );
   }
 
-  async loadSession(sessionId: string) {
+  async loadSession(sessionId: string): Promise<SessionSnapshot | null> {
     const data = await this.sessions?.findOne({ sessionId });
     return data ? data.snapshot : null;
   }
 
-  async listSessions() {
-    return this.sessions?.find({})
+  async listSessions(): Promise<any[]> {
+    if (!this.sessions) return [];
+    return this.sessions.find({})
       .sort({ updatedAt: -1 })
       .toArray();
   }
 
-  async deleteSession(sessionId: string) {
+  async deleteSession(sessionId: string): Promise<void> {
     if (!this.db) return;
     await this.sessions?.deleteOne({ sessionId });
     await this.db.collection('audit_logs').deleteMany({ sessionId });
   }
 
-  async log(entry: Omit<AuditEntry, 'timestamp'>) {
+  async log(entry: Omit<AuditEntry, 'timestamp' | '_id'>): Promise<void> {
     if (!this.db) return;
     await this.db.collection('audit_logs').insertOne({
       ...entry,
+      _id: randomUUID() as any,
       timestamp: new Date()
     });
   }
@@ -65,7 +69,7 @@ export class MongoPersistenceAdapter implements UniversalAuditPort {
       .toArray();
   }
 
-  async getSessionFlow(sessionId: string) {
+  async getSessionFlow(sessionId: string): Promise<any> {
     const session = await this.sessions?.findOne({ sessionId });
     if (!session) return null;
 

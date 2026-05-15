@@ -1,0 +1,17 @@
+{
+  "sessionId": "SESSION-T0R2NR",
+  "snapshot": {
+    "value": "failure",
+    "context": {
+      "step": 0,
+      "transactionId": null,
+      "segments": [],
+      "currentSegmentIndex": 0,
+      "error": "fetch failed",
+      "retryCount": 3
+    },
+    "status": "active"
+  },
+  "updatedAt": "2026-05-15T09:00:36.820Z",
+  "status": "failure"
+}

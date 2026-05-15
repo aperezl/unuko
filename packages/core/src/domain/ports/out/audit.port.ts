@@ -2,6 +2,7 @@ export type AuditDirection = 'IN' | 'OUT' | 'INTERNAL';
 export type AuditCategory = 'HARDWARE' | 'TRANSPORT' | 'WORKFLOW' | 'CRYPTO';
 
 export interface AuditEntry {
+  _id: string;
   sessionId: string;
   timestamp: Date;
   category: AuditCategory;
@@ -12,5 +13,5 @@ export interface AuditEntry {
 }
 
 export interface UniversalAuditPort {
-  log(entry: Omit<AuditEntry, 'timestamp'>): Promise<void>;
+  log(entry: Omit<AuditEntry, 'timestamp' | '_id'>): Promise<void>;
 }

@@ -9,12 +9,14 @@ import {
 import { UeransimAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
-import { MongoPersistenceAdapter } from '@unuko/adapter-mongodb';
 import { createActor, AnyActor } from 'xstate';
 import fastify from 'fastify';
 import {
   HardwareAuditOutboundAdapter,
-  TransportAuditOutboundAdapter
+  TransportAuditOutboundAdapter,
+  UniversalPersistencePort,
+  JsonPersistenceAdapter,
+  MockNetworkAdapter
 } from '@unuko/core';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
@@ -27,8 +29,9 @@ async function bootstrap() {
   console.log('🚀 UNUKO Orchestrator - Starting Resilient Product API');
 
   const server = fastify();
-  const persistence = new MongoPersistenceAdapter('mongodb://localhost:27017', 'unuko_db');
-  await persistence.connect();
+
+  // Usamos el adaptador de ficheros JSON por defecto para una experiencia "Zero Config"
+  const persistence = new JsonPersistenceAdapter('./data');
 
   // Registro de actores activos en memoria
   const activeActors = new Map<string, AnyActor>();
@@ -42,6 +45,7 @@ async function bootstrap() {
   );
   const rawTransport = new HttpmTLSAdapter(crypto);
   const notification = new WebhookNotificationAdapter('http://localhost:3000/v1/orchestrator/alerts/null'); // Silent local loop
+  const network = new MockNetworkAdapter({ delayMs: 1000 });
 
   // Función para inicializar y arrancar una sesión
   const startSession = async (sessionId: string, workflow: string = 'provisioning', snapshot?: any, workflowDefinition?: any) => {
@@ -58,6 +62,7 @@ async function bootstrap() {
         transport,
         audit: persistence,
         notification,
+        network,
         sessionId
       });
     } else {
@@ -75,6 +80,7 @@ async function bootstrap() {
         transport,
         audit: persistence,
         notification,
+        network,
         sessionId
       });
     }
