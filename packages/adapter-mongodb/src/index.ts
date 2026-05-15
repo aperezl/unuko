@@ -1,8 +1,14 @@
 import { MongoClient, Db, Collection } from 'mongodb';
 import { randomUUID } from 'crypto';
-import { UniversalAuditPort, AuditEntry, calculateProgress, UniversalPersistencePort, SessionSnapshot } from '@unuko/core';
+import { 
+  UniversalAuditPort, 
+  UniversalAuditReaderPort, 
+  AuditEntry, 
+  UniversalPersistencePort, 
+  SessionSnapshot 
+} from '@unuko/core';
 
-export class MongoPersistenceAdapter implements UniversalAuditPort, UniversalPersistencePort {
+export class MongoPersistenceAdapter implements UniversalPersistencePort {
   private client: MongoClient;
   private db?: Db;
   private sessions?: Collection;
@@ -15,7 +21,6 @@ export class MongoPersistenceAdapter implements UniversalAuditPort, UniversalPer
     await this.client.connect();
     this.db = this.client.db(this.dbName);
     this.sessions = this.db.collection('sessions');
-    // Índice para búsquedas rápidas por IMSI o SessionId
     await this.sessions.createIndex({ sessionId: 1 }, { unique: true });
   }
 
@@ -27,7 +32,7 @@ export class MongoPersistenceAdapter implements UniversalAuditPort, UniversalPer
         $set: {
           snapshot,
           updatedAt: new Date(),
-          status: snapshot.value // El estado actual de XState (ej: 'authenticating')
+          status: snapshot.value
         }
       },
       { upsert: true }
@@ -49,7 +54,20 @@ export class MongoPersistenceAdapter implements UniversalAuditPort, UniversalPer
   async deleteSession(sessionId: string): Promise<void> {
     if (!this.db) return;
     await this.sessions?.deleteOne({ sessionId });
-    await this.db.collection('audit_logs').deleteMany({ sessionId });
+  }
+}
+
+export class MongoAuditAdapter implements UniversalAuditPort, UniversalAuditReaderPort {
+  private client: MongoClient;
+  private db?: Db;
+
+  constructor(private uri: string, private dbName: string) {
+    this.client = new MongoClient(uri);
+  }
+
+  async connect() {
+    await this.client.connect();
+    this.db = this.client.db(this.dbName);
   }
 
   async log(entry: Omit<AuditEntry, 'timestamp' | '_id'>): Promise<void> {
@@ -61,38 +79,16 @@ export class MongoPersistenceAdapter implements UniversalAuditPort, UniversalPer
     });
   }
 
-  async getAuditLogs(sessionId: string) {
+  async getAuditLogs(sessionId: string): Promise<AuditEntry[]> {
     if (!this.db) return [];
     return this.db.collection('audit_logs')
       .find({ sessionId })
-      .sort({ timestamp: 1 }) // Orden cronológico ascendente para el feed
-      .toArray();
+      .sort({ timestamp: 1 })
+      .toArray() as unknown as Promise<AuditEntry[]>;
   }
 
-  async getSessionFlow(sessionId: string): Promise<any> {
-    const session = await this.sessions?.findOne({ sessionId });
-    if (!session) return null;
-
-    return {
-      sessionId: session.sessionId,
-      imsi: session.imsi,
-      displayState: session.status, // El estado amigable
-      progress: calculateProgress(session.status),
-      logs: await this.db?.collection('audit_logs')
-        .find({ sessionId })
-        .sort({ timestamp: -1 })
-        .limit(5)
-        .toArray()
-    };
-  }
-
-  // Deprecated: Use log() instead. Kept for temporary compatibility if needed.
-  async logTransaction(sessionId: string, entry: { direction: 'IN' | 'OUT', apdu: string, description?: string }) {
-    await this.log({
-      sessionId,
-      category: 'HARDWARE',
-      ...entry,
-      payload: { apdu: entry.apdu }
-    });
+  async deleteAuditLogs(sessionId: string): Promise<void> {
+    if (!this.db) return;
+    await this.db.collection('audit_logs').deleteMany({ sessionId });
   }
 }

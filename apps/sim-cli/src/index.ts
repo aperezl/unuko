@@ -16,7 +16,11 @@ import {
   TransportAuditOutboundAdapter,
   UniversalPersistencePort,
   JsonPersistenceAdapter,
-  MockNetworkAdapter
+  FileAuditAdapter,
+  CompositeAuditAdapter,
+  ConsoleAuditAdapter,
+  MockNetworkAdapter,
+  SessionInspector
 } from '@unuko/core';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
@@ -30,8 +34,16 @@ async function bootstrap() {
 
   const server = fastify();
 
-  // Usamos el adaptador de ficheros JSON por defecto para una experiencia "Zero Config"
+  // Capa de persistencia segregada
   const persistence = new JsonPersistenceAdapter('./data');
+  const fileAudit = new FileAuditAdapter('./data');
+  const consoleAudit = new ConsoleAuditAdapter();
+  
+  // Auditoría compuesta (Archivo + Consola)
+  const audit = new CompositeAuditAdapter([fileAudit, consoleAudit]);
+
+  // Inspector de sesiones para la UI
+  const inspector = new SessionInspector(persistence, fileAudit);
 
   // Registro de actores activos en memoria
   const activeActors = new Map<string, AnyActor>();
@@ -51,8 +63,8 @@ async function bootstrap() {
   const startSession = async (sessionId: string, workflow: string = 'provisioning', snapshot?: any, workflowDefinition?: any) => {
     console.log(`[SYSTEM]: Starting ${workflowDefinition ? 'dynamic' : workflow} session ${sessionId}...`);
 
-    const hardware = new HardwareAuditOutboundAdapter(rawHardware, persistence, sessionId);
-    const transport = new TransportAuditOutboundAdapter(rawTransport, persistence, sessionId);
+    const hardware = new HardwareAuditOutboundAdapter(rawHardware, audit, sessionId);
+    const transport = new TransportAuditOutboundAdapter(rawTransport, audit, sessionId);
 
     let machine;
     if (workflowDefinition) {
@@ -60,7 +72,7 @@ async function bootstrap() {
         hardware,
         crypto,
         transport,
-        audit: persistence,
+        audit,
         notification,
         network,
         sessionId
@@ -78,7 +90,7 @@ async function bootstrap() {
         hardware,
         crypto,
         transport,
-        audit: persistence,
+        audit,
         notification,
         network,
         sessionId
@@ -161,24 +173,18 @@ async function bootstrap() {
     }
 
     await persistence.deleteSession(id);
+    await fileAudit.deleteAuditLogs(id);
     return { status: 'deleted', sessionId: id };
   });
 
   // Consultar el estado vivo de la sesión
   server.get('/v1/orchestrator/session/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const snapshot = await persistence.loadSession(id);
-    const logs = await persistence.getAuditLogs(id);
+    const details = await inspector.getFullDetails(id);
 
-    if (!snapshot) return reply.status(404).send({ error: 'Session not found' });
+    if (!details) return reply.status(404).send({ error: 'Session not found' });
 
-    return {
-      sessionId: id,
-      status: snapshot.value,
-      context: snapshot.context,
-      logs: logs,
-      updatedAt: new Date()
-    };
+    return details;
   });
 
   // Controlar la máquina remotamente

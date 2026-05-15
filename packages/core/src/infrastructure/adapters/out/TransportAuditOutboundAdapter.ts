@@ -12,6 +12,7 @@ export class TransportAuditOutboundAdapter implements UniversalTransportPort {
     await this.audit.log({
       sessionId: this.sessionId,
       category: 'TRANSPORT',
+      level: 'INFO',
       direction: 'OUT',
       payload: {
         url: request.url,
@@ -27,6 +28,7 @@ export class TransportAuditOutboundAdapter implements UniversalTransportPort {
       await this.audit.log({
         sessionId: this.sessionId,
         category: 'TRANSPORT',
+        level: 'INFO',
         direction: 'IN',
         payload: response,
         description: `HTTP Response from ${new URL(request.url).pathname}`
@@ -37,6 +39,7 @@ export class TransportAuditOutboundAdapter implements UniversalTransportPort {
       await this.audit.log({
         sessionId: this.sessionId,
         category: 'TRANSPORT',
+        level: 'ERROR',
         direction: 'IN',
         payload: { error: error instanceof Error ? error.message : String(error) },
         description: `HTTP Failure from ${new URL(request.url).pathname}`

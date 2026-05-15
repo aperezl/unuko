@@ -23,6 +23,7 @@ export const createUnukoMachine = <TContext extends WorkflowBaseContext>(
         await ports.audit.log({
           sessionId: ports.sessionId,
           category: 'WORKFLOW',
+          level: 'INFO',
           direction: 'INTERNAL',
           payload: { status: 'SUCCESS' },
           description: `Workflow ${config.id} Completed Successfully`
@@ -32,6 +33,7 @@ export const createUnukoMachine = <TContext extends WorkflowBaseContext>(
         await ports.audit.log({
           sessionId: ports.sessionId,
           category: 'WORKFLOW',
+          level: 'ERROR',
           direction: 'INTERNAL',
           payload: { status: 'FAILURE', error: context.error },
           description: `Workflow ${config.id} Failed: ${context.error}`

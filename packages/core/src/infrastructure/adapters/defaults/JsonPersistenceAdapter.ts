@@ -1,28 +1,19 @@
 import { promises as fs } from 'fs';
-import { randomUUID } from 'crypto';
 import path from 'path';
 import { 
   UniversalPersistencePort, 
-  SessionSnapshot, 
-  SessionFlow 
+  SessionSnapshot
 } from '../../../domain/ports/out/persistence.port';
-import { UniversalAuditPort, AuditEntry } from '../../../domain/ports/out/audit.port';
-import { calculateProgress } from '../../../domain/logic/progress';
 
-export class JsonPersistenceAdapter implements UniversalPersistencePort, UniversalAuditPort {
-  private baseDir: string;
+export class JsonPersistenceAdapter implements UniversalPersistencePort {
   private sessionsDir: string;
-  private logsDir: string;
 
   constructor(basePath: string = './data') {
-    this.baseDir = path.resolve(basePath);
-    this.sessionsDir = path.join(this.baseDir, 'sessions');
-    this.logsDir = path.join(this.baseDir, 'logs');
+    this.sessionsDir = path.resolve(basePath, 'sessions');
   }
 
   private async ensureDirs() {
     await fs.mkdir(this.sessionsDir, { recursive: true });
-    await fs.mkdir(this.logsDir, { recursive: true });
   }
 
   async saveSession(sessionId: string, snapshot: SessionSnapshot): Promise<void> {
@@ -69,59 +60,5 @@ export class JsonPersistenceAdapter implements UniversalPersistencePort, Univers
     try {
       await fs.unlink(path.join(this.sessionsDir, `${sessionId}.json`));
     } catch (error) {}
-    try {
-      await fs.unlink(path.join(this.logsDir, `${sessionId}.log`));
-    } catch (error) {}
-  }
-
-  async log(entry: Omit<AuditEntry, 'timestamp' | '_id'>): Promise<void> {
-    await this.ensureDirs();
-    const filePath = path.join(this.logsDir, `${entry.sessionId}.log`);
-    
-    const logLine = JSON.stringify({
-      ...entry,
-      _id: randomUUID(),
-      timestamp: new Date()
-    }) + '\n';
-
-    await fs.appendFile(filePath, logLine);
-  }
-
-  async getAuditLogs(sessionId: string): Promise<AuditEntry[]> {
-    try {
-      const filePath = path.join(this.logsDir, `${sessionId}.log`);
-      const content = await fs.readFile(filePath, 'utf-8');
-      return content
-        .trim()
-        .split('\n')
-        .filter(line => line.trim().length > 0)
-        .map(line => JSON.parse(line));
-    } catch (error) {
-      return [];
-    }
-  }
-
-  async getSessionFlow(sessionId: string): Promise<SessionFlow | null> {
-    const session = await this.loadSessionRaw(sessionId);
-    if (!session) return null;
-
-    const logs = await this.getAuditLogs(sessionId);
-
-    return {
-      sessionId: session.sessionId,
-      displayState: session.status,
-      progress: calculateProgress(session.status),
-      logs: logs.slice(-5).reverse() // Últimos 5 logs
-    };
-  }
-
-  private async loadSessionRaw(sessionId: string): Promise<any | null> {
-    try {
-      const filePath = path.join(this.sessionsDir, `${sessionId}.json`);
-      const content = await fs.readFile(filePath, 'utf-8');
-      return JSON.parse(content);
-    } catch (error) {
-      return null;
-    }
   }
 }

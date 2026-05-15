@@ -10,6 +10,7 @@ export * from './application/use-cases/base/engine';
 export * from './application/use-cases/base/factory';
 export * from './application/use-cases/base/schema';
 export * from './application/use-cases/inspector';
+export * from './application/use-cases/SessionInspector';
 export * from './application/use-cases/sgp22/tasks';
 export * from './application/use-cases/sgp22/types';
 export * from './application/use-cases/sgp22/provisioning.machine';

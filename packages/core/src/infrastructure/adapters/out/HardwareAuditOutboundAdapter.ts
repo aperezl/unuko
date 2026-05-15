@@ -18,6 +18,7 @@ export class HardwareAuditOutboundAdapter implements UniversalHardwarePort {
     await this.audit.log({
       sessionId: this.sessionId,
       category: 'HARDWARE',
+      level: 'AUDIT',
       direction: 'OUT',
       payload: { apdu: commandHex },
       description: 'APDU Command'
@@ -34,6 +35,7 @@ export class HardwareAuditOutboundAdapter implements UniversalHardwarePort {
       await this.audit.log({
         sessionId: this.sessionId,
         category: 'HARDWARE',
+        level: 'AUDIT',
         direction: 'IN',
         payload: { 
           data: respHex, 
@@ -49,6 +51,7 @@ export class HardwareAuditOutboundAdapter implements UniversalHardwarePort {
       await this.audit.log({
         sessionId: this.sessionId,
         category: 'HARDWARE',
+        level: 'ERROR',
         direction: 'IN',
         payload: { error: error instanceof Error ? error.message : String(error) },
         description: 'APDU Transmission Failure'
@@ -61,6 +64,7 @@ export class HardwareAuditOutboundAdapter implements UniversalHardwarePort {
     await this.audit.log({
       sessionId: this.sessionId,
       category: 'HARDWARE',
+      level: 'INFO',
       direction: 'OUT',
       payload: {},
       description: 'Hardware Reset Request'

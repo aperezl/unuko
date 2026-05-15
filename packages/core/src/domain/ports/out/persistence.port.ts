@@ -1,4 +1,3 @@
-import { AuditEntry } from './audit.port';
 
 export interface SessionSnapshot {
   value: any;
@@ -12,7 +11,6 @@ export interface SessionFlow {
   imsi?: string;
   displayState: string;
   progress: number;
-  logs?: AuditEntry[];
 }
 
 export interface UniversalPersistencePort {
@@ -20,5 +18,4 @@ export interface UniversalPersistencePort {
   loadSession(sessionId: string): Promise<SessionSnapshot | null>;
   listSessions(): Promise<any[]>;
   deleteSession(sessionId: string): Promise<void>;
-  getSessionFlow(sessionId: string): Promise<SessionFlow | null>;
 }

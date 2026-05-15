@@ -135,6 +135,7 @@ export const tasks: Record<string, TaskDefinition> = {
       await ports.audit.log({
         sessionId: ports.sessionId,
         category: 'WORKFLOW',
+        level: 'INFO',
         direction: 'INTERNAL',
         payload: input.payload || {},
         description: input.description
@@ -176,6 +177,7 @@ export const utils = {
     await ports.audit.log({
       sessionId: ports.sessionId,
       category: 'WORKFLOW',
+      level: 'INFO',
       direction: 'INTERNAL',
       payload,
       description
