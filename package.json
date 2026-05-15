@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=sim-cli... --filter=@unuko/smdp-mock...",
     "test": "turbo run test"
   },
   "keywords": [],

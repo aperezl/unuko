@@ -1,0 +1,47 @@
+{
+  "sessionId": "SESSION-YFKZG8",
+  "snapshot": {
+    "value": "done",
+    "context": {
+      "step": 0,
+      "transactionId": "abc-123-transaction-id",
+      "segments": [
+        "80E280001730E08AFC1394343FCF44E1482C4FCF002280184FC30130"
+      ],
+      "currentSegmentIndex": 0,
+      "error": null,
+      "retryCount": 0,
+      "boundProfilePackage": {
+        "type": "Buffer",
+        "data": [
+          48,
+          224,
+          138,
+          252,
+          19,
+          148,
+          52,
+          63,
+          207,
+          68,
+          225,
+          72,
+          44,
+          79,
+          207,
+          0,
+          34,
+          128,
+          24,
+          79,
+          195,
+          1,
+          48
+        ]
+      }
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-15T10:12:44.762Z",
+  "status": "done"
+}
