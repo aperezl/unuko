@@ -1,6 +1,12 @@
 import { UniversalHardwarePort, APDU, ChipStatus, TransportError } from '../../../domain/ports/out/hardware.port';
 
 export class MockHardwareAdapter implements UniversalHardwarePort {
+  private delayMs: number;
+  
+  constructor(options?: { delayMs?: number }) {
+    this.delayMs = options?.delayMs ?? 0;
+  }
+
   async transmit(command: APDU): Promise<{
     success: boolean;
     data?: Buffer;
@@ -9,8 +15,10 @@ export class MockHardwareAdapter implements UniversalHardwarePort {
   }> {
     console.log(`[MOCK HARDWARE] Transmitting APDU: ${command.toString('hex').toUpperCase()}`);
     
-    // Simular latencia de hardware
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Simular latencia de hardware configurable
+    if (this.delayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, this.delayMs));
+    }
 
     // Lógica básica: si es un SELECT (empezando con 00A4), responder OK
     if (command[0] === 0x00 && command[1] === 0xA4) {

@@ -4,6 +4,11 @@ import { Subscriber, UESession, NetworkMetrics, AttachOptions } from '../../../d
 export class MockNetworkAdapter implements UniversalNetworkPort {
   private subscribers: Map<string, Subscriber> = new Map();
   private sessions: Map<string, UESession> = new Map();
+  private delayMs: number;
+
+  constructor(options?: { delayMs?: number }) {
+    this.delayMs = options?.delayMs ?? 0;
+  }
 
   async provision(subscriber: Subscriber): Promise<void> {
     console.log(`[MOCK NETWORK] Provisioning subscriber: ${subscriber.imsi}`);
@@ -29,8 +34,10 @@ export class MockNetworkAdapter implements UniversalNetworkPort {
     };
     this.sessions.set(imsi, session);
 
-    // Simular el tiempo de conexión
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Simular el tiempo de conexión configurable
+    if (this.delayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, this.delayMs));
+    }
 
     session.status = 'CONNECTED';
     session.ipAddress = `10.45.0.${Math.floor(Math.random() * 254) + 2}`;

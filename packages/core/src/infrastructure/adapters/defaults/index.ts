@@ -15,9 +15,9 @@ export function createDefaultPorts(sessionId: string): WorkflowPorts {
     sessionId,
     audit: new ConsoleAuditAdapter(),
     notification: new ConsoleNotificationAdapter(),
-    hardware: new MockHardwareAdapter(),
+    hardware: new MockHardwareAdapter({ delayMs: 50 }),
     crypto: new MockCryptoAdapter(),
     transport: new FetchTransportAdapter(),
-    network: new MockNetworkAdapter()
+    network: new MockNetworkAdapter({ delayMs: 1000 })
   };
 }
