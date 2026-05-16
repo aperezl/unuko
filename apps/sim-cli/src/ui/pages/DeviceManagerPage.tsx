@@ -89,6 +89,53 @@ export const DeviceManagerPage = () => {
   const [logs, setLogs] = React.useState<string>('');
   const [isLogsLoading, setIsLogsLoading] = React.useState(false);
 
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+  const [sidebarWidth, setSidebarWidth] = React.useState(() => {
+    const saved = localStorage.getItem('unuko_log_sidebar_width');
+    return saved ? parseInt(saved, 10) : 800; // Much larger default
+  });
+  const latestWidthRef = React.useRef(sidebarWidth);
+  const isDragging = React.useRef(false);
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const newWidth = window.innerWidth - e.clientX;
+      const maxWidth = window.innerWidth - 32; // Allow almost full screen
+      if (newWidth > 300 && newWidth < maxWidth) {
+        setSidebarWidth(newWidth);
+        latestWidthRef.current = newWidth;
+      }
+    };
+    const handleMouseUp = () => {
+      if (isDragging.current) {
+        isDragging.current = false;
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto';
+        localStorage.setItem('unuko_log_sidebar_width', latestWidthRef.current.toString());
+      }
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (viewingLogId && sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        if (!(e.target as Element).closest('.prevent-sidebar-close')) {
+          setViewingLogId(null);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [viewingLogId]);
+
   const fetchDevices = async () => {
     setIsLoading(true);
     try {
@@ -230,8 +277,7 @@ export const DeviceManagerPage = () => {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <div className={cn(
-        "space-y-8 max-w-6xl mx-auto transition-all duration-500 px-6 pt-10",
-        viewingLogId ? "pr-[480px]" : ""
+        "space-y-8 max-w-6xl mx-auto transition-all duration-500 px-6 pt-10"
       )}>
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -423,7 +469,7 @@ export const DeviceManagerPage = () => {
                                 size="icon"
                                 onClick={() => setViewingLogId(device.id)}
                                 className={cn(
-                                  "h-8 w-8 transition-all",
+                                  "h-8 w-8 transition-all prevent-sidebar-close",
                                   viewingLogId === device.id && "text-primary border-primary/50"
                                 )}
                                 title="View Logs"
@@ -489,12 +535,24 @@ export const DeviceManagerPage = () => {
       <AnimatePresence>
         {viewingLogId && (
           <motion.div 
+            ref={sidebarRef as any}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 bottom-0 w-[480px] bg-background/95 backdrop-blur-xl border-l border-border z-40 shadow-[-30px_0_60px_rgba(0,0,0,0.7)] flex flex-col"
+            style={{ width: sidebarWidth }}
+            className="fixed top-0 right-0 bottom-0 bg-background/95 backdrop-blur-xl border-l border-border z-40 shadow-[-30px_0_60px_rgba(0,0,0,0.7)] flex flex-col"
           >
+            {/* Drag Handle */}
+            <div 
+              className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/20 transition-colors z-50 prevent-sidebar-close"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                isDragging.current = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+              }}
+            />
             <div className="p-6 border-b border-border flex items-center justify-between bg-card/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 text-primary rounded-md">
