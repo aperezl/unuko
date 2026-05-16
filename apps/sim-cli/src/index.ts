@@ -7,6 +7,7 @@ import {
   unukoEngine
 } from '@unuko/core';
 import { UeransimAdapter, UeransimNetworkAdapter } from '@unuko/adapter-ueransim';
+import { Open5gsSdmAdapter } from '@unuko/adapter-open5gs-sdm';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
 import { createActor, AnyActor } from 'xstate';
@@ -58,6 +59,7 @@ async function bootstrap() {
   const rawTransport = new HttpmTLSAdapter(crypto);
   const notification = new WebhookNotificationAdapter('http://localhost:3000/v1/orchestrator/alerts/null'); // Silent local loop
   const ueransimNetwork = new UeransimNetworkAdapter('core5g');
+  const sdmAdapter = new Open5gsSdmAdapter('core5g');
   const network = new MockNetworkAdapter({ delayMs: 1000 });
 
   // Función para inicializar y arrancar una sesión
@@ -203,6 +205,29 @@ async function bootstrap() {
   // --- 8. INFRASTRUCTURE MANAGEMENT ---
 
   // List all UEs (using sessions as proxy for now or querying the adapter)
+  server.get('/v1/inventory/subscribers', async () => {
+    return await sdmAdapter.findAll();
+  });
+
+  server.get('/v1/inventory/subscribers/:imsi', async (request, reply) => {
+    const { imsi } = request.params as { imsi: string };
+    const sub = await sdmAdapter.findById(imsi);
+    if (!sub) return reply.status(404).send({ error: 'Subscriber not found' });
+    return sub;
+  });
+
+  server.post('/v1/inventory/subscribers', async (request) => {
+    const subscriber = request.body as any;
+    await sdmAdapter.upsert(subscriber);
+    return { status: 'ok' };
+  });
+
+  server.delete('/v1/inventory/subscribers/:imsi', async (request) => {
+    const { imsi } = request.params as { imsi: string };
+    await sdmAdapter.delete(imsi);
+    return { status: 'ok' };
+  });
+
   server.get('/v1/infrastructure/devices', async () => {
     const controller = (ueransimNetwork as any).controller;
     return await controller.getDevices();

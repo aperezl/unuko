@@ -45,6 +45,9 @@ importers:
       '@unuko/adapter-mongodb':
         specifier: workspace:*
         version: link:../../packages/adapter-mongodb
+      '@unuko/adapter-open5gs-sdm':
+        specifier: workspace:*
+        version: link:../../packages/adapter-open5gs-sdm
       '@unuko/adapter-pkcs11':
         specifier: workspace:*
         version: link:../../packages/adapter-pkcs11
@@ -84,6 +87,9 @@ importers:
       react-dom:
         specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
+      react-icons:
+        specifier: ^5.6.0
+        version: 5.6.0(react@19.2.6)
       react-router-dom:
         specifier: ^7.15.0
         version: 7.15.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -177,6 +183,22 @@ importers:
         version: 20.19.41
       typescript:
         specifier: ^5.0.0
+        version: 5.9.3
+
+  packages/adapter-open5gs-sdm:
+    dependencies:
+      '@unuko/core':
+        specifier: workspace:*
+        version: link:../core
+      axios:
+        specifier: ^1.6.0
+        version: 1.16.0
+    devDependencies:
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.14)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.2.2
         version: 5.9.3
 
   packages/adapter-pkcs11:
@@ -1823,6 +1845,11 @@ packages:
     resolution: {integrity: sha512-0prMI+hvBbPjsWnxDLxlCGyM8PN6UuWjEUCYmZhO67xIV9Xasa/r/vDnq+Xyq4Lo27g8QSbO5YzARu0D1Sps3g==}
     peerDependencies:
       react: ^19.2.6
+
+  react-icons@5.6.0:
+    resolution: {integrity: sha512-RH93p5ki6LfOiIt0UtDyNg/cee+HLVR6cHHtW3wALfo+eOHTp8RnU2kRkI6E+H19zMIs03DyxUG/GfZMOGvmiA==}
+    peerDependencies:
+      react: '*'
 
   react-router-dom@7.15.0:
     resolution: {integrity: sha512-VcrVg64Fo8nwBvDscajG8gRTLIuTC6N50nb22l2HOOV4PTOHgoGp8mUjy9wLiHYoYTSYI36tUnXZgasSRFZorQ==}
@@ -3602,6 +3629,10 @@ snapshots:
     dependencies:
       react: 19.2.6
       scheduler: 0.27.0
+
+  react-icons@5.6.0(react@19.2.6):
+    dependencies:
+      react: 19.2.6
 
   react-router-dom@7.15.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
     dependencies:

@@ -6,6 +6,8 @@ import { SessionList } from './components/SessionList';
 import { SessionMonitor } from './components/SessionMonitor';
 import { WorkflowEditor } from './components/WorkflowEditor';
 import { DeviceManager } from './components/DeviceManager';
+import { InventoryManager } from './components/InventoryManager';
+import { ProvisioningForm } from './components/ProvisioningForm';
 
 export default function App() {
   const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
@@ -84,7 +86,9 @@ export default function App() {
             <Route path="gnb" element={<div />} />
             <Route index element={<Navigate to="ue" replace />} />
           </Route>
-          <Route path="/inventory" element={<div className="p-10 text-slate-500 font-mono">Inventory module coming soon...</div>} />
+          <Route path="/inventory" element={<InventoryManager />} />
+          <Route path="/inventory/new" element={<ProvisioningForm />} />
+          <Route path="/inventory/edit/:imsi" element={<ProvisioningForm />} />
           <Route path="/analytics" element={<div className="p-10 text-slate-500 font-mono">Analytics module coming soon...</div>} />
           <Route path="/settings" element={<div className="p-10 text-slate-500 font-mono">Settings module coming soon...</div>} />
         </Route>

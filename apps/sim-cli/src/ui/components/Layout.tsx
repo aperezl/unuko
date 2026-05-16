@@ -140,7 +140,7 @@ export const Layout = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-hidden relative">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
           <Outlet />
         </main>
       </div>
