@@ -41,14 +41,14 @@ export class UeransimConfigBuilder {
   static buildUE(config: UEConfig): string {
     const doc = {
       supi: config.supi,
-      mcc: config.mcc,
-      mnc: config.mnc,
+      mcc: String(config.mcc),
+      mnc: String(config.mnc),
       protectionScheme: 0,
       homeNetworkPublicKey: '5a8d38864820197c3394b92613b20b91633cbd897119273bf8e4a6f4eec0a650',
       homeNetworkPublicKeyId: 1,
       routingIndicator: '0000',
-      key: config.key,
-      op: config.op || config.opc,
+      key: config.key.replace(/\s+/g, ''),
+      op: (config.op || (config as any).opc).replace(/\s+/g, ''),
       opType: config.opType,
       amf: config.amf,
       imei: config.imei,
@@ -67,19 +67,19 @@ export class UeransimConfigBuilder {
       sessions: config.sessions,
       'configured-nssai': config.configuredNssai,
       'default-nssai': config.defaultNssai,
+      slices: config.configuredNssai, // Añadimos esta sección que falta
       integrity: config.integrity || { IA1: true, IA2: true, IA3: true },
       ciphering: config.ciphering || { EA1: true, EA2: true, EA3: true },
-      integrityMaxRate: { uplink: 'full', downlink: 'full' },
-      slices: config.configuredNssai // Use same as configured-nssai for now
+      integrityMaxRate: { uplink: 'full', downlink: 'full' }
     };
     return yaml.dump(doc);
   }
 
   static buildGNB(config: GNBConfig): string {
     const doc = {
-      mcc: config.mcc,
-      mnc: config.mnc,
-      nci: config.nci,
+      mcc: String(config.mcc),
+      mnc: String(config.mnc),
+      nci: String(config.nci),
       idLength: config.idLength,
       tac: config.tac,
       linkIp: config.linkIp,
@@ -87,7 +87,9 @@ export class UeransimConfigBuilder {
       gtpIp: config.gtpIp,
       amfConfigs: config.amfConfigs,
       slices: config.slices,
-      amfSelection: config.amfSelection
+      amfSelection: config.slices.map(s => ({ sst: s.sst })), // Vinculación explícita
+      ignoreStreamIds: true,
+      cellAccessType: 'nr'
     };
     return yaml.dump(doc);
   }

@@ -75,11 +75,11 @@ export class UeransimNetworkAdapter implements UniversalNetworkPort {
 
     const config: UEConfig = {
       supi: `imsi-${imsi}`,
-      mcc,
-      mnc,
+      mcc: '999',
+      mnc: '70',
       key: '465B5CE8B199B49FAA5F0A2EE238A6BC', // Default or from subscriber
       opType: 'OPC',
-      opc: 'E8ED289DEBA952E4283B54E88E6183CA',
+      op: 'E8ED289DEBA952E4283B54E88E6183CA',
       amf: '8000',
       imei: '356938035643803',
       imeiSv: '4370816125816151',

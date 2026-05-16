@@ -1,0 +1,16 @@
+{
+  "sessionId": "SESSION-N5IY99",
+  "snapshot": {
+    "value": "done",
+    "context": {
+      "iccid": "",
+      "action": "enable",
+      "refreshRequired": false,
+      "error": null,
+      "retryCount": 0
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-16T11:00:59.434Z",
+  "status": "done"
+}

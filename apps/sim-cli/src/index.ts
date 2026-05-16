@@ -204,11 +204,14 @@ async function bootstrap() {
 
   // List all UEs (using sessions as proxy for now or querying the adapter)
   server.get('/v1/infrastructure/devices', async () => {
-    // In a real scenario, we'd query the adapter for all active UEs
-    // For now, let's return a hardcoded list or empty
-    return [
-      { id: 'imsi-999700000000001', type: 'UE', status: 'RUNNING', ip: '10.45.0.2' }
-    ];
+    const controller = (ueransimNetwork as any).controller;
+    return await controller.getDevices();
+  });
+
+  server.delete('/v1/infrastructure/devices', async () => {
+    const controller = (ueransimNetwork as any).controller;
+    await controller.stopAll();
+    return { status: 'all_stopped' };
   });
 
   server.post('/v1/infrastructure/ue', async (request, reply) => {
@@ -223,15 +226,92 @@ async function bootstrap() {
     }
   });
 
-  server.post('/v1/infrastructure/gnb', async (request, reply) => {
-    const { mcc, mnc, nci, tac, amfAddress } = (request.body as any) || {};
+  server.put('/v1/infrastructure/ue/:imsi', async (request, reply) => {
+    const { imsi } = request.params as { imsi: string };
+    const config = request.body as any;
     
-    // In a real scenario, we'd use the ueransim-lib to start a gNB
-    // For now, let's simulate success or implement a basic version if the adapter supports it
     try {
-      // Assuming we extend the adapter to support gNB or use controller directly
-      // For now, let's return a simulated success
-      return { status: 'created', id: nci || 'GNB-1' };
+      const controller = (ueransimNetwork as any).controller;
+      // Complete UE config with defaults
+      const fullConfig = {
+        supi: imsi,
+        mcc: config.mcc || '999',
+        mnc: config.mnc || '70',
+        key: '465B5CE8B199B49FAA5F0A2EE238A6BC',
+        opType: 'OPC',
+        opc: 'E8ED289DEBA952E4283B54E88E6183CA',
+        amf: '8000',
+        imei: '356938035643803',
+        imeiSv: '4370816125816151',
+        gnbSearchList: [config.gnbAddress || '127.0.0.1'],
+        sessions: [{ type: 'IPv4', apn: 'internet', slice: { sst: 1 } }],
+        configuredNssai: [{ sst: 1 }],
+        defaultNssai: [{ sst: 1 }]
+      };
+      await controller.updateUE(imsi, fullConfig);
+      return { status: 'updated', id: imsi };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.post('/v1/infrastructure/gnb', async (request, reply) => {
+    const config = request.body as any;
+    
+    try {
+      const controller = (ueransimNetwork as any).controller;
+      const fullConfig = {
+        mcc: config.mcc || '999',
+        mnc: config.mnc || '70',
+        nci: config.nci || '0x000000010',
+        idLength: 32,
+        tac: Number(config.tac || 1),
+        linkIp: '127.0.0.1',
+        ngapIp: '127.0.0.1',
+        gtpIp: '127.0.0.1',
+        amfConfigs: [{ address: config.amfAddress || '127.0.0.5', port: 38412 }],
+        slices: [{ sst: 1 }],
+        amfSelection: [{ sst: 1 }]
+      };
+      const device = await controller.startGNB(fullConfig);
+      return { status: 'created', device };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.put('/v1/infrastructure/gnb/:nci', async (request, reply) => {
+    const { nci } = request.params as { nci: string };
+    const config = request.body as any;
+    
+    try {
+      const controller = (ueransimNetwork as any).controller;
+      const fullConfig = {
+        mcc: config.mcc || '999',
+        mnc: config.mnc || '70',
+        nci: nci,
+        idLength: 32,
+        tac: Number(config.tac || 1),
+        linkIp: '127.0.0.1',
+        ngapIp: '127.0.0.1',
+        gtpIp: '127.0.0.1',
+        amfConfigs: [{ address: config.amfAddress || '127.0.0.5', port: 38412 }],
+        slices: [{ sst: 1 }],
+        amfSelection: [{ sst: 1 }]
+      };
+      await controller.updateGNB(nci, fullConfig);
+      return { status: 'updated', id: nci };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.post('/v1/infrastructure/device/:id/stop', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      const controller = (ueransimNetwork as any).controller;
+      await controller.stopDevice(id);
+      return { status: 'stopped', id };
     } catch (err: any) {
       return reply.status(500).send({ error: err.message });
     }
@@ -239,11 +319,43 @@ async function bootstrap() {
 
   server.delete('/v1/infrastructure/device/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const imsi = id.replace('imsi-', '');
+    try {
+      const controller = (ueransimNetwork as any).controller;
+      await controller.removeDevice(id);
+      return { status: 'deleted', id };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.post('/v1/infrastructure/device/:id/start', async (request, reply) => {
+    const { id } = request.params as { id: string };
     
     try {
-      await ueransimNetwork.detachUE(imsi);
-      return { status: 'deleted', id };
+      const controller = (ueransimNetwork as any).controller;
+      const devices = await controller.getDevices();
+      const device = devices.find((d: any) => d.id === id);
+      
+      if (!device) return reply.status(404).send({ error: 'Device config not found' });
+      
+      if (device.type === 'UE') {
+        await controller.startUE(device.config);
+      } else {
+        await controller.startGNB(device.config);
+      }
+      
+      return { status: 'started', id };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.get('/v1/infrastructure/device/:id/logs', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      const controller = (ueransimNetwork as any).controller;
+      const logs = await controller.getLogs(id);
+      return { logs };
     } catch (err: any) {
       return reply.status(500).send({ error: err.message });
     }
