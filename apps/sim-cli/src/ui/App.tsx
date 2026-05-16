@@ -2,12 +2,12 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SessionSummary } from './types';
 import { Layout } from './components/Layout';
-import { SessionList } from './components/SessionList';
-import { SessionMonitor } from './components/SessionMonitor';
-import { WorkflowEditor } from './components/WorkflowEditor';
-import { DeviceManager } from './components/DeviceManager';
-import { InventoryManager } from './components/InventoryManager';
-import { ProvisioningForm } from './components/ProvisioningForm';
+import { SessionListPage } from './pages/SessionListPage';
+import { SessionMonitorPage } from './pages/SessionMonitorPage';
+import { WorkflowEditorPage } from './pages/WorkflowEditorPage';
+import { DeviceManagerPage } from './pages/DeviceManagerPage';
+import { InventoryManagerPage } from './pages/InventoryManagerPage';
+import { ProvisioningFormPage } from './pages/ProvisioningFormPage';
 
 export default function App() {
   const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
@@ -67,30 +67,29 @@ export default function App() {
           <Route 
             path="/sessions" 
             element={
-              <SessionList 
+              <SessionListPage 
                 sessions={sessions} 
                 onCreate={handleCreateSession} 
                 onDelete={handleDeleteSession}
               />
             } 
           />
-          <Route path="/session/:id" element={<SessionMonitor />} />
+          <Route path="/session/:id" element={<SessionMonitorPage />} />
           <Route 
             path="/designer" 
-            element={<WorkflowEditor onExecute={(def) => handleCreateSession('dynamic', def)} />} 
+            element={<WorkflowEditorPage onExecute={(def) => handleCreateSession('dynamic', def)} />} 
           />
           
-          {/* Placeholder routes for future expansion */}
-          <Route path="/devices" element={<DeviceManager />}>
+          <Route path="/devices" element={<DeviceManagerPage />}>
             <Route path="ue" element={<div />} />
             <Route path="gnb" element={<div />} />
             <Route index element={<Navigate to="ue" replace />} />
           </Route>
-          <Route path="/inventory" element={<InventoryManager />} />
-          <Route path="/inventory/new" element={<ProvisioningForm />} />
-          <Route path="/inventory/edit/:imsi" element={<ProvisioningForm />} />
-          <Route path="/analytics" element={<div className="p-10 text-slate-500 font-mono">Analytics module coming soon...</div>} />
-          <Route path="/settings" element={<div className="p-10 text-slate-500 font-mono">Settings module coming soon...</div>} />
+          <Route path="/inventory" element={<InventoryManagerPage />} />
+          <Route path="/inventory/new" element={<ProvisioningFormPage />} />
+          <Route path="/inventory/edit/:imsi" element={<ProvisioningFormPage />} />
+          <Route path="/analytics" element={<div className="p-10 text-muted-foreground font-mono">Analytics module coming soon...</div>} />
+          <Route path="/settings" element={<div className="p-10 text-muted-foreground font-mono">Settings module coming soon...</div>} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -9,17 +9,13 @@ import {
   Trash2,
   FileCode,
   CheckCircle,
-  AlertCircle,
   Terminal,
-  Settings,
   BookOpen,
-  ChevronRight,
   ShieldAlert,
-  Zap,
-  Code2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 interface WorkflowEditorProps {
   onExecute: (definition: any) => Promise<string | void>;
@@ -56,7 +52,7 @@ const AVAILABLE_TASKS = [
   { id: 'sgp22/enableConnectivity', desc: 'UE Attach' },
 ];
 
-export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
+export const WorkflowEditorPage = ({ onExecute }: WorkflowEditorProps) => {
   const navigate = useNavigate();
   const [code, setCode] = useState(DEFAULT_WORKFLOW);
   const [fileName, setFileName] = useState('new-workflow.yaml');
@@ -182,87 +178,92 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
   };
 
   return (
-    <div className="flex h-full bg-[#020617] text-slate-200 overflow-hidden font-sans">
+    <div className="flex h-full bg-background text-foreground overflow-hidden font-sans">
       {/* Sidebar - Compact */}
-      <div className="w-48 border-r border-slate-800/60 flex flex-col bg-slate-950/40">
-        <div className="p-3 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/10">
-          <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-600">Library</h3>
-          <button
+      <div className="w-48 border-r border-border flex flex-col bg-muted/20">
+        <div className="p-3 border-b border-border flex items-center justify-between bg-muted/40">
+          <h3 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Library</h3>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => { setFileName('new-workflow.yaml'); setCode(DEFAULT_WORKFLOW); }}
-            className="p-1 hover:bg-sky-500/10 rounded-sm transition-colors"
+            className="h-6 w-6 rounded-sm transition-colors text-primary"
           >
-            <FileCode className="w-3.5 h-3.5 text-sky-500" />
-          </button>
+            <FileCode className="w-3.5 h-3.5" />
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
           {library.map((f) => (
             <div
               key={f.name}
               className={cn(
-                "group flex items-center justify-between p-2 rounded-sm text-[11px] cursor-pointer transition-colors",
+                "group flex items-center justify-between p-2 rounded-md text-[11px] cursor-pointer transition-colors",
                 fileName === f.name
-                  ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
-                  : "hover:bg-slate-900/60 text-slate-500 hover:text-slate-300"
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
               )}
               onClick={() => { setFileName(f.name); setCode(f.content); }}
             >
               <div className="flex items-center gap-2 truncate">
                 <div className={cn(
                   "w-1 h-1 rounded-full",
-                  fileName === f.name ? "bg-sky-400" : "bg-slate-800"
+                  fileName === f.name ? "bg-primary" : "bg-muted-foreground"
                 )} />
                 <span className="truncate font-bold tracking-tight">{f.name}</span>
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); handleDelete(f.name); }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 transition-colors"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
             </div>
           ))}
           {library.length === 0 && (
-            <p className="text-[9px] text-slate-700 uppercase tracking-tight text-center py-10 px-4">No local workflows</p>
+            <p className="text-[9px] text-muted-foreground uppercase tracking-tight text-center py-10 px-4">No local workflows</p>
           )}
         </div>
       </div>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#020617]">
-        <div className="h-10 border-b border-slate-800/60 flex items-center justify-between px-4 bg-slate-950/20">
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+        <div className="h-10 border-b border-border flex items-center justify-between px-4 bg-muted/20">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Terminal className="w-3.5 h-3.5 text-slate-700" />
-              <input
+              <Terminal className="w-3.5 h-3.5 text-muted-foreground" />
+              <Input
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
-                className="bg-transparent border-none focus:ring-0 text-[11px] font-bold font-mono text-slate-300 w-40 placeholder-slate-800"
+                className="bg-transparent border-none focus:ring-0 text-[11px] font-bold font-mono text-foreground w-40 placeholder:text-muted-foreground shadow-none h-6 px-1"
               />
             </div>
             {status.message && (
               <div className={cn(
                 "px-2 py-0.5 rounded-sm border text-[9px] font-black uppercase tracking-widest",
-                status.type === 'success' ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" : "bg-rose-500/5 text-rose-500 border-rose-500/20"
+                status.type === 'success' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-destructive/10 text-destructive border-destructive/20"
               )}>
                 {status.message}
               </div>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 rounded-sm text-[10px] font-black uppercase tracking-widest border border-slate-800 transition-colors"
+              className="h-7 text-[10px] font-black uppercase tracking-widest gap-1.5"
             >
-              <Save className="w-3 h-3 text-slate-500" />
+              <Save className="w-3 h-3" />
               Save
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={handleExecute}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-sky-700 hover:bg-sky-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest transition-colors active:scale-95 shadow-lg shadow-sky-900/20"
+              className="h-7 text-[10px] font-black uppercase tracking-widest gap-1.5 shadow-lg shadow-primary/20"
             >
               <Play className="w-3 h-3 fill-current" />
               Execute
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -297,13 +298,13 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
       </div>
 
       {/* Right Sidebar - Diagnostics */}
-      <div className="w-64 border-l border-slate-800/60 flex flex-col bg-slate-950/40">
-        <div className="flex border-b border-slate-800/60 bg-slate-900/10">
+      <div className="w-64 border-l border-border flex flex-col bg-muted/20">
+        <div className="flex border-b border-border bg-muted/40">
           <button
             onClick={() => setActiveTab('errors')}
             className={cn(
               "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2",
-              activeTab === 'errors' ? "text-sky-500 border-b border-sky-500" : "text-slate-600 hover:text-slate-400"
+              activeTab === 'errors' ? "text-primary border-b border-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
@@ -313,7 +314,7 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
             onClick={() => setActiveTab('tasks')}
             className={cn(
               "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2",
-              activeTab === 'tasks' ? "text-sky-500 border-b border-sky-500" : "text-slate-600 hover:text-slate-400"
+              activeTab === 'tasks' ? "text-primary border-b border-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -329,10 +330,10 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
                   <div
                     key={i}
                     className={cn(
-                      "p-3 rounded-sm border transition-colors cursor-pointer",
+                      "p-3 rounded-md border transition-colors cursor-pointer",
                       m.severity === 8
-                        ? "bg-rose-500/5 border-rose-500/10 text-rose-500"
-                        : "bg-amber-500/5 border-amber-500/10 text-amber-500"
+                        ? "bg-destructive/10 border-destructive/20 text-destructive"
+                        : "bg-amber-500/10 border-amber-500/20 text-amber-500"
                     )}
                     onClick={() => {
                       if (editorRef.current) {
@@ -347,34 +348,34 @@ export const WorkflowEditor = ({ onExecute }: WorkflowEditorProps) => {
                   </div>
                 ))
               ) : (
-                <div className="py-20 text-center flex flex-col items-center gap-2 opacity-30">
-                  <CheckCircle className="w-6 h-6 text-emerald-600" />
-                  <p className="text-[9px] font-black uppercase tracking-widest">No issues</p>
+                <div className="py-20 text-center flex flex-col items-center gap-2 opacity-50">
+                  <CheckCircle className="w-6 h-6 text-emerald-500" />
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">No issues</p>
                 </div>
               )}
             </div>
           ) : (
             <div className="space-y-1.5">
-              <h4 className="text-[9px] font-black uppercase text-slate-700 tracking-widest mb-3 px-1">SGP.22 Services</h4>
+              <h4 className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-3 px-1">SGP.22 Services</h4>
               {AVAILABLE_TASKS.map((t) => (
                 <div
                   key={t.id}
-                  className="p-2 rounded-sm bg-slate-900/40 border border-slate-800/40 hover:border-sky-500/20 transition-colors group cursor-pointer"
+                  className="p-2 rounded-md bg-card border border-border hover:border-primary/50 transition-colors group cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[10px] font-bold text-sky-600 font-mono tracking-tighter group-hover:text-sky-500">{t.id}</span>
+                    <span className="text-[10px] font-bold text-primary font-mono tracking-tighter group-hover:text-primary/80">{t.id}</span>
                   </div>
-                  <p className="text-[9px] text-slate-600 font-medium uppercase tracking-tighter leading-none">{t.desc}</p>
+                  <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter leading-none">{t.desc}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="p-3 border-t border-slate-800/60 bg-slate-900/20">
+        <div className="p-3 border-t border-border bg-card">
           <div className="flex items-center justify-between">
-            <span className="text-[8px] font-black uppercase text-slate-700 tracking-widest">Build</span>
-            <span className="text-[9px] font-mono text-emerald-800 uppercase font-black">v1.0.4-REL</span>
+            <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Build</span>
+            <span className="text-[9px] font-mono text-emerald-500 uppercase font-black">v1.0.4-REL</span>
           </div>
         </div>
       </div>

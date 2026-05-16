@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LogEntry } from '../types';
 import { cn } from '../lib/utils';
 import { HexViewer } from './HexViewer';
+import { TableCell, TableRow } from './ui/table';
 
 interface LogItemProps {
   log: LogEntry;
@@ -73,68 +74,68 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
 
   return (
     <>
-      <tr 
+      <TableRow 
         onClick={onClick}
         className={cn(
-          "hover:bg-white/5 cursor-pointer transition-colors group",
-          isSelected && "bg-sky-500/5"
+          "hover:bg-muted/50 cursor-pointer transition-colors group",
+          isSelected && "bg-muted/80"
         )}
       >
-        <td className="px-4 py-1.5 text-slate-500 whitespace-nowrap text-[11px]">
+        <TableCell className="text-muted-foreground whitespace-nowrap font-mono">
           {format(new Date(log.timestamp), 'HH:mm:ss.SSS')}
-        </td>
-        <td className="px-4 py-1.5">
+        </TableCell>
+        <TableCell>
           <span className={cn(
             "px-1.5 py-0.5 rounded-sm text-[10px] border uppercase font-black tracking-widest",
             {
-              'bg-indigo-500/5 text-indigo-500 border-indigo-500/20': log.category === 'TRANSPORT',
-              'bg-amber-500/5 text-amber-500 border-amber-500/20': log.category === 'HARDWARE',
-              'bg-fuchsia-500/5 text-fuchsia-400 border-fuchsia-500/20': log.category === 'WORKFLOW',
-              'bg-sky-500/5 text-sky-400 border-sky-500/20': log.category === 'NOTIFICATION',
-              'bg-slate-500/5 text-slate-500 border-slate-500/20': !['TRANSPORT', 'HARDWARE', 'WORKFLOW', 'NOTIFICATION'].includes(log.category)
+              'bg-indigo-500/10 text-indigo-500 border-indigo-500/20': log.category === 'TRANSPORT',
+              'bg-amber-500/10 text-amber-500 border-amber-500/20': log.category === 'HARDWARE',
+              'bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20': log.category === 'WORKFLOW',
+              'bg-sky-500/10 text-sky-500 border-sky-500/20': log.category === 'NOTIFICATION',
+              'bg-muted text-muted-foreground border-border': !['TRANSPORT', 'HARDWARE', 'WORKFLOW', 'NOTIFICATION'].includes(log.category)
             }
           )}>
             {log.category}
           </span>
-        </td>
-        <td className={cn(
-          "px-4 py-1.5 text-center font-bold text-[11px]",
-          log.direction === 'IN' ? "text-rose-500/80" : "text-sky-500/80"
+        </TableCell>
+        <TableCell className={cn(
+          "text-center font-bold",
+          log.direction === 'IN' ? "text-destructive" : "text-primary"
         )}>
           {log.direction !== 'NONE' ? log.direction : '-'}
-        </td>
-        <td className="px-4 py-1.5 text-slate-400 font-medium">
+        </TableCell>
+        <TableCell className="text-muted-foreground font-medium">
           <div className="flex items-center gap-2">
             <span className="truncate max-w-[500px] text-[12px] font-bold tracking-tight">{log.description}</span>
             <ChevronDown className={cn(
-              "w-3 h-3 text-slate-700 transition-transform duration-150",
+              "w-3 h-3 text-muted-foreground transition-transform duration-150",
               isSelected && "rotate-180"
             )} />
           </div>
-        </td>
-        <td className="px-4 py-1.5">
+        </TableCell>
+        <TableCell>
           <div className="flex items-center gap-1.5">
             {isError ? (
-              <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
+              <AlertCircle className="w-3 h-3 text-destructive" />
             ) : (
-              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 opacity-40" />
+              <CheckCircle2 className="w-3 h-3 text-emerald-500 opacity-80" />
             )}
             <span className={cn(
               "text-[10px] font-black uppercase tracking-widest",
-              isError ? "text-rose-600" : "text-emerald-700"
+              isError ? "text-destructive" : "text-emerald-500"
             )}>
               {statusText}
             </span>
           </div>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       
       {/* Expanded Row for Payload - Sharp and dark */}
       {isSelected && (
-        <tr>
-          <td colSpan={5} className="px-4 py-0 border-none">
-            <div className="overflow-hidden pb-4 pt-1">
-              <div className="bg-black/40 rounded-sm border border-slate-800/60 shadow-inner flex flex-col">
+        <TableRow className="bg-muted/20 hover:bg-muted/20">
+          <TableCell colSpan={5} className="p-0 border-b-0">
+            <div className="overflow-hidden pb-4 px-6 pt-2">
+              <div className="bg-background rounded-sm border border-border shadow-inner flex flex-col">
                 
                 {/* URL Bar */}
                 {url && (
@@ -206,8 +207,8 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
 
               </div>
             </div>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );

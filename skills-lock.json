@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/code/slidev-monaco-editor/SKILL.md",
       "computedHash": "e3ca933fa67896e93e68a25a1cef8f058cfc5245e8173349c4d80724097532f1"
+    },
+    "tailwind-design-system": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/frontend-mobile-development/skills/tailwind-design-system/SKILL.md",
+      "computedHash": "988d80e52c67c3692d43cc963b6a048a239895e88b272b061de55370d0f8efc3"
     }
   }
 }
