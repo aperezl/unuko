@@ -1,5 +1,5 @@
 {
-  "name": "@unuko/adapter-ueransim",
+  "name": "@unuko/ueransim-lib",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -9,11 +9,12 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@unuko/core": "workspace:*",
-    "@unuko/ueransim-lib": "workspace:*"
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "@types/js-yaml": "^4.0.5",
+    "tsup": "^8.0.0"
   }
 }

@@ -1,6 +1,0 @@
-{
-  "name": "eSIM Tracing Dashboard",
-  "description": "Traceability dashboard for eSIM card activations, featuring hardware logs and transport monitoring.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
-}

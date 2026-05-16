@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { SessionList } from './components/SessionList';
 import { SessionMonitor } from './components/SessionMonitor';
 import { WorkflowEditor } from './components/WorkflowEditor';
+import { DeviceManager } from './components/DeviceManager';
 
 export default function App() {
   const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
@@ -78,6 +79,11 @@ export default function App() {
           />
           
           {/* Placeholder routes for future expansion */}
+          <Route path="/devices" element={<DeviceManager />}>
+            <Route path="ue" element={<div />} />
+            <Route path="gnb" element={<div />} />
+            <Route index element={<Navigate to="ue" replace />} />
+          </Route>
           <Route path="/inventory" element={<div className="p-10 text-slate-500 font-mono">Inventory module coming soon...</div>} />
           <Route path="/analytics" element={<div className="p-10 text-slate-500 font-mono">Analytics module coming soon...</div>} />
           <Route path="/settings" element={<div className="p-10 text-slate-500 font-mono">Settings module coming soon...</div>} />

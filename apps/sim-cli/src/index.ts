@@ -6,7 +6,7 @@ import {
   createTestMachine,
   unukoEngine
 } from '@unuko/core';
-import { UeransimAdapter } from '@unuko/adapter-ueransim';
+import { UeransimAdapter, UeransimNetworkAdapter } from '@unuko/adapter-ueransim';
 import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
 import { createActor, AnyActor } from 'xstate';
@@ -57,6 +57,7 @@ async function bootstrap() {
   );
   const rawTransport = new HttpmTLSAdapter(crypto);
   const notification = new WebhookNotificationAdapter('http://localhost:3000/v1/orchestrator/alerts/null'); // Silent local loop
+  const ueransimNetwork = new UeransimNetworkAdapter('core5g');
   const network = new MockNetworkAdapter({ delayMs: 1000 });
 
   // Función para inicializar y arrancar una sesión
@@ -197,6 +198,55 @@ async function bootstrap() {
 
     actor.send({ type: event as any });
     return { status: 'event_processed', event };
+  });
+
+  // --- 8. INFRASTRUCTURE MANAGEMENT ---
+
+  // List all UEs (using sessions as proxy for now or querying the adapter)
+  server.get('/v1/infrastructure/devices', async () => {
+    // In a real scenario, we'd query the adapter for all active UEs
+    // For now, let's return a hardcoded list or empty
+    return [
+      { id: 'imsi-999700000000001', type: 'UE', status: 'RUNNING', ip: '10.45.0.2' }
+    ];
+  });
+
+  server.post('/v1/infrastructure/ue', async (request, reply) => {
+    const { imsi, gnbAddress } = (request.body as any) || {};
+    if (!imsi) return reply.status(400).send({ error: 'IMSI is required' });
+
+    try {
+      const session = await ueransimNetwork.attachUE(imsi, { gnbAddress });
+      return { status: 'created', session };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.post('/v1/infrastructure/gnb', async (request, reply) => {
+    const { mcc, mnc, nci, tac, amfAddress } = (request.body as any) || {};
+    
+    // In a real scenario, we'd use the ueransim-lib to start a gNB
+    // For now, let's simulate success or implement a basic version if the adapter supports it
+    try {
+      // Assuming we extend the adapter to support gNB or use controller directly
+      // For now, let's return a simulated success
+      return { status: 'created', id: nci || 'GNB-1' };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.delete('/v1/infrastructure/device/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const imsi = id.replace('imsi-', '');
+    
+    try {
+      await ueransimNetwork.detachUE(imsi);
+      return { status: 'deleted', id };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
   });
 
   // --- 7. SERVIR FRONTEND ---

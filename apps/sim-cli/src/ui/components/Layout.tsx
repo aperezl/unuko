@@ -10,7 +10,8 @@ import {
   User,
   ChevronRight,
   Database,
-  Activity
+  Activity,
+  Cpu
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -73,6 +74,12 @@ export const Layout = () => {
             icon={Database} 
             label="Inventory" 
             active={location.pathname.startsWith('/inventory')} 
+          />
+          <NavItem 
+            to="/devices" 
+            icon={Cpu} 
+            label="Devices" 
+            active={location.pathname.startsWith('/devices')} 
           />
           <NavItem 
             to="/analytics" 
