@@ -11,7 +11,8 @@ import {
   Play,
   Square,
   Search,
-  Terminal
+  Terminal,
+  ArrowDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -88,6 +89,28 @@ export const DeviceManagerPage = () => {
   const [viewingLogId, setViewingLogId] = React.useState<string | null>(null);
   const [logs, setLogs] = React.useState<string>('');
   const [isLogsLoading, setIsLogsLoading] = React.useState(false);
+
+  const logsContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isScrolledUp, setIsScrolledUp] = React.useState(false);
+
+  const handleLogsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 10;
+    setIsScrolledUp(!isAtBottom);
+  };
+
+  React.useEffect(() => {
+    if (!isScrolledUp && logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  React.useEffect(() => {
+    if (viewingLogId && logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+      setIsScrolledUp(false);
+    }
+  }, [viewingLogId]);
 
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const [sidebarWidth, setSidebarWidth] = React.useState(() => {
@@ -572,7 +595,11 @@ export const DeviceManagerPage = () => {
               </Button>
             </div>
 
-            <div className="flex-1 overflow-auto p-4 scrollbar-thin scrollbar-thumb-muted">
+            <div 
+              ref={logsContainerRef}
+              onScroll={handleLogsScroll}
+              className="flex-1 overflow-auto p-4 scrollbar-thin scrollbar-thumb-muted"
+            >
               {isLogsLoading && !logs ? (
                 <div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
                   <RefreshCw className="w-6 h-6 animate-spin opacity-20" />
@@ -591,8 +618,24 @@ export const DeviceManagerPage = () => {
                 </div>
               )}
             </div>
+            
+            {isScrolledUp && logs.length > 0 && (
+              <Button 
+                size="icon" 
+                className="absolute bottom-20 right-6 rounded-full shadow-[0_0_20px_rgba(var(--color-primary),0.3)] bg-primary/10 text-primary hover:bg-primary/30 backdrop-blur-md z-50 border border-primary/20"
+                onClick={() => {
+                  if (logsContainerRef.current) {
+                    logsContainerRef.current.scrollTo({ top: logsContainerRef.current.scrollHeight, behavior: 'smooth' });
+                    setIsScrolledUp(false);
+                  }
+                }}
+                title="Scroll to bottom"
+              >
+                <ArrowDown className="w-5 h-5" />
+              </Button>
+            )}
 
-            <div className="p-4 bg-card border-t border-border flex items-center justify-between">
+            <div className="p-4 bg-card border-t border-border flex items-center justify-between z-10">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Live Stream Active</span>

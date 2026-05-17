@@ -56,11 +56,11 @@ export class UeransimController {
         if (type === 'UE' && status === 'RUNNING') {
           try {
             const infoStr = await this.cliClient.getUEStatus(id);
-            const ipMatch = infoStr.match(/IP Address: ([\d.]+)/);
-            if (ipMatch) ip = ipMatch[1];
+            connected = infoStr.includes('NORMAL-SERVICE') || infoStr.includes('CM-CONNECTED');
             
-            // Check for REGISTERED or CONNECTED in info
-            connected = infoStr.includes('REGISTERED') || infoStr.includes('CONNECTED') || !!ip;
+            const psStr = await (this.cliClient as any).getUEPSList(id);
+            const ipMatch = psStr.match(/address:\s*([\d.]+)/);
+            if (ipMatch) ip = ipMatch[1];
           } catch (e) {}
         }
 
@@ -123,18 +123,18 @@ export class UeransimController {
 
   async stopDevice(deviceId: string): Promise<void> {
     // Use -9 to be sure and -f with full path matching
-    await this.transport.execute(`pkill -9 -f "${deviceId}.yaml"`);
+    await this.transport.execute(`sudo pkill -9 -f "${deviceId}.yaml"`);
     await this.sync();
   }
 
   async removeDevice(deviceId: string): Promise<void> {
     await this.stopDevice(deviceId);
-    await this.transport.execute(`rm -f ${this.configDir}/${deviceId}.yaml ${this.configDir}/${deviceId}.log`);
+    await this.transport.execute(`sudo rm -f ${this.configDir}/${deviceId}.yaml ${this.configDir}/${deviceId}.log`);
     await this.sync();
   }
 
   async stopAll(): Promise<void> {
-    await this.transport.execute(`pkill -9 nr-ue; pkill -9 nr-gnb`);
+    await this.transport.execute(`sudo pkill -9 nr-ue; sudo pkill -9 nr-gnb`);
     await this.sync();
   }
 

@@ -1,0 +1,14 @@
+{
+  "sessionId": "SESSION-UF5KN1",
+  "snapshot": {
+    "value": "done",
+    "context": {
+      "error": null,
+      "retryCount": 0,
+      "transactionId": "undefined"
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-16T22:23:24.472Z",
+  "status": "done"
+}
