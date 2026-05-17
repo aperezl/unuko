@@ -12,8 +12,10 @@ import {
   Square,
   Search,
   Terminal,
-  ArrowDown
+  ArrowDown,
+  Settings
 } from 'lucide-react';
+import Editor from '@monaco-editor/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Link, useLocation } from 'react-router-dom';
@@ -90,6 +92,55 @@ export const DeviceManagerPage = () => {
   const [logs, setLogs] = React.useState<string>('');
   const [isLogsLoading, setIsLogsLoading] = React.useState(false);
 
+  const [viewingYamlId, setViewingYamlId] = React.useState<string | null>(null);
+  const [yamlContent, setYamlContent] = React.useState<string>('');
+  const [isYamlLoading, setIsYamlLoading] = React.useState(false);
+  const [isSavingYaml, setIsSavingYaml] = React.useState(false);
+
+  const fetchYaml = async (id: string) => {
+    setIsYamlLoading(true);
+    try {
+      const response = await fetch(`/v1/infrastructure/device/${id}/config`);
+      const data = await response.json();
+      setYamlContent(data.yaml || '');
+    } catch (err) {
+      setYamlContent('Failed to retrieve YAML configuration from VM.');
+    } finally {
+      setIsYamlLoading(false);
+    }
+  };
+
+  const handleSaveYaml = async () => {
+    if (!viewingYamlId) return;
+    setIsSavingYaml(true);
+    try {
+      const response = await fetch(`/v1/infrastructure/device/${viewingYamlId}/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: yamlContent })
+      });
+      if (response.ok) {
+        setViewingYamlId(null);
+        fetchDevices();
+      } else {
+        alert('Failed to save configuration.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save configuration.');
+    } finally {
+      setIsSavingYaml(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (viewingYamlId) {
+      fetchYaml(viewingYamlId);
+    } else {
+      setYamlContent('');
+    }
+  }, [viewingYamlId]);
+
   const logsContainerRef = React.useRef<HTMLDivElement>(null);
   const [isScrolledUp, setIsScrolledUp] = React.useState(false);
 
@@ -154,10 +205,15 @@ export const DeviceManagerPage = () => {
           setViewingLogId(null);
         }
       }
+      if (viewingYamlId && sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        if (!(e.target as Element).closest('.prevent-sidebar-close')) {
+          setViewingYamlId(null);
+        }
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [viewingLogId]);
+  }, [viewingLogId, viewingYamlId]);
 
   const fetchDevices = async () => {
     setIsLoading(true);
@@ -499,6 +555,18 @@ export const DeviceManagerPage = () => {
                               >
                                 <Terminal className="w-3.5 h-3.5" />
                               </Button>
+                              <Button 
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setViewingYamlId(device.id)}
+                                className={cn(
+                                  "h-8 w-8 transition-all prevent-sidebar-close",
+                                  viewingYamlId === device.id && "text-primary border-primary/50"
+                                )}
+                                title="Edit YAML Config"
+                              >
+                                <Settings className="w-3.5 h-3.5" />
+                              </Button>
                               {device.status === 'STOPPED' ? (
                                 <Button 
                                   variant="outline"
@@ -648,6 +716,110 @@ export const DeviceManagerPage = () => {
                   <RefreshCw className={cn("w-3 h-3", isLogsLoading && "animate-spin")} />
                   Force Refresh
                 </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* YAML Editor Sidebar */}
+      <AnimatePresence>
+        {viewingYamlId && (
+          <motion.div 
+            ref={sidebarRef as any}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            style={{ width: sidebarWidth }}
+            className="fixed top-0 right-0 bottom-0 bg-background/95 backdrop-blur-xl border-l border-border z-40 shadow-[-30px_0_60px_rgba(0,0,0,0.7)] flex flex-col"
+          >
+            {/* Drag Handle */}
+            <div 
+              className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/20 transition-colors z-50 prevent-sidebar-close"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                isDragging.current = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+              }}
+            />
+            <div className="p-6 border-b border-border flex items-center justify-between bg-card/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 text-primary rounded-md">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-foreground uppercase tracking-widest">Device Configuration YAML</h3>
+                  <p className="text-[10px] font-mono text-muted-foreground">{viewingYamlId}</p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewingYamlId(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="flex-1 min-h-0 relative bg-slate-950">
+              {isYamlLoading ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-muted-foreground bg-background/50">
+                  <RefreshCw className="w-6 h-6 animate-spin opacity-25 text-primary" />
+                  <span className="text-[10px] uppercase tracking-[0.3em] font-black animate-pulse">Fetching config from VM...</span>
+                </div>
+              ) : (
+                <div className="absolute inset-0">
+                  <Editor
+                    height="100%"
+                    language="yaml"
+                    theme="unuko-dark"
+                    value={yamlContent}
+                    onChange={(val) => setYamlContent(val || '')}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 12,
+                      fontFamily: 'JetBrains Mono, Fira Code, monospace',
+                      scrollbar: { vertical: 'visible', horizontal: 'visible' },
+                      lineNumbers: 'on',
+                      automaticLayout: true,
+                      padding: { top: 12 }
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-card border-t border-border flex items-center justify-between z-10">
+              <div className="flex items-center gap-2 max-w-[50%]">
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
+                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest truncate">
+                  Saves directly to VM configuration
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setViewingYamlId(null)}
+                  className="text-[10px] font-black uppercase tracking-wider h-8"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={handleSaveYaml}
+                  disabled={isSavingYaml || isYamlLoading}
+                  className="text-[10px] font-black uppercase tracking-wider h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {isSavingYaml ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 animate-spin mr-1.5" />
+                      Saving...
+                    </>
+                  ) : 'Save & Apply'}
+                </Button>
               </div>
             </div>
           </motion.div>

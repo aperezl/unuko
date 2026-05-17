@@ -386,6 +386,29 @@ async function bootstrap() {
     }
   });
 
+  server.get('/v1/infrastructure/device/:id/config', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      const controller = (ueransimNetwork as any).controller;
+      const config = await controller.getDeviceYaml(id);
+      return { yaml: config };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  server.put('/v1/infrastructure/device/:id/config', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { yaml } = request.body as { yaml: string };
+    try {
+      const controller = (ueransimNetwork as any).controller;
+      await controller.saveDeviceYaml(id, yaml);
+      return { status: 'saved' };
+    } catch (err: any) {
+      return reply.status(500).send({ error: err.message });
+    }
+  });
+
   // --- 7. SERVIR FRONTEND ---
   const uiPath = path.join(__dirname, '../dist/ui');
   server.register(fastifyStatic, {

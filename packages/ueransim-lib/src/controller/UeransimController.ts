@@ -86,6 +86,47 @@ export class UeransimController {
     // Ensure it's stopped first
     await this.stopDevice(config.supi);
     
+    // Query MongoDB inside the VM to enrich config with the absolute latest subscriber keys and slices
+    try {
+      const supiVal = config.supi;
+      const imsi = supiVal.replace('imsi-', '');
+      const wrappedEval = `JSON.stringify(db.subscribers.findOne({imsi: "${imsi}"}))`;
+      const fullCommand = `sudo mongosh open5gs --quiet --eval '${wrappedEval}'`;
+      const result = await this.transport.execute(fullCommand);
+      const output = result.stdout;
+      if (output && output.trim() !== '') {
+        const jsonStart = output.indexOf('{');
+        if (jsonStart !== -1) {
+          const cleanJson = output.substring(jsonStart).trim();
+          const end = cleanJson.lastIndexOf('}') + 1;
+          const sub = JSON.parse(cleanJson.substring(0, end));
+          if (sub && sub.security) {
+            if (sub.security.k) config.key = sub.security.k.replace(/\s+/g, '');
+            if (sub.security.opc) {
+              config.op = sub.security.opc.replace(/\s+/g, '');
+              config.opType = 'OPC';
+            } else if (sub.security.op) {
+              config.op = sub.security.op.replace(/\s+/g, '');
+              config.opType = 'OP';
+            }
+            if (sub.slice && sub.slice.length > 0) {
+              config.sessions = sub.slice.map((sl: any) => ({
+                type: 'IPv4',
+                apn: 'internet',
+                slice: { sst: Number(sl.sst), sd: sl.sd ? sl.sd.replace(/\s+/g, '') : undefined }
+              }));
+              config.configuredNssai = sub.slice.map((sl: any) => ({
+                sst: Number(sl.sst),
+                sd: sl.sd ? sl.sd.replace(/\s+/g, '') : undefined
+              }));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to dynamically enrich UE config from MongoDB:', e);
+    }
+    
     const yamlStr = UeransimConfigBuilder.buildUE(config);
     const id = config.supi;
     const configPath = `${this.configDir}/${id}.yaml`;
@@ -160,5 +201,16 @@ export class UeransimController {
     const logPath = `${this.configDir}/${id}.log`;
     const result = await this.transport.execute(`tail -n ${lines} ${logPath}`);
     return result.stdout;
+  }
+
+  async getDeviceYaml(id: string): Promise<string> {
+    const configPath = `${this.configDir}/${id}.yaml`;
+    const result = await this.transport.execute(`cat ${configPath}`);
+    return result.stdout;
+  }
+
+  async saveDeviceYaml(id: string, yamlStr: string): Promise<void> {
+    const configPath = `${this.configDir}/${id}.yaml`;
+    await this.transport.writeFile(configPath, yamlStr);
   }
 }

@@ -40,33 +40,70 @@ export interface GNBConfig {
 export class UeransimConfigBuilder {
   static buildUE(config: UEConfig): string {
     // Generamos el YAML de la UE manualmente para evitar inyecciones de campos por defecto
-    return [
+    const lines = [
       `supi: ${config.supi}`,
       `mcc: '${config.mcc}'`,
       `mnc: '${config.mnc}'`,
       '',
       `key: '${config.key.replace(/\s+/g, '')}'`,
-      `op: '${(config.op || (config as any).opc).replace(/\s+/g, '')}'`,
-      `opType: '${config.opType}'`,
-      `amf: '${config.amf}'`,
+      `op: '${(config.op || (config as any).opc || '').replace(/\s+/g, '')}'`,
+      `opType: '${config.opType || 'OPC'}'`,
+      `amf: '${config.amf || '8000'}'`,
       '',
-      `imei: '${config.imei}'`,
-      `imeiSv: '${config.imeiSv}'`,
+      `imei: '${config.imei || '356938035643803'}'`,
+      `imeiSv: '${config.imeiSv || '4370816125816151'}'`,
       '',
       'gnbSearchList:',
-      ...config.gnbSearchList.map(g => `  - ${g}`),
+      ...(config.gnbSearchList || ['127.0.0.1']).map(g => `  - ${g}`),
       '',
       'sessions:',
-      '  - type: IPv4',
-      '    apn: internet',
-      '    slice:',
-      '      sst: 1',
-      '',
-      'configured-nssai:',
-      '  - sst: 1',
-      '',
-      'slices:',
-      '  - sst: 1',
+    ];
+
+    if (config.sessions && config.sessions.length > 0) {
+      config.sessions.forEach(s => {
+        lines.push('  - type: IPv4');
+        lines.push(`    apn: ${s.apn || 'internet'}`);
+        lines.push('    slice:');
+        lines.push(`      sst: ${s.slice.sst}`);
+        if (s.slice.sd) {
+          const sdHex = s.slice.sd.startsWith('0x') ? s.slice.sd : `0x${s.slice.sd}`;
+          lines.push(`      sd: ${sdHex}`);
+        }
+      });
+    } else {
+      lines.push('  - type: IPv4');
+      lines.push('    apn: internet');
+      lines.push('    slice:');
+      lines.push('      sst: 1');
+    }
+
+    lines.push('', 'configured-nssai:');
+    if (config.configuredNssai && config.configuredNssai.length > 0) {
+      config.configuredNssai.forEach(n => {
+        lines.push(`  - sst: ${n.sst}`);
+        if (n.sd) {
+          const sdHex = n.sd.startsWith('0x') ? n.sd : `0x${n.sd}`;
+          lines.push(`    sd: ${sdHex}`);
+        }
+      });
+    } else {
+      lines.push('  - sst: 1');
+    }
+
+    lines.push('', 'slices:');
+    if (config.configuredNssai && config.configuredNssai.length > 0) {
+      config.configuredNssai.forEach(n => {
+        lines.push(`  - sst: ${n.sst}`);
+        if (n.sd) {
+          const sdHex = n.sd.startsWith('0x') ? n.sd : `0x${n.sd}`;
+          lines.push(`    sd: ${sdHex}`);
+        }
+      });
+    } else {
+      lines.push('  - sst: 1');
+    }
+
+    lines.push(
       '',
       'uacAic:',
       '  mps: false',
@@ -93,7 +130,9 @@ export class UeransimConfigBuilder {
       'integrityMaxRate:',
       '  uplink: full',
       '  downlink: full'
-    ].join('\n');
+    );
+
+    return lines.join('\n');
   }
 
   static buildGNB(config: GNBConfig): string {
