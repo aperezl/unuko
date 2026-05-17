@@ -13,13 +13,15 @@ import {
   Search,
   Terminal,
   ArrowDown,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Link, useLocation } from 'react-router-dom';
 import { DeviceForm } from '../components/DeviceForms';
+import { AILogAuditor } from '../components/AILogAuditor';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
@@ -91,6 +93,10 @@ export const DeviceManagerPage = () => {
   const [viewingLogId, setViewingLogId] = React.useState<string | null>(null);
   const [logs, setLogs] = React.useState<string>('');
   const [isLogsLoading, setIsLogsLoading] = React.useState(false);
+  const [showAiAuditor, setShowAiAuditor] = React.useState(() => {
+    const saved = localStorage.getItem('unuko_show_ai_auditor');
+    return saved === 'true';
+  });
 
   const [viewingYamlId, setViewingYamlId] = React.useState<string | null>(null);
   const [yamlContent, setYamlContent] = React.useState<string>('');
@@ -170,6 +176,19 @@ export const DeviceManagerPage = () => {
   });
   const latestWidthRef = React.useRef(sidebarWidth);
   const isDragging = React.useRef(false);
+
+  const toggleAiAuditor = () => {
+    setShowAiAuditor(prev => {
+      const next = !prev;
+      localStorage.setItem('unuko_show_ai_auditor', next.toString());
+      if (next && sidebarWidth < 800) {
+        setSidebarWidth(800);
+        latestWidthRef.current = 800;
+        localStorage.setItem('unuko_log_sidebar_width', '800');
+      }
+      return next;
+    });
+  };
 
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -654,69 +673,99 @@ export const DeviceManagerPage = () => {
                   <p className="text-[10px] font-mono text-muted-foreground">{viewingLogId}</p>
                 </div>
               </div>
-              <Button 
-                variant="ghost"
-                size="icon"
-                onClick={() => setViewingLogId(null)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleAiAuditor}
+                  className={cn(
+                    "w-8 h-8 rounded-md transition-all relative flex items-center justify-center prevent-sidebar-close",
+                    showAiAuditor 
+                      ? "bg-primary/20 text-primary border border-primary/30 shadow-[0_0_12px_rgba(56,189,248,0.2)]" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  )}
+                  title={showAiAuditor ? "Hide AI Log Auditor" : "Open AI Log Auditor"}
+                >
+                  <Sparkles className={cn("w-4 h-4", showAiAuditor && "animate-pulse")} />
+                </Button>
+                
+                <Button 
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewingLogId(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
-            <div 
-              ref={logsContainerRef}
-              onScroll={handleLogsScroll}
-              className="flex-1 overflow-auto p-4 scrollbar-thin scrollbar-thumb-muted"
-            >
-              {isLogsLoading && !logs ? (
-                <div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
-                  <RefreshCw className="w-6 h-6 animate-spin opacity-20" />
-                  <span className="text-[10px] uppercase tracking-[0.3em] font-black">Syncing with Lima VM...</span>
-                </div>
-              ) : (
-                <div className="space-y-0.5">
-                  {logs.split('\n').filter(l => l.trim()).map((line, idx) => (
-                    <LogLine key={`${viewingLogId}-${idx}`} line={line} />
-                  ))}
-                  {logs === '' && (
-                    <div className="text-center py-10">
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">No log data available</p>
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+              {/* Logs Stream Container */}
+              <div className="flex-1 flex flex-col min-w-0 h-full relative">
+                <div 
+                  ref={logsContainerRef}
+                  onScroll={handleLogsScroll}
+                  className="flex-1 overflow-auto p-4 scrollbar-thin scrollbar-thumb-muted"
+                >
+                  {isLogsLoading && !logs ? (
+                    <div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                      <RefreshCw className="w-6 h-6 animate-spin opacity-20" />
+                      <span className="text-[10px] uppercase tracking-[0.3em] font-black">Syncing with Lima VM...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {logs.split('\n').filter(l => l.trim()).map((line, idx) => (
+                        <LogLine key={`${viewingLogId}-${idx}`} line={line} />
+                      ))}
+                      {logs === '' && (
+                        <div className="text-center py-10">
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">No log data available</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-            
-            {isScrolledUp && logs.length > 0 && (
-              <Button 
-                size="icon" 
-                className="absolute bottom-20 right-6 rounded-full shadow-[0_0_20px_rgba(var(--color-primary),0.3)] bg-primary/10 text-primary hover:bg-primary/30 backdrop-blur-md z-50 border border-primary/20"
-                onClick={() => {
-                  if (logsContainerRef.current) {
-                    logsContainerRef.current.scrollTo({ top: logsContainerRef.current.scrollHeight, behavior: 'smooth' });
-                    setIsScrolledUp(false);
-                  }
-                }}
-                title="Scroll to bottom"
-              >
-                <ArrowDown className="w-5 h-5" />
-              </Button>
-            )}
 
-            <div className="p-4 bg-card border-t border-border flex items-center justify-between z-10">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Live Stream Active</span>
+                {isScrolledUp && logs.length > 0 && (
+                  <Button 
+                    size="icon" 
+                    className="absolute bottom-20 right-6 rounded-full shadow-[0_0_20px_rgba(var(--color-primary),0.3)] bg-primary/10 text-primary hover:bg-primary/30 backdrop-blur-md z-50 border border-primary/20"
+                    onClick={() => {
+                      if (logsContainerRef.current) {
+                        logsContainerRef.current.scrollTo({ top: logsContainerRef.current.scrollHeight, behavior: 'smooth' });
+                        setIsScrolledUp(false);
+                      }
+                    }}
+                    title="Scroll to bottom"
+                  >
+                    <ArrowDown className="w-5 h-5" />
+                  </Button>
+                )}
+
+                <div className="p-4 bg-card border-t border-border flex items-center justify-between z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Live Stream Active</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => fetchLogs(viewingLogId!)}
+                      className="text-[8px] font-black text-primary uppercase tracking-widest hover:text-primary/80 flex items-center gap-1.5 transition-colors"
+                    >
+                      <RefreshCw className={cn("w-3 h-3", isLogsLoading && "animate-spin")} />
+                      Force Refresh
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => fetchLogs(viewingLogId!)}
-                  className="text-[8px] font-black text-primary uppercase tracking-widest hover:text-primary/80 flex items-center gap-1.5 transition-colors"
-                >
-                  <RefreshCw className={cn("w-3 h-3", isLogsLoading && "animate-spin")} />
-                  Force Refresh
-                </button>
-              </div>
+
+              {/* AI Auditor Column */}
+              {showAiAuditor && (
+                <div className="w-full lg:w-[380px] shrink-0 border-t lg:border-t-0 lg:border-l border-border h-2/5 lg:h-full overflow-hidden">
+                  <AILogAuditor logs={logs} deviceId={viewingLogId!} />
+                </div>
+              )}
             </div>
           </motion.div>
         )}
