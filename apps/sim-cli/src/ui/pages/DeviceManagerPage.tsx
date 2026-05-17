@@ -516,7 +516,9 @@ export const DeviceManagerPage = () => {
                             <div className="flex flex-col gap-1">
                               <p className={cn(
                                 "text-[12px] font-mono font-bold transition-all",
-                                device.ip ? "text-primary/80" : (device.connected ? "text-muted-foreground" : "text-muted-foreground/50")
+                                device.type === 'UE'
+                                  ? (device.ip ? "text-primary/80" : (device.connected ? "text-muted-foreground" : "text-muted-foreground/50"))
+                                  : (device.connected ? "text-primary/80" : "text-muted-foreground/50")
                               )}>
                                 {device.type === 'UE' ? (
                                   device.ip || (device.status === 'RUNNING' && !device.connected ? 'Searching...' : 'Pending...')
@@ -525,6 +527,11 @@ export const DeviceManagerPage = () => {
                               {device.status === 'RUNNING' && device.type === 'UE' && !device.connected && (
                                 <span className="text-[8px] text-amber-500/80 font-black uppercase tracking-tighter">
                                   No gNodeB detected
+                                </span>
+                              )}
+                              {device.status === 'RUNNING' && device.type === 'GNB' && !device.connected && (
+                                <span className="text-[8px] text-amber-500/80 font-black uppercase tracking-tighter">
+                                  No AMF connection
                                 </span>
                               )}
                             </div>
@@ -553,7 +560,11 @@ export const DeviceManagerPage = () => {
                                       ? (device.connected ? "text-emerald-500/80" : "text-amber-500/80") 
                                       : "text-destructive"
                                   )}>
-                                    {device.status === 'RUNNING' && device.type === 'UE' && !device.connected ? 'SEARCHING' : device.status}
+                                    {device.status === 'RUNNING' 
+                                      ? (device.connected 
+                                        ? 'RUNNING' 
+                                        : (device.type === 'UE' ? 'SEARCHING' : 'NOT CONNECTED'))
+                                      : device.status}
                                   </span>
                                 </>
                               )}

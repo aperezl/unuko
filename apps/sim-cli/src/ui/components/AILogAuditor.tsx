@@ -463,9 +463,11 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
               aiResponse = chunk;
               setMessages(prev => prev.map(m => m.id === responseId ? { ...m, content: aiResponse } : m));
             }
+            console.log('🤖 [window.ai] Respuesta final recibida por streaming de la IA local:', aiResponse);
           } else {
             // Fallback to standard prompt block
             const result = await session.prompt(fullPrompt);
+            console.log('🤖 [window.ai] Respuesta final recibida (síncrona) de la IA local:', result);
             setMessages(prev => [...prev, {
               id: responseId,
               role: 'assistant',
@@ -484,6 +486,7 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
     // 2. Mock Fallback Response (Simulates natural typing and streaming)
     setTimeout(() => {
       const mockResult = generateMockResponse(text, activeLogsSnippet);
+      console.log('🤖 [Simulated AI] Respuesta final simulada (Mock Fallback):', mockResult);
       const responseId = `msg-${Date.now()}-assistant`;
       
       // Setup typing stream simulation

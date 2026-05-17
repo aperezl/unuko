@@ -62,6 +62,23 @@ export class UeransimController {
             const ipMatch = psStr.match(/address:\s*([\d.]+)/);
             if (ipMatch) ip = ipMatch[1];
           } catch (e) {}
+        } else if (type === 'GNB' && status === 'RUNNING') {
+          try {
+            let gnbId = 1;
+            const nciVal = typeof config.nci === 'string' && config.nci.startsWith('0x') 
+              ? parseInt(config.nci, 16) 
+              : parseInt(config.nci, 10);
+            const idLength = config.idLength ? Number(config.idLength) : 32;
+            const shift = 36 - idLength;
+            gnbId = nciVal >> shift;
+
+            const cleanMcc = config.mcc.toString().replace(/['"]/g, '');
+            const cleanMnc = config.mnc.toString().replace(/['"]/g, '');
+            const nodeName = `UERANSIM-gnb-${cleanMcc}-${cleanMnc}-${gnbId}`;
+            
+            const infoStr = await this.cliClient.exec(nodeName, 'status');
+            connected = infoStr.includes('is-ngap-up: true');
+          } catch (e) {}
         }
 
         newMap.set(id, { 
