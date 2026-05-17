@@ -177,14 +177,24 @@ export const DeviceManagerPage = () => {
   const latestWidthRef = React.useRef(sidebarWidth);
   const isDragging = React.useRef(false);
 
+  // AI Auditor resizable state
+  const [aiAuditorWidth, setAiAuditorWidth] = React.useState(() => {
+    const saved = localStorage.getItem('unuko_ai_auditor_width');
+    return saved ? parseInt(saved, 10) : 380;
+  });
+  const latestAiWidthRef = React.useRef(aiAuditorWidth);
+  const isAiDragging = React.useRef(false);
+
   const toggleAiAuditor = () => {
     setShowAiAuditor(prev => {
       const next = !prev;
       localStorage.setItem('unuko_show_ai_auditor', next.toString());
-      if (next && sidebarWidth < 800) {
-        setSidebarWidth(800);
-        latestWidthRef.current = 800;
-        localStorage.setItem('unuko_log_sidebar_width', '800');
+      if (next) {
+        // Guarantee the main sidebar is wide enough to show both logs and resizable AI Auditor
+        const requiredSidebarWidth = Math.max(sidebarWidth, aiAuditorWidth + 400);
+        setSidebarWidth(requiredSidebarWidth);
+        latestWidthRef.current = requiredSidebarWidth;
+        localStorage.setItem('unuko_log_sidebar_width', requiredSidebarWidth.toString());
       }
       return next;
     });
@@ -192,20 +202,39 @@ export const DeviceManagerPage = () => {
 
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) return;
-      const newWidth = window.innerWidth - e.clientX;
-      const maxWidth = window.innerWidth - 32; // Allow almost full screen
-      if (newWidth > 300 && newWidth < maxWidth) {
-        setSidebarWidth(newWidth);
-        latestWidthRef.current = newWidth;
+      if (isDragging.current) {
+        const newWidth = window.innerWidth - e.clientX;
+        const maxWidth = window.innerWidth - 32; // Allow almost full screen
+        if (newWidth > 300 && newWidth < maxWidth) {
+          setSidebarWidth(newWidth);
+          latestWidthRef.current = newWidth;
+        }
+      }
+
+      if (isAiDragging.current) {
+        const newWidth = window.innerWidth - e.clientX;
+        const minWidth = 260;
+        // Don't let the auditor squish the logs section to less than 400px
+        const maxWidth = sidebarWidth - 400;
+        if (newWidth > minWidth && newWidth < maxWidth) {
+          setAiAuditorWidth(newWidth);
+          latestAiWidthRef.current = newWidth;
+        }
       }
     };
+
     const handleMouseUp = () => {
       if (isDragging.current) {
         isDragging.current = false;
         document.body.style.cursor = 'default';
         document.body.style.userSelect = 'auto';
         localStorage.setItem('unuko_log_sidebar_width', latestWidthRef.current.toString());
+      }
+      if (isAiDragging.current) {
+        isAiDragging.current = false;
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto';
+        localStorage.setItem('unuko_ai_auditor_width', latestAiWidthRef.current.toString());
       }
     };
     
@@ -215,7 +244,7 @@ export const DeviceManagerPage = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [sidebarWidth]);
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -773,7 +802,21 @@ export const DeviceManagerPage = () => {
 
               {/* AI Auditor Column */}
               {showAiAuditor && (
-                <div className="w-full lg:w-[380px] shrink-0 border-t lg:border-t-0 lg:border-l border-border h-2/5 lg:h-full overflow-hidden">
+                <div 
+                  style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${aiAuditorWidth}px` : '100%' }}
+                  className="relative shrink-0 border-t lg:border-t-0 lg:border-l border-border h-2/5 lg:h-full overflow-hidden flex flex-col"
+                >
+                  {/* Resizable Drag Handle */}
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 active:bg-primary/45 transition-colors z-50 hidden lg:block"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      isAiDragging.current = true;
+                      document.body.style.cursor = 'col-resize';
+                      document.body.style.userSelect = 'none';
+                    }}
+                    title="Arrastra para cambiar el ancho del chat de IA"
+                  />
                   <AILogAuditor logs={logs} deviceId={viewingLogId!} />
                 </div>
               )}

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Sparkles, 
-  Bot, 
-  Send, 
-  Trash2, 
-  Activity, 
-  Wifi, 
-  AlertTriangle, 
-  ShieldAlert, 
-  Loader2, 
+import {
+  Sparkles,
+  Bot,
+  Send,
+  Trash2,
+  Activity,
+  Wifi,
+  AlertTriangle,
+  ShieldAlert,
+  Loader2,
   Info,
   ExternalLink,
   ChevronDown,
@@ -49,9 +49,10 @@ Tu tarea es analizar los logs de dispositivos de un simulador UERANSIM 5G UE o g
 Sé altamente técnico, preciso, conciso y de gran ayuda. Utiliza la terminología estándar 3GPP.
 SIEMPRE responde en español.`;
 
-// Extend Window interface for Chrome's experimental Prompt API
+// Extend global scope for Chrome's experimental Prompt API
 declare global {
   interface Window {
+    LanguageModel?: any;
     ai?: {
       languageModel?: {
         availability(options?: any): Promise<'readily' | 'after-download' | 'no'>;
@@ -63,6 +64,7 @@ declare global {
       };
     };
   }
+  const LanguageModel: any;
 }
 
 // Simple Custom Markdown/Text Formatter to render AI responses with styled markup
@@ -71,7 +73,7 @@ const FormattedMessage = ({ text }: { text: string }) => {
     // Check for headers (e.g. ### Header or **Header**)
     if (line.startsWith('### ')) {
       return (
-        <h4 key={lineIdx} className="text-xs font-black uppercase tracking-wider text-primary mt-3 mb-1.5 flex items-center gap-1.5">
+        <h4 key={lineIdx} className="text-[13px] font-black uppercase tracking-wider text-primary mt-3 mb-1.5 flex items-center gap-1.5">
           <Activity className="w-3.5 h-3.5" />
           {line.replace('### ', '')}
         </h4>
@@ -82,7 +84,7 @@ const FormattedMessage = ({ text }: { text: string }) => {
     if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
       const content = line.trim().replace(/^[-*]\s+/, '');
       return (
-        <li key={lineIdx} className="ml-4 list-disc text-[11px] leading-relaxed text-muted-foreground my-0.5">
+        <li key={lineIdx} className="ml-4 list-disc text-[12.5px] leading-relaxed text-muted-foreground my-0.5">
           {parseInlineElements(content)}
         </li>
       );
@@ -93,7 +95,7 @@ const FormattedMessage = ({ text }: { text: string }) => {
     if (numMatch) {
       const [_, num, content] = numMatch;
       return (
-        <div key={lineIdx} className="flex gap-2 text-[11px] leading-relaxed text-muted-foreground my-1 pl-1">
+        <div key={lineIdx} className="flex gap-2 text-[12.5px] leading-relaxed text-muted-foreground my-1 pl-1">
           <span className="text-primary font-bold">{num}.</span>
           <span>{parseInlineElements(content)}</span>
         </div>
@@ -101,7 +103,7 @@ const FormattedMessage = ({ text }: { text: string }) => {
     }
 
     return (
-      <p key={lineIdx} className="text-[11px] leading-relaxed text-foreground/90 my-1.5">
+      <p key={lineIdx} className="text-[12.5px] leading-relaxed text-foreground/90 my-1.5">
         {parseInlineElements(line)}
       </p>
     );
@@ -111,10 +113,10 @@ const FormattedMessage = ({ text }: { text: string }) => {
     // Split by bold elements (**bold**)
     const boldRegex = /\*\*(.*?)\*\*/g;
     const codeRegex = /`(.*?)`/g;
-    
+
     // We do a simple sequential replacement of markdown styles
     let parts: React.ReactNode[] = [text];
-    
+
     // Process code blocks
     let newParts: React.ReactNode[] = [];
     parts.forEach(part => {
@@ -122,7 +124,7 @@ const FormattedMessage = ({ text }: { text: string }) => {
         const subParts = [];
         let lastIndex = 0;
         let match;
-        
+
         // Reset regex index
         codeRegex.lastIndex = 0;
         while ((match = codeRegex.exec(part)) !== null) {
@@ -130,7 +132,7 @@ const FormattedMessage = ({ text }: { text: string }) => {
             subParts.push(part.substring(lastIndex, match.index));
           }
           subParts.push(
-            <code key={`code-${match.index}`} className="px-1.5 py-0.5 rounded bg-muted/80 text-[10px] font-mono border border-border/50 text-purple-400 font-semibold">
+            <code key={`code-${match.index}`} className="px-1.5 py-0.5 rounded bg-muted/80 text-[11.5px] font-mono border border-border/50 text-purple-400 font-semibold">
               {match[1]}
             </code>
           );
@@ -153,7 +155,7 @@ const FormattedMessage = ({ text }: { text: string }) => {
         const subParts = [];
         let lastIndex = 0;
         let match;
-        
+
         boldRegex.lastIndex = 0;
         while ((match = boldRegex.exec(part)) !== null) {
           if (match.index > lastIndex) {
@@ -187,10 +189,10 @@ export const AILogAuditor: React.FC<AILogAuditorProps> = ({ logs, deviceId }) =>
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [promptApiStatus, setPromptApiStatus] = useState<'checking' | 'available' | 'mock'>('checking');
+  const [promptApiStatus, setPromptApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [showConfigGuide, setShowConfigGuide] = useState(false);
   const [aiSession, setAiSession] = useState<any>(null);
-  
+
   // Real-time parsed insights from logs
   const [insights, setInsights] = useState<Insights>({
     currentState: 'UNKNOWN',
@@ -201,6 +203,20 @@ export const AILogAuditor: React.FC<AILogAuditorProps> = ({ logs, deviceId }) =>
   });
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Collapsible telemetry state
+  const [telemetryCollapsed, setTelemetryCollapsed] = useState(() => {
+    const saved = localStorage.getItem('unuko_telemetry_collapsed');
+    return saved === 'true';
+  });
+
+  const toggleTelemetry = () => {
+    setTelemetryCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('unuko_telemetry_collapsed', next.toString());
+      return next;
+    });
+  };
 
   // Parse logs in real-time
   useEffect(() => {
@@ -215,7 +231,7 @@ export const AILogAuditor: React.FC<AILogAuditorProps> = ({ logs, deviceId }) =>
 
     lines.forEach(line => {
       const lower = line.toLowerCase();
-      
+
       // Count warnings and errors
       if (lower.includes('[error]')) errs++;
       if (lower.includes('[warning]') || lower.includes('[warn]')) warns++;
@@ -258,10 +274,20 @@ export const AILogAuditor: React.FC<AILogAuditorProps> = ({ logs, deviceId }) =>
     });
   }, [logs]);
 
-  // Check window.ai Prompt API availability on mount
+  // Check LanguageModel (Prompt API) availability on mount
   useEffect(() => {
     const checkAvailability = async () => {
       try {
+        // A. Standard LanguageModel from documentation
+        if (typeof LanguageModel !== 'undefined') {
+          const avail = await LanguageModel.availability();
+          if (avail !== 'no') {
+            setPromptApiStatus('available');
+            return;
+          }
+        }
+
+        // B. Fallback to older window.ai
         if (window.ai && window.ai.languageModel) {
           const avail = await window.ai.languageModel.availability();
           if (avail !== 'no') {
@@ -275,10 +301,10 @@ export const AILogAuditor: React.FC<AILogAuditorProps> = ({ logs, deviceId }) =>
             return;
           }
         }
-        setPromptApiStatus('mock');
+        setPromptApiStatus('unavailable');
       } catch (err) {
-        console.error('Error checking window.ai availability:', err);
-        setPromptApiStatus('mock');
+        console.error('Error checking model availability:', err);
+        setPromptApiStatus('unavailable');
       }
     };
 
@@ -319,6 +345,20 @@ Me he conectado automáticamente a la traza activa de logs del dispositivo \`${d
   const getAISession = async () => {
     if (aiSession) return aiSession;
 
+    // A. Standard LanguageModel session creation from documentation
+    if (typeof LanguageModel !== 'undefined') {
+      try {
+        const session = await LanguageModel.create({
+          initialPrompts: [{ role: 'system', content: SYSTEM_PROMPT }]
+        });
+        setAiSession(session);
+        return session;
+      } catch (err) {
+        console.error('Failed to create LanguageModel session:', err);
+      }
+    }
+
+    // B. Legacy fallback to window.ai
     if (window.ai) {
       const api = window.ai.languageModel || window.ai.assistant;
       if (api) {
@@ -330,95 +370,16 @@ Me he conectado automáticamente a la traza activa de logs del dispositivo \`${d
           setAiSession(session);
           return session;
         } catch (err) {
-          console.error('Failed to create window.ai session, falling back to mock:', err);
+          console.error('Failed to create window.ai session:', err);
         }
       }
     }
     return null;
   };
 
-  // Rule-based Simulated AI Expert Engine (High Fidelity Fallback)
-  const generateMockResponse = (query: string, logSnippet: string): string => {
-    const q = query.toLowerCase();
-    
-    if (q.includes('t3517') || q.includes('timer') || q.includes('temporizador')) {
-      return `### Análisis del temporizador T3517 del protocolo NAS ⏱️
-En las especificaciones del protocolo NAS (Estrato de No Acceso) de 5G, el **temporizador T3517** es iniciado por el equipo de usuario (UE) cuando transmite un mensaje de **Petición de Servicio (Service Request)** a la red.
 
-- **Propósito**: Evita que el UE se quede colgado indefinidamente esperando una respuesta de la AMF (Red de Núcleo) en un estado de acceso de servicio pendiente.
-- **Disparador**: Se inicia al enviar una \`Service Request\`. Se detiene cuando el UE recibe una aceptación de servicio (\`Service Accept\`) o un procedimiento de seguridad de la AMF.
-- **Expiración**: Si el temporizador expira (típicamente **15 segundos**), el UE incrementa el contador de expiración y retransmitirá la solicitud o volverá a un estado anterior.
-- **En tus logs**: Observamos \`[NAS] [DEBUG] NAS timer[3517] expired [1]\`. Esto significa que el núcleo AMF no envió la validación del servicio a tiempo, lo que obligó al UE a regresar al estado registrado estándar \`[MM-REGISTERED/PS]\` antes de reintentarlo.`;
-    }
 
-    if (q.includes('rrc') || q.includes('rrc connection') || q.includes('conexión') || q.includes('conexion')) {
-      return `### Diagnóstico de la capa de protocolo RRC 📡
-La capa de protocolo **RRC (Control de Recursos de Radio)** gestiona la señalización del plano de control de Capa 3 entre el Equipo de Usuario (UE) y la estación base gNodeB.
-
-Aquí tienes la explicación de los eventos RRC detectados en tus logs:
-1. **RRC Setup Request**: El UE envía una solicitud inicial a la estación base \`cell[4]\` solicitando recursos de radio.
-2. **RRC Connection Established**: El gNodeB aprueba, negocia las capacidades y establece la comunicación segura.
-3. **Estado \`[RRC-CONNECTED]\`**: Los canales de radio físicos están completamente activos y negociados. 
-- **Significado**: Una vez que RRC está conectado, puede comenzar la transmisión de señalización de nivel superior **NAS (Non-Access Stratum)**.`;
-    }
-
-    if (q.includes('plmn') || q.includes('cobertura') || q.includes('coverage')) {
-      return `### Selección de PLMN y Auditoría de Cobertura 🌍
-Una **PLMN (Red Móvil Terrestre Pública)** representa la identidad de red del operador, identificada por su Código de País Móvil (MCC) y su Código de Red Móvil (MNC).
-
-En los logs de UERANSIM, vemos dos eventos principales:
-1. \`[RRC] [ERROR] Cell selection failure, no suitable or acceptable cell found\`:
-   - **Causa**: El simulador está buscando una celda activa que transmita la PLMN objetivo (\`999/70\`), pero no había ninguna activa en las cercanías.
-2. \`Selected plmn[999/70] tac[1] category[SUITABLE]\`:
-   - **Causa**: Se encendió con éxito un gNodeB que transmite MCC 999 (red privada) y MNC 70. El UE midió inmediatamente la señal como SUITABLE (Adecuada) y se conectó a ella.`;
-    }
-
-    if (q.includes('nas') || q.includes('mm-') || q.includes('registro') || q.includes('registrar')) {
-      return `### Desglose de la Gestión de Movilidad NAS 🛡️
-La capa **NAS (Estrato de No Acceso)** es la capa de protocolo que se ejecuta entre el UE y la Red de Núcleo (AMF), responsable de la gestión de movilidad y seguridad.
-
-Transiciones de estado clave observadas:
-- **\`[MM-REGISTERED/PLMN-SEARCH]\`**: El UE perdió la cobertura de radio y se encuentra en modo de búsqueda activa para encontrar una estación base que pertenezca a su lista de PLMN autorizadas.
-- **\`[MM-REGISTERED/NORMAL-SERVICE]\`**: El UE se autenticó con éxito con la red de núcleo. Todos los servicios (datos/voz) están ahora autorizados.
-- **\`[MM-SERVICE-REQUEST-INITIATED]\`**: Activado por datos pendientes en el enlace de subida. El UE está iniciando una negociación para pasar de modo inactivo a modo de transmisión activa.`;
-    }
-
-    // Default deep audit response
-    if (q.includes('audit') || q.includes('auditoría') || q.includes('auditoria') || q.includes('troubleshoot') || q.includes('error') || q.includes('fallo') || q.includes('warn')) {
-      const hasErrors = insights.errorsCount > 0;
-      return `### Informe de Auditoría Profunda de Telecomunicaciones de Unuko RSP-AI 🔍
-He analizado el búfer activo actual (${logSnippet.split('\n').length} líneas) para el dispositivo **${deviceId}**.
-
-#### 1. Resumen del Estado de Conexión
-- **Estado Actual**: \`${insights.currentState}\`
-- **Conectividad de Radio**: \`${insights.rrcConnection}\` 
-- **Perfil PLMN**: \`plmn[${insights.selectedPlmn}]\`
-
-#### 2. Anomalías y Análisis de Eventos Detectados
-${hasErrors 
-  ? `- ⚠️ **Errores de Selección de Celda Detectados**: Los logs contienen \`${insights.errorsCount} fallos de selección de celda\`. Esto indica que UERANSIM no pudo establecer un canal físico. Esto es normal durante el inicio mientras se enciende la antena del gNodeB.
-- ⏱️ **Expiración de Temporizador**: Capturamos un evento de \`expiración del temporizador NAS T3517\`, lo que revela un retraso temporal en la negociación con el núcleo, el cual se recuperó correctamente mediante el re-registro.`
-  : `- ✅ **Todo Correcto**: No se han detectado errores activos en el protocolo. El UE ha establecido con éxito una conexión RRC y se ha autenticado con el núcleo AMF.`
-}
-
-#### 3. Causa Raíz y Recomendaciones
-- **Causa**: Los fallos iniciales se deben al arranque secuencial de gNodeB y UE. El UE comenzó a buscar antes de que el gNodeB estuviera completamente activo.
-- **Recomendación**: Mantén la simulación actual activa. El plano de control se recuperó con éxito. Si la cobertura vuelve a caer, verifica que la configuración IP del gNodeB coincida con las vinculaciones de AMF en la máquina virtual Lima.`;
-    }
-
-    return `### Respuesta del Asistente Unuko RSP-AI 🤖
-He revisado tu solicitud sobre los logs del dispositivo **${deviceId}**. 
-
-Basándome en mis conocimientos de red, los logs activos muestran a UERANSIM estableciendo canales del **Plano de Control 5G**. 
-
-Aquí tienes sugerencias sobre lo que puedes preguntarme:
-- **"Explicar transiciones de estado"**: Para obtener una línea de tiempo secuencial de los cambios de estado de NAS.
-- **"Solucionar errores"**: Si estás viendo errores de selección de celda en color rojo.
-- **"¿Qué es NAS T3517?"**: Para entender en detalle las acciones del temporizador del protocolo.
-- **"Ejecutar auditoría profunda"**: Para obtener un informe exhaustivo sobre el estado de la conexión.`;
-  };
-
-  // Submit Prompt to AI (Real or Mock)
+  // Submit Prompt to AI (Real local Gemini Nano)
   const handleSendPrompt = async (text: string) => {
     if (!text.trim()) return;
 
@@ -433,86 +394,92 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
     setInputValue('');
     setIsAiLoading(true);
 
-    const activeLogsSnippet = logs.split('\n').slice(-40).join('\n'); // Grab last 40 lines of logs
+    const activeLogsSnippet = logs.split('\n').slice(-100).join('\n'); // Grab last 100 lines of logs
 
-    // 1. If real Prompt API is available, try to use it
-    if (promptApiStatus === 'available') {
-      try {
-        const session = await getAISession();
-        if (session) {
-          // Prepare prompt including current log context in Spanish
-          const fullPrompt = `Contexto de logs:\n"""\n${activeLogsSnippet}\n"""\n\nPregunta del usuario: ${text}\n\nResponde en español de forma técnica.`;
-          
-          let aiResponse = '';
-          const responseId = `msg-${Date.now()}-assistant`;
-          
-          // Let's check if promptStreaming is available
-          if (typeof session.promptStreaming === 'function') {
-            const stream = session.promptStreaming(fullPrompt);
-            setIsAiLoading(false); // Disable typing spinner once stream starts
+    // 1. If Prompt API is not available, show instructional warning
+    if (promptApiStatus === 'unavailable') {
+      setTimeout(() => {
+        setIsAiLoading(false);
+        const responseId = `msg-${Date.now()}-assistant`;
+        setMessages(prev => [...prev, {
+          id: responseId,
+          role: 'assistant',
+          content: `### ⚠️ API de IA Local No Disponible
+La **Prompt API (\`window.ai\`)** no está disponible o no se encuentra habilitada en tu navegador actual.
 
-            // Add placeholder assistant message
-            setMessages(prev => [...prev, {
-              id: responseId,
-              role: 'assistant',
-              content: 'Pensando...',
-              timestamp: new Date()
-            }]);
+Como has solicitado evaluar **únicamente el comportamiento real del modelo Gemini Nano** (sin simulaciones ni reglas estáticas de \`if/else\`), debes activar las capacidades nativas de Chrome para que el modelo local procese esta consulta en tu máquina:
 
-            for await (const chunk of stream) {
-              aiResponse = chunk;
-              setMessages(prev => prev.map(m => m.id === responseId ? { ...m, content: aiResponse } : m));
-            }
-            console.log('🤖 [window.ai] Respuesta final recibida por streaming de la IA local:', aiResponse);
-          } else {
-            // Fallback to standard prompt block
-            const result = await session.prompt(fullPrompt);
-            console.log('🤖 [window.ai] Respuesta final recibida (síncrona) de la IA local:', result);
-            setMessages(prev => [...prev, {
-              id: responseId,
-              role: 'assistant',
-              content: result,
-              timestamp: new Date()
-            }]);
-            setIsAiLoading(false);
-          }
-          return;
-        }
-      } catch (err) {
-        console.error('Error during Prompt API call, falling back to mock response:', err);
-      }
+1. **Activar el Modelo Local**: Abre \`chrome://flags/#optimization-guide-on-device-model\` en Chrome y cámbialo a **Enabled BypassPerfRequirement**.
+2. **Activar la API de Prompts**: Abre \`chrome://flags/#prompt-api-for-gemini-nano\` y establécelo en **Enabled**.
+3. **Reiniciar Chrome**: Haz clic en el botón de reinicio (*Relaunch*).
+4. **Verificar Descarga**: Abre \`chrome://on-device-internals\` para comprobar que el modelo Gemini Nano se ha descargado correctamente (pesa ~1.5 GB).
+
+*Una vez completado, el banner superior cambiará a **"Local Gemini Nano"** y el modelo procesará directamente tus logs.*`,
+          timestamp: new Date()
+        }]);
+      }, 600);
+      return;
     }
 
-    // 2. Mock Fallback Response (Simulates natural typing and streaming)
-    setTimeout(() => {
-      const mockResult = generateMockResponse(text, activeLogsSnippet);
-      console.log('🤖 [Simulated AI] Respuesta final simulada (Mock Fallback):', mockResult);
-      const responseId = `msg-${Date.now()}-assistant`;
-      
-      // Setup typing stream simulation
+    // 2. If real Prompt API is available, try to use it
+    try {
+      const session = await getAISession();
+      if (session) {
+        // Prepare prompt including current log context in Spanish
+        const fullPrompt = `Contexto de logs:\n"""\n${activeLogsSnippet}\n"""\n\nPregunta del usuario: ${text}\n\nResponde en español de forma técnica.`;
+
+        let aiResponse = '';
+        const responseId = `msg-${Date.now()}-assistant`;
+
+        // Let's check if promptStreaming is available
+        if (typeof session.promptStreaming === 'function') {
+          const stream = session.promptStreaming(fullPrompt);
+          setIsAiLoading(false); // Disable typing spinner once stream starts
+
+          // Add placeholder assistant message
+          setMessages(prev => [...prev, {
+            id: responseId,
+            role: 'assistant',
+            content: 'Pensando...',
+            timestamp: new Date()
+          }]);
+
+          for await (const chunk of stream) {
+            // Auto-detect if the chunk is cumulative or a delta token
+            if (aiResponse && chunk.startsWith(aiResponse)) {
+              aiResponse = chunk;
+            } else {
+              aiResponse += chunk;
+            }
+            setMessages(prev => prev.map(m => m.id === responseId ? { ...m, content: aiResponse } : m));
+            console.log('Stream chunk:', chunk);
+          }
+          console.log('🤖 [window.ai] Respuesta final recibida por streaming de la IA local:', aiResponse);
+        } else {
+          // Fallback to standard prompt block
+          const result = await session.prompt(fullPrompt);
+          console.log('🤖 [window.ai] Respuesta final recibida (síncrona) de la IA local:', result);
+          setMessages(prev => [...prev, {
+            id: responseId,
+            role: 'assistant',
+            content: result,
+            timestamp: new Date()
+          }]);
+          setIsAiLoading(false);
+        }
+        return;
+      }
+    } catch (err) {
+      console.error('Error during Prompt API call:', err);
       setIsAiLoading(false);
+      const responseId = `msg-${Date.now()}-assistant`;
       setMessages(prev => [...prev, {
         id: responseId,
         role: 'assistant',
-        content: '',
+        content: `### ❌ Error al invocar el modelo local\nOcurrió un error al intentar llamar a la Prompt API del navegador:\n\n\`\`\`text\n${err instanceof Error ? err.message : String(err)}\n\`\`\`\n\nPor favor, verifica el estado en \`chrome://on-device-internals\`.`,
         timestamp: new Date()
       }]);
-
-      let currentText = '';
-      const words = mockResult.split(' ');
-      let i = 0;
-
-      const timer = setInterval(() => {
-        if (i < words.length) {
-          currentText += (i === 0 ? '' : ' ') + words[i];
-          setMessages(prev => prev.map(m => m.id === responseId ? { ...m, content: currentText } : m));
-          i++;
-        } else {
-          clearInterval(timer);
-        }
-      }, 25); // Sleek streaming speed
-
-    }, 800); // Small initial "thinking" delay
+    }
   };
 
   const handleClearChat = () => {
@@ -549,50 +516,70 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
   return (
     <div className="flex flex-col h-full bg-slate-950/60 border-l border-border/80 relative text-foreground font-sans">
       {/* Telemetry Dashboard Widget */}
-      <div className="p-4 bg-card/60 backdrop-blur-md border-b border-border/50 space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="bg-card/60 backdrop-blur-md border-b border-border/50 select-none">
+        {/* Clickable Header */}
+        <div 
+          onClick={toggleTelemetry}
+          className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-900/40 active:bg-slate-900/60 transition-colors"
+        >
           <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-primary" />
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Log Telemetry</h4>
+            <Cpu className="w-4 h-4 text-primary shrink-0" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              Log Telemetry
+              {telemetryCollapsed ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/60" /> : <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/60" />}
+            </h4>
           </div>
-          <Badge className={cn(getConnBadge(insights.rrcConnection), "text-[9px] uppercase font-black px-1.5 py-0.5 rounded-sm")}>
+          <Badge className={cn(getConnBadge(insights.rrcConnection), "text-[9px] uppercase font-black px-1.5 py-0.5 rounded-sm shrink-0")}>
             <Wifi className="w-2.5 h-2.5 mr-1" />
             {insights.rrcConnection}
           </Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          {/* State */}
-          <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex flex-col justify-center">
-            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">NAS State</span>
-            <span className="text-[10px] font-mono font-bold text-purple-400 truncate mt-0.5" title={insights.currentState}>
-              {insights.currentState}
-            </span>
-          </div>
-          {/* PLMN */}
-          <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex flex-col justify-center">
-            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Lock PLMN</span>
-            <span className="text-[10px] font-mono font-bold text-sky-400 truncate mt-0.5">
-              {insights.selectedPlmn}
-            </span>
-          </div>
-          {/* Warnings */}
-          <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Warnings</span>
-              <span className="text-[11px] font-mono font-black text-amber-500 mt-0.5">{insights.warningsCount}</span>
-            </div>
-            <AlertTriangle className={cn("w-3.5 h-3.5 text-amber-500/80", insights.warningsCount > 0 && "animate-bounce")} />
-          </div>
-          {/* Errors */}
-          <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Errors</span>
-              <span className="text-[11px] font-mono font-black text-destructive mt-0.5">{insights.errorsCount}</span>
-            </div>
-            <ShieldAlert className={cn("w-3.5 h-3.5 text-destructive/80", insights.errorsCount > 0 && "animate-pulse")} />
-          </div>
-        </div>
+        {/* Collapsible content with animation */}
+        <AnimatePresence initial={false}>
+          {!telemetryCollapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="overflow-hidden px-4 pb-4"
+            >
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {/* State */}
+                <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex flex-col justify-center">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">NAS State</span>
+                  <span className="text-[10px] font-mono font-bold text-purple-400 truncate mt-0.5" title={insights.currentState}>
+                    {insights.currentState}
+                  </span>
+                </div>
+                {/* PLMN */}
+                <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex flex-col justify-center">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Lock PLMN</span>
+                  <span className="text-[10px] font-mono font-bold text-sky-400 truncate mt-0.5">
+                    {insights.selectedPlmn}
+                  </span>
+                </div>
+                {/* Warnings */}
+                <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Warnings</span>
+                    <span className="text-[11px] font-mono font-black text-amber-500 mt-0.5">{insights.warningsCount}</span>
+                  </div>
+                  <AlertTriangle className={cn("w-3.5 h-3.5 text-amber-500/80", insights.warningsCount > 0 && "animate-bounce")} />
+                </div>
+                {/* Errors */}
+                <div className="bg-slate-950/40 p-2 rounded border border-border/20 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Errors</span>
+                    <span className="text-[11px] font-mono font-black text-destructive mt-0.5">{insights.errorsCount}</span>
+                  </div>
+                  <ShieldAlert className={cn("w-3.5 h-3.5 text-destructive/80", insights.errorsCount > 0 && "animate-pulse")} />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Model Mode Banner */}
@@ -600,12 +587,12 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
         <div className="flex items-center gap-1.5">
           <Sparkles className={cn("w-3.5 h-3.5 text-primary", promptApiStatus === 'available' && "animate-pulse text-emerald-400")} />
           <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-            Mode: {promptApiStatus === 'available' ? 'Local Gemini Nano' : 'Simulated Expert'}
+            Mode: {promptApiStatus === 'available' ? 'Local Gemini Nano' : 'Local AI Unavailable'}
           </span>
         </div>
-        
-        {promptApiStatus === 'mock' && (
-          <button 
+
+        {promptApiStatus === 'unavailable' && (
+          <button
             onClick={() => setShowConfigGuide(!showConfigGuide)}
             className="text-[9px] font-black text-primary uppercase hover:underline flex items-center gap-0.5 cursor-pointer"
           >
@@ -618,7 +605,7 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
       {/* Local AI Guide Panel */}
       <AnimatePresence>
         {showConfigGuide && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -654,7 +641,7 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 scrollbar-thin scrollbar-thumb-muted">
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
-            <motion.div 
+            <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -666,8 +653,8 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
               {/* Avatar */}
               <div className={cn(
                 "w-7 h-7 rounded-sm flex items-center justify-center shrink-0 border shadow-inner",
-                msg.role === 'user' 
-                  ? "bg-primary/10 text-primary border-primary/20" 
+                msg.role === 'user'
+                  ? "bg-primary/10 text-primary border-primary/20"
                   : "bg-purple-500/10 text-purple-500 border-purple-500/20"
               )}>
                 {msg.role === 'user' ? <Bot className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
@@ -675,26 +662,26 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
 
               {/* Message Bubble */}
               <div className={cn(
-                "max-w-[85%] rounded p-3 text-[11px] shadow-lg border",
-                msg.role === 'user' 
-                  ? "bg-primary/5 border-primary/10 text-foreground" 
+                "max-w-[85%] rounded p-3 text-[12.5px] shadow-lg border",
+                msg.role === 'user'
+                  ? "bg-primary/5 border-primary/10 text-foreground"
                   : "bg-card/40 border-border/40 text-foreground/90 font-sans"
               )}>
                 {msg.role === 'user' ? (
-                  <p className="whitespace-pre-wrap font-sans font-medium">{msg.content}</p>
+                  <p className="whitespace-pre-wrap font-sans font-medium text-[12.5px] leading-relaxed text-foreground">{msg.content}</p>
                 ) : (
                   <FormattedMessage text={msg.content} />
                 )}
-                
-                <span className="block text-[8px] font-mono text-muted-foreground/60 text-right mt-1.5 uppercase">
+
+                <span className="block text-[9px] font-mono text-muted-foreground/60 text-right mt-1.5 uppercase">
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </span>
               </div>
             </motion.div>
           ))}
-          
+
           {isAiLoading && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex gap-3 flex-row"
@@ -716,26 +703,26 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
 
       {/* Preset Suggestions / Chip Options */}
       <div className="px-4 py-2 border-t border-border/20 flex flex-wrap gap-1.5 bg-slate-950/20">
-        <button 
+        <button
           onClick={() => handleSendPrompt("Ejecutar auditoría profunda de la traza de logs.")}
           className="text-[9px] font-black uppercase tracking-wider py-1 px-2.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer flex items-center gap-1"
         >
           <Sparkles className="w-3 h-3" />
           Ejecutar Auditoría Profunda
         </button>
-        <button 
+        <button
           onClick={() => handleSendPrompt("Explicar las transiciones de estado de protocolo.")}
           className="text-[9px] font-black uppercase tracking-wider py-1 px-2.5 rounded bg-card hover:bg-muted border border-border/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
         >
           Explicar Transiciones de Estado
         </button>
-        <button 
+        <button
           onClick={() => handleSendPrompt("Solucionar errores activos y fallos de configuración de RRC.")}
           className="text-[9px] font-black uppercase tracking-wider py-1 px-2.5 rounded bg-card hover:bg-muted border border-border/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
         >
           Solucionar Errores
         </button>
-        <button 
+        <button
           onClick={() => handleSendPrompt("¿Qué es el temporizador de protocolo NAS T3517?")}
           className="text-[9px] font-black uppercase tracking-wider py-1 px-2.5 rounded bg-card hover:bg-muted border border-border/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
         >
@@ -745,8 +732,8 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
 
       {/* Input Form Box */}
       <div className="p-4 bg-card/60 border-t border-border/50 flex items-center gap-2">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="icon"
           onClick={handleClearChat}
           className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive border-border/80 hover:border-destructive/30 hover:bg-destructive/5"
@@ -754,9 +741,9 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
         >
           <Trash2 className="w-4 h-4" />
         </Button>
-        
-        <input 
-          type="text" 
+
+        <input
+          type="text"
           placeholder="Pregúntale a Unuko AI sobre logs celulares..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -769,7 +756,7 @@ Aquí tienes sugerencias sobre lo que puedes preguntarme:
           className="flex-1 h-9 rounded bg-background border border-border px-3 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/60 transition-all font-sans font-medium"
         />
 
-        <Button 
+        <Button
           onClick={() => handleSendPrompt(inputValue)}
           disabled={!inputValue.trim() || isAiLoading}
           className="h-9 w-9 shrink-0 bg-primary text-primary-foreground hover:bg-primary/95 flex items-center justify-center rounded"
