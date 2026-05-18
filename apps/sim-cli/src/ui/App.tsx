@@ -8,6 +8,8 @@ import { WorkflowEditorPage } from './pages/WorkflowEditorPage';
 import { DeviceManagerPage } from './pages/DeviceManagerPage';
 import { InventoryManagerPage } from './pages/InventoryManagerPage';
 import { ProvisioningFormPage } from './pages/ProvisioningFormPage';
+import { NetworkTopologyPage } from './pages/NetworkTopologyPage';
+
 
 export default function App() {
   const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
@@ -88,6 +90,7 @@ export default function App() {
           <Route path="/inventory" element={<InventoryManagerPage />} />
           <Route path="/inventory/new" element={<ProvisioningFormPage />} />
           <Route path="/inventory/edit/:imsi" element={<ProvisioningFormPage />} />
+          <Route path="/network" element={<NetworkTopologyPage />} />
           <Route path="/analytics" element={<div className="p-10 text-muted-foreground font-mono">Analytics module coming soon...</div>} />
           <Route path="/settings" element={<div className="p-10 text-muted-foreground font-mono">Settings module coming soon...</div>} />
         </Route>

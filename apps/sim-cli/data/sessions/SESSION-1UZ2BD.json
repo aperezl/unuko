@@ -1,0 +1,14 @@
+{
+  "sessionId": "SESSION-1UZ2BD",
+  "snapshot": {
+    "value": "done",
+    "context": {
+      "profiles": [],
+      "error": null,
+      "retryCount": 0
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-17T20:01:44.298Z",
+  "status": "done"
+}

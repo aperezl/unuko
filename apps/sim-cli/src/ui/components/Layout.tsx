@@ -76,6 +76,12 @@ export const Layout = () => {
             active={location.pathname.startsWith('/inventory')} 
           />
           <NavItem 
+            to="/network" 
+            icon={Network} 
+            label="Network" 
+            active={location.pathname.startsWith('/network')} 
+          />
+          <NavItem 
             to="/devices" 
             icon={Cpu} 
             label="Devices" 
