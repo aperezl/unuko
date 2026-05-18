@@ -1,0 +1,3 @@
+{"sessionId":"SESSION-9QARSU","category":"HARDWARE","level":"AUDIT","direction":"OUT","payload":{"apdu":"80E2910002BF2D"},"description":"APDU Command","_id":"6ce87dbd-b690-4e3e-ac17-ba182fd481dc","timestamp":"2026-05-18T05:40:48.724Z"}
+{"sessionId":"SESSION-9QARSU","category":"HARDWARE","level":"AUDIT","direction":"IN","payload":{"data":"","sw":"9000","success":true},"description":"APDU Response","_id":"98184efb-86e7-48e9-839a-1e0d03132d5c","timestamp":"2026-05-18T05:40:48.726Z"}
+{"sessionId":"SESSION-9QARSU","category":"WORKFLOW","level":"INFO","direction":"INTERNAL","payload":"undefined","description":"Profiles listed successfully from eUICC","_id":"9f56c5f6-d918-4f15-9336-7339b44915e8","timestamp":"2026-05-18T05:40:48.727Z"}

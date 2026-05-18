@@ -1,0 +1,17 @@
+{
+  "sessionId": "SESSION-PS5D6A",
+  "snapshot": {
+    "value": "done",
+    "context": {
+      "error": null,
+      "retryCount": 0,
+      "smdpAddress": "localhost",
+      "iccid": 89049032000001000000,
+      "transactionId": "undefined",
+      "boundProfilePackage": "undefined"
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-18T08:27:03.825Z",
+  "status": "done"
+}

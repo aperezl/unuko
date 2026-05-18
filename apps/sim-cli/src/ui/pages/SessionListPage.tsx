@@ -3,6 +3,7 @@ import { SessionSummary } from '../types';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import yaml from 'js-yaml';
 import {
   History,
   ChevronRight,
@@ -15,7 +16,9 @@ import {
   X,
   Download,
   Search,
-  Filter
+  Filter,
+  FileCode,
+  Terminal
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import {
@@ -29,7 +32,7 @@ import {
 
 interface SessionListProps {
   sessions: SessionSummary[];
-  onCreate: (workflow: string) => void;
+  onCreate: (workflow: string, definition?: any) => Promise<string | void>;
   onDelete: (id: string) => Promise<void>;
 }
 
@@ -39,6 +42,174 @@ export const SessionListPage = ({ sessions, onCreate, onDelete }: SessionListPro
   const [showWorkflowSelector, setShowWorkflowSelector] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [library, setLibrary] = React.useState<{ name: string; content: string }[]>([]);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('unuko-workflows');
+    let loaded = [];
+    if (saved) {
+      try {
+        loaded = JSON.parse(saved);
+      } catch (e) {
+        loaded = [];
+      }
+    }
+    if (!loaded || loaded.length === 0) {
+      const defaults = [
+        {
+          name: 'sgp22-provisioning.yaml',
+          content: `id: sgp22-provisioning
+initial: initializing
+context:
+  smdpAddress: localhost
+  iccid: 89049032000001000001
+states:
+  initializing:
+    invoke:
+      src: sgp22/initialize
+      onDone: authenticating
+      onError: failure
+  authenticating:
+    invoke:
+      src: sgp22/authenticate
+      input:
+        smdpAddress: "\${context.smdpAddress}"
+      onDone:
+        target: downloading
+        assign:
+          transactionId: "\${event.data.transactionId}"
+      onError: failure
+  downloading:
+    invoke:
+      src: sgp22/downloadProfile
+      input:
+        transactionId: "\${context.transactionId}"
+        smdpAddress: "\${context.smdpAddress}"
+      onDone:
+        target: registering_in_core
+        assign:
+          boundProfilePackage: "\${event.data}"
+      onError: failure
+  registering_in_core:
+    invoke:
+      src: sgp22/registerSubscriber
+      input:
+        iccid: "\${context.iccid}"
+      onDone: activating_connectivity
+      onError: activating_connectivity
+  activating_connectivity:
+    invoke:
+      src: sgp22/enableConnectivity
+      onDone: done
+      onError: done
+  done:
+    type: final`
+        },
+        {
+          name: 'sgp22-inventory.yaml',
+          content: `id: sgp22-inventory
+initial: fetching_profiles
+states:
+  fetching_profiles:
+    invoke:
+      src: sgp22/getProfilesInfo
+      onDone: logging_result
+      onError: failure
+  logging_result:
+    invoke:
+      src: sgp22/logEventInvoke
+      input:
+        description: "Profiles listed successfully from eUICC"
+        payload: "\${event.data}"
+      onDone: done
+      onError: failure
+  done:
+    type: final`
+        },
+        {
+          name: 'sgp22-profile-control.yaml',
+          content: `id: sgp22-profile-control
+initial: executing_action
+context:
+  iccid: 89049032000001000001
+  action: enable
+states:
+  executing_action:
+    invoke:
+      src: sgp22/manageProfile
+      input:
+        iccid: "\${context.iccid}"
+        action: "\${context.action}"
+      onDone: logging_refresh
+      onError: failure
+  logging_refresh:
+    invoke:
+      src: sgp22/logEventInvoke
+      input:
+        description: "Simulating Profile Refresh (REUICC) after action"
+      onDone: done
+      onError: failure
+  done:
+    type: final`
+        },
+        {
+          name: 'sgp22-event-processor.yaml',
+          content: `id: sgp22-event-processor
+initial: fetching_notifications
+states:
+  fetching_notifications:
+    invoke:
+      src: sgp22/listNotifications
+      onDone: logging_result
+      onError: failure
+  logging_result:
+    invoke:
+      src: sgp22/logEventInvoke
+      input:
+        description: "Pending notifications retrieved successfully"
+        payload: "\${event.data}"
+      onDone: done
+      onError: failure
+  done:
+    type: final`
+        }
+      ];
+      setLibrary(defaults);
+      localStorage.setItem('unuko-workflows', JSON.stringify(defaults));
+    } else {
+      setLibrary(loaded);
+    }
+  }, [showWorkflowSelector]);
+
+  const getWorkflowMetadata = (name: string) => {
+    const lowercase = name.toLowerCase();
+    if (lowercase.includes('provisioning')) {
+      return { title: 'Full Provisioning', icon: Download, color: 'sky', desc: 'SGP.22 Provisioning Flow' };
+    }
+    if (lowercase.includes('inventory')) {
+      return { title: 'Inventory Retrieve', icon: Database, color: 'indigo', desc: 'SGP.22 Inventory Flow' };
+    }
+    if (lowercase.includes('profile')) {
+      return { title: 'Profile Control', icon: Activity, color: 'emerald', desc: 'SGP.22 Lifecycle Actions' };
+    }
+    if (lowercase.includes('event') || lowercase.includes('notification')) {
+      return { title: 'Event Processor', icon: AlertTriangle, color: 'amber', desc: 'SGP.22 Async Notifications' };
+    }
+    return { title: name.replace('.yaml', ''), icon: FileCode, color: 'sky', desc: 'Custom User Workflow' };
+  };
+
+  const handleLaunchWorkflow = async (content: string) => {
+    try {
+      const definition = yaml.load(content);
+      const sessionId = await onCreate('dynamic', definition);
+      if (sessionId) {
+        setShowWorkflowSelector(false);
+        navigate(`/session/${sessionId}`);
+      }
+    } catch (err) {
+      console.error('Failed to parse or launch workflow:', err);
+    }
+  };
 
   const confirmDelete = async () => {
     if (!sessionToDelete) return;
@@ -279,36 +450,31 @@ export const SessionListPage = ({ sessions, onCreate, onDelete }: SessionListPro
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { id: 'provisioning', title: 'Full Provisioning', icon: Download, color: 'sky' },
-                  { id: 'inventory', title: 'Inventory Retrieve', icon: Database, color: 'indigo' },
-                  { id: 'profile-mgmt', title: 'Profile Control', icon: Activity, color: 'emerald' },
-                  { id: 'notification', title: 'Event Processor', icon: AlertTriangle, color: 'amber' },
-                ].map((wf) => (
-                  <button
-                    key={wf.id}
-                    onClick={() => {
-                      onCreate(wf.id);
-                      setShowWorkflowSelector(false);
-                    }}
-                    className="flex items-center gap-4 p-4 rounded-sm border border-slate-800 bg-slate-950 hover:bg-slate-900 hover:border-sky-500/30 transition-all text-left group"
-                  >
-                    <div className={cn(
-                      "w-10 h-10 rounded-sm flex items-center justify-center transition-colors",
-                      wf.color === 'sky' ? "bg-sky-500/10 text-sky-500 group-hover:bg-sky-600 group-hover:text-white" :
-                        wf.color === 'indigo' ? "bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white" :
-                          wf.color === 'emerald' ? "bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-600 group-hover:text-white" :
-                            "bg-amber-500/10 text-amber-500 group-hover:bg-amber-600 group-hover:text-white"
-                    )}>
-                      <wf.icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-tight group-hover:text-sky-400 transition-colors">{wf.title}</h4>
-                      <p className="text-[9px] font-medium text-slate-600 uppercase mt-0.5">SGP.22 Handler</p>
-                    </div>
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-1">
+                {library.map((wf) => {
+                  const meta = getWorkflowMetadata(wf.name);
+                  return (
+                    <button
+                      key={wf.name}
+                      onClick={() => handleLaunchWorkflow(wf.content)}
+                      className="flex items-center gap-4 p-4 rounded-sm border border-slate-800 bg-slate-950 hover:bg-slate-900 hover:border-sky-500/30 transition-all text-left group"
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-sm flex items-center justify-center transition-colors",
+                        meta.color === 'sky' ? "bg-sky-500/10 text-sky-500 group-hover:bg-sky-600 group-hover:text-white" :
+                          meta.color === 'indigo' ? "bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white" :
+                            meta.color === 'emerald' ? "bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-600 group-hover:text-white" :
+                              "bg-amber-500/10 text-amber-500 group-hover:bg-amber-600 group-hover:text-white"
+                      )}>
+                        <meta.icon className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-[11px] font-black text-white uppercase tracking-tight group-hover:text-sky-400 transition-colors truncate">{meta.title}</h4>
+                        <p className="text-[9px] font-medium text-slate-600 uppercase mt-0.5 truncate">{meta.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
