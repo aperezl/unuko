@@ -9,6 +9,7 @@ import { DeviceManagerPage } from './pages/DeviceManagerPage';
 import { InventoryManagerPage } from './pages/InventoryManagerPage';
 import { ProvisioningFormPage } from './pages/ProvisioningFormPage';
 import { NetworkTopologyPage } from './pages/NetworkTopologyPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 
 export default function App() {
@@ -92,7 +93,7 @@ export default function App() {
           <Route path="/inventory/edit/:imsi" element={<ProvisioningFormPage />} />
           <Route path="/network" element={<NetworkTopologyPage />} />
           <Route path="/analytics" element={<div className="p-10 text-muted-foreground font-mono">Analytics module coming soon...</div>} />
-          <Route path="/settings" element={<div className="p-10 text-muted-foreground font-mono">Settings module coming soon...</div>} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

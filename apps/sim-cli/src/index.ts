@@ -234,9 +234,80 @@ async function bootstrap() {
   });
 
   server.delete('/v1/infrastructure/devices', async () => {
+    // 1. Wipe subscriber DB
+    await sdmAdapter.clearAll();
+
+    // 2. Kill simulated processes and delete config/log files
     const controller = (ueransimNetwork as any).controller;
-    await controller.stopAll();
-    return { status: 'all_stopped' };
+    await controller.removeAllDevices();
+
+    return { status: 'all_cleared' };
+  });
+
+  server.post('/v1/infrastructure/provision-all', async (request, reply) => {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      console.log('=== Starting Resilient Automatic Seed Provisioning ===');
+
+      // 1. Wipe Slate Clean: Delete all existing subscribers and simulated devices
+      console.log('[SEED]: Clearing existing subscriber database...');
+      await sdmAdapter.clearAll();
+
+      const controller = (ueransimNetwork as any).controller;
+      console.log('[SEED]: Stopping and removing all simulated 5G devices...');
+      await controller.removeAllDevices();
+      
+      // Ensure the config directory exists
+      await controller.init();
+
+      // 2. Seed subscribers in Open5GS MongoDB
+      let subscribersCount = 0;
+      const subsPath = path.resolve(__dirname, '../../../config/seeds/subscribers.json');
+      const subsData = await fs.readFile(subsPath, 'utf-8');
+      const subscribers = JSON.parse(subsData);
+      for (const sub of subscribers) {
+        await sdmAdapter.upsert(sub);
+        subscribersCount++;
+      }
+      console.log(`[SEED]: Registered ${subscribersCount} fresh subscribers in MongoDB`);
+
+      // 3. Seed gNB configurations and start them
+      let gnbsCount = 0;
+      const gnbsPath = path.resolve(__dirname, '../../../config/seeds/gnbs.json');
+      const gnbsData = await fs.readFile(gnbsPath, 'utf-8');
+      const gnbs = JSON.parse(gnbsData);
+      for (const gnb of gnbs) {
+        await controller.startGNB(gnb, false);
+        gnbsCount++;
+      }
+      console.log(`[SEED]: Inventoried ${gnbsCount} slice-aware gNB simulated antennas`);
+
+      // 4. Seed UE configurations and start them
+      let uesCount = 0;
+      const uesPath = path.resolve(__dirname, '../../../config/seeds/ues.json');
+      const uesData = await fs.readFile(uesPath, 'utf-8');
+      const ues = JSON.parse(uesData);
+      for (const ue of ues) {
+        await controller.startUE(ue, false);
+        uesCount++;
+      }
+      console.log(`[SEED]: Inventoried ${uesCount} slice-aware UE simulated devices`);
+
+      return {
+        status: 'success',
+        message: 'Automatic provisioning completed successfully.',
+        details: {
+          subscribersSeeded: subscribersCount,
+          gnbsStarted: gnbsCount,
+          uesStarted: uesCount
+        }
+      };
+    } catch (err: any) {
+      console.error('Fatal Seeding Error:', err.message);
+      return reply.status(500).send({ error: err.message });
+    }
   });
 
   server.post('/v1/infrastructure/ue', async (request, reply) => {

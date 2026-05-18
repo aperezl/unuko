@@ -99,9 +99,12 @@ export class UeransimController {
     this.activeDevices = newMap;
   }
 
-  async startUE(config: UEConfig): Promise<UeransimDevice> {
+  async startUE(config: UEConfig, runProcess: boolean = true): Promise<UeransimDevice> {
     // Ensure it's stopped first
     await this.stopDevice(config.supi);
+    
+    // Ensure config directory exists defensively
+    await this.transport.execute(`mkdir -p ${this.configDir}`);
     
     // Query MongoDB inside the VM to enrich config with the absolute latest subscriber keys and slices
     try {
@@ -151,19 +154,25 @@ export class UeransimController {
 
     await this.transport.writeFile(configPath, yamlStr);
 
-    // Use a clearer command structure with sudo for TUN interface
-    const command = `nohup sudo ${this.workDir}/build/nr-ue -c ${configPath} > ${logPath} 2>&1 &`;
-    await this.transport.execute(command);
+    if (runProcess) {
+      // Use a clearer command structure with sudo for TUN interface
+      const command = `nohup sudo ${this.workDir}/build/nr-ue -c ${configPath} > ${logPath} 2>&1 &`;
+      await this.transport.execute(command);
+      
+      // Wait a bit for the process to appear
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
     
-    // Wait a bit for the process to appear
-    await new Promise(resolve => setTimeout(resolve, 500));
     await this.sync();
     return this.activeDevices.get(id)!;
   }
 
-  async startGNB(config: GNBConfig): Promise<UeransimDevice> {
+  async startGNB(config: GNBConfig, runProcess: boolean = true): Promise<UeransimDevice> {
     const id = `gnb-${config.nci}`;
     await this.stopDevice(id);
+    
+    // Ensure config directory exists defensively
+    await this.transport.execute(`mkdir -p ${this.configDir}`);
     
     const yamlStr = UeransimConfigBuilder.buildGNB(config);
     const configPath = `${this.configDir}/${id}.yaml`;
@@ -171,10 +180,13 @@ export class UeransimController {
 
     await this.transport.writeFile(configPath, yamlStr);
 
-    const command = `nohup ${this.workDir}/build/nr-gnb -c ${configPath} > ${logPath} 2>&1 &`;
-    await this.transport.execute(command);
+    if (runProcess) {
+      const command = `nohup ${this.workDir}/build/nr-gnb -c ${configPath} > ${logPath} 2>&1 &`;
+      await this.transport.execute(command);
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
     
-    await new Promise(resolve => setTimeout(resolve, 500));
     await this.sync();
     return this.activeDevices.get(id)!;
   }
@@ -193,6 +205,12 @@ export class UeransimController {
 
   async stopAll(): Promise<void> {
     await this.transport.execute(`sudo pkill -9 nr-ue; sudo pkill -9 nr-gnb`);
+    await this.sync();
+  }
+
+  async removeAllDevices(): Promise<void> {
+    await this.stopAll();
+    await this.transport.execute(`sudo rm -f ${this.configDir}/*.yaml ${this.configDir}/*.log`);
     await this.sync();
   }
 

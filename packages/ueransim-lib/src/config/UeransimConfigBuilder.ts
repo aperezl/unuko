@@ -153,7 +153,14 @@ export class UeransimConfigBuilder {
       ...config.amfConfigs.map(amf => `  - address: ${amf.address}\n    port: ${amf.port}`),
       '',
       'slices:',
-      ...config.slices.map(s => `  - sst: ${Number(s.sst)}`),
+      ...config.slices.map(s => {
+        let str = `  - sst: ${Number(s.sst)}`;
+        if (s.sd) {
+          const sdHex = s.sd.startsWith('0x') ? s.sd : `0x${s.sd}`;
+          str += `\n    sd: ${sdHex}`;
+        }
+        return str;
+      }),
       '',
       'ignoreStreamIds: true',
       'cellAccessType: nr'

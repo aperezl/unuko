@@ -62,6 +62,16 @@ export class Open5gsSdmAdapter implements SubscriberPort {
     }
   }
 
+  async clearAll(): Promise<void> {
+    const evalStr = `db.subscribers.deleteMany({})`;
+    const fullCommand = `limactl shell ${this.vmName} sudo mongosh open5gs --quiet --eval '${evalStr}'`;
+    try {
+      execSync(fullCommand);
+    } catch (error: any) {
+      console.error(`Mongo ClearAll failed`, error.message);
+    }
+  }
+
   private toDomain(s: any): Subscriber {
     return {
       imsi: s.imsi,

@@ -1,0 +1,82 @@
+[
+  {
+    "imsi": "999700000000001",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000002",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000003",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000004",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000005",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000006",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000007",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000008",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000009",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  },
+  {
+    "imsi": "999700000000010",
+    "k": "465B5CE8B199B49FAA5F0A2EE238A6BC",
+    "opc": "E8ED289DEBA952E4283B54E88E6183CA",
+    "opType": "OPC",
+    "amf": "8000",
+    "slices": [{ "sst": 1, "isDefault": true }]
+  }
+]

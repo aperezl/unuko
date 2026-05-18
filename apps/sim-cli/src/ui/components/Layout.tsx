@@ -113,17 +113,17 @@ export const Layout = () => {
             collapsed={collapsed}
           />
           <NavItem 
-            to="/network" 
-            icon={Network} 
-            label="Network" 
-            active={location.pathname.startsWith('/network')} 
-            collapsed={collapsed}
-          />
-          <NavItem 
             to="/devices" 
             icon={Cpu} 
             label="Devices" 
             active={location.pathname.startsWith('/devices')} 
+            collapsed={collapsed}
+          />
+          <NavItem 
+            to="/network" 
+            icon={Network} 
+            label="Network" 
+            active={location.pathname.startsWith('/network')} 
             collapsed={collapsed}
           />
           <NavItem 

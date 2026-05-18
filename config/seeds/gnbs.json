@@ -1,0 +1,54 @@
+[
+  {
+    "mcc": "999",
+    "mnc": "70",
+    "nci": "0x000000010",
+    "idLength": 32,
+    "tac": 1,
+    "linkIp": "127.0.0.1",
+    "ngapIp": "127.0.0.1",
+    "gtpIp": "127.0.0.1",
+    "amfConfigs": [{ "address": "127.0.0.5", "port": 38412 }],
+    "slices": [{ "sst": 1 }],
+    "amfSelection": [{ "sst": 1 }]
+  },
+  {
+    "mcc": "999",
+    "mnc": "70",
+    "nci": "0x000000011",
+    "idLength": 32,
+    "tac": 1,
+    "linkIp": "127.0.0.2",
+    "ngapIp": "127.0.0.2",
+    "gtpIp": "127.0.0.2",
+    "amfConfigs": [{ "address": "127.0.0.5", "port": 38412 }],
+    "slices": [{ "sst": 1 }],
+    "amfSelection": [{ "sst": 1 }]
+  },
+  {
+    "mcc": "999",
+    "mnc": "70",
+    "nci": "0x000000020",
+    "idLength": 32,
+    "tac": 2,
+    "linkIp": "127.0.0.3",
+    "ngapIp": "127.0.0.3",
+    "gtpIp": "127.0.0.3",
+    "amfConfigs": [{ "address": "127.0.0.5", "port": 38412 }],
+    "slices": [{ "sst": 1 }],
+    "amfSelection": [{ "sst": 1 }]
+  },
+  {
+    "mcc": "999",
+    "mnc": "70",
+    "nci": "0x000000021",
+    "idLength": 32,
+    "tac": 2,
+    "linkIp": "127.0.0.4",
+    "ngapIp": "127.0.0.4",
+    "gtpIp": "127.0.0.4",
+    "amfConfigs": [{ "address": "127.0.0.5", "port": 38412 }],
+    "slices": [{ "sst": 1 }],
+    "amfSelection": [{ "sst": 1 }]
+  }
+]
