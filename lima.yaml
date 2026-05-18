@@ -1,0 +1,130 @@
+# Configuration template for Unuko RSP 5G Core Simulation Virtual Machine
+# Start this VM using: limactl start --name=core5g lima.yaml
+
+# OS Images (Ubuntu 22.04 LTS Jammy Jellyfish)
+# Supporting both Intel (x86_64) and Apple Silicon (aarch64 / M1-M5)
+images:
+  - location: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+    arch: "x86_64"
+  - location: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-arm64.img"
+    arch: "aarch64"
+
+# Resource allocation optimal for running MongoDB, Open5GS, and UERANSIM
+cpus: 4
+memory: "4GiB"
+disk: "20GiB"
+
+# Mounts: Host directories exposed to the guest VM
+mounts:
+  - location: "~"
+    writable: true
+
+# Port Forwards from VM to macOS host
+portForwards:
+  # Open5GS WebUI API (guest port 3000 mapped to host port 9999 for integration)
+  - guestPort: 3000
+    hostPort: 9999
+    proto: tcp
+  # MongoDB port (guest port 27017 mapped to host port 27017 for debugging/inspection)
+  - guestPort: 27017
+    hostPort: 27017
+    proto: tcp
+  # Disable automatic port forwarding for all other ports to keep logs clean and fast
+  - guestPortRange: [1, 65535]
+    hostPortRange: [1, 65535]
+    ignore: true
+
+# Provisioning Scripts
+provision:
+  # 1. System Provisioner: Runs as root inside the VM
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      echo "=== Starting 5G Core System Provisioning ==="
+
+      # Prevent interactive prompts during package installations
+      export DEBIAN_FRONTEND=noninteractive
+
+      # 1. Ensure SCTP module is loaded and persisted (vital for 5G AMF interface)
+      echo "=== Configuring SCTP Kernel Module ==="
+      modprobe sctp
+      if ! grep -q "^sctp" /etc/modules; then
+        echo "sctp" >> /etc/modules
+      fi
+
+      # 2. Add Official MongoDB 7.0 Repository
+      echo "=== Configuring MongoDB 7.0 Repository ==="
+      curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+      echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+      # 3. Add Official Open5GS PPA
+      echo "=== Configuring Open5GS PPA ==="
+      add-apt-repository -y ppa:open5gs/latest
+
+      # 4. Install packages & system tools
+      echo "=== Installing System Packages and 5G Core ==="
+      apt-get update
+      apt-get install -y \
+        curl \
+        wget \
+        git \
+        build-essential \
+        cmake \
+        gcc \
+        g++ \
+        libsctp-dev \
+        lksctp-tools \
+        iproute2 \
+        net-tools \
+        iptables \
+        software-properties-common \
+        gnupg \
+        mongodb-org \
+        open5gs
+
+      # 5. Enable and start MongoDB & Open5GS
+      echo "=== Starting Services ==="
+      systemctl daemon-reload
+      systemctl enable --now mongod
+      
+      # Open5GS microservices are enabled and started automatically by the package, 
+      # but let's make sure they are properly running
+      systemctl restart "open5gs-*" || true
+
+      # 6. Enable IP Forwarding in Kernel (required for 5G UE internet access)
+      echo "=== Enabling IP Forwarding ==="
+      echo "net.ipv4.ip_forward=1" | tee /etc/sysctl.d/99-open5gs.conf
+      sysctl --system
+
+      # 7. Configure persistent NAT Routing for UERANSIM
+      # Install iptables-persistent non-interactively
+      echo "=== Configuring Persistent NAT ==="
+      echo iptables-persistent iptables-persistent/secure4 select false | debconf-set-selections
+      echo iptables-persistent iptables-persistent/secure6 select false | debconf-set-selections
+      apt-get install -y iptables-persistent
+
+      # Apply MASQUERADE rules for the Open5GS virtual interface 'ogstun'
+      iptables -t nat -C POSTROUTING -s 10.45.0.0/16 ! -o ogstun -j MASQUERADE 2>/dev/null || \
+      iptables -t nat -A POSTROUTING -s 10.45.0.0/16 ! -o ogstun -j MASQUERADE
+      netfilter-persistent save
+
+      # 8. Install Node.js v20 and Open5GS WebUI
+      echo "=== Installing Node.js & Open5GS WebUI ==="
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      apt-get install -y nodejs
+      curl -fsSL https://open5gs.org/open5gs/assets/webui/install | bash -
+      systemctl enable --now open5gs-webui
+
+      # 9. Clone and compile UERANSIM system-wide in /opt/ueransim
+      echo "=== Cloning and Compiling UERANSIM ==="
+      if [ ! -d "/opt/ueransim" ]; then
+        git clone https://github.com/aligungr/UERANSIM /opt/ueransim
+        cd /opt/ueransim
+        make -j$(nproc)
+        # Grant global permissions so any non-root user can generate configuration files
+        chmod -R 777 /opt/ueransim
+      fi
+
+      echo "=== System Provisioning Completed Successfully ==="

@@ -73,7 +73,7 @@ export class LimaOpen5gsAdapter implements UniversalNetworkPort {
 
     // 3. Ejecutar nr-ue y monitorizar logs
     return new Promise((resolve, reject) => {
-      const nrUe = spawn('limactl', ['shell', this.LIMA_INSTANCE, 'sudo', '/home/aperezl/UERANSIM/build/nr-ue', '-c', remotePath]);
+      const nrUe = spawn('limactl', ['shell', this.LIMA_INSTANCE, 'sudo', '/opt/ueransim/build/nr-ue', '-c', remotePath]);
 
       const session: UESession = {
         sessionId: `lima-${imsi}-${Date.now()}`,

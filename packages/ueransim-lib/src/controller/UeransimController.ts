@@ -17,8 +17,8 @@ export class UeransimController {
 
   constructor(
     private transport: UeransimTransport,
-    private workDir: string = '/home/aperezl.guest/UERANSIM',
-    private configDir: string = '/home/aperezl.guest/UERANSIM/generated_configs'
+    private workDir: string = '/opt/ueransim',
+    private configDir: string = '/opt/ueransim/generated_configs'
   ) {
     this.cliClient = new UeransimCliClient(transport, `${workDir}/build/nr-cli`);
   }

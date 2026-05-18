@@ -1,0 +1,17 @@
+{
+  "sessionId": "SESSION-3G5S0G",
+  "snapshot": {
+    "value": "done",
+    "context": {
+      "error": null,
+      "retryCount": 0,
+      "smdpAddress": "localhost",
+      "iccid": 89049032000001000000,
+      "transactionId": "undefined",
+      "boundProfilePackage": "undefined"
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-18T16:07:30.304Z",
+  "status": "done"
+}

@@ -2,9 +2,24 @@ Esta es una guía rápida y profesional para gestionar tu instancia de **Lima** 
 
 # 🚀 Guía de Gestión de Lima (Instancia `core5g`)
 
-Esta guía cubre los comandos esenciales para operar el entorno de red 5G virtualizado en tu macOS.
+Esta guía cubre los comandos esenciales para operar el entorno de red 5G virtualizado en tu macOS de forma **100% automatizada**.
 
-## 1. Control de Energía y Memoria
+---
+
+## 1. Despliegue Automatizado
+
+Hemos diseñado una plantilla `lima.yaml` que realiza toda la instalación de Open5GS, dependencias, módulo SCTP del kernel, persistencia NAT (iptables) y compilación de UERANSIM de forma completamente automática.
+
+### A. Crear e iniciar la máquina por primera vez:
+Ejecuta el siguiente comando en la raíz de tu proyecto macOS:
+```bash
+limactl start --name=core5g lima.yaml
+```
+*(El primer arranque tomará unos minutos mientras descarga la imagen de Ubuntu, instala los servicios y compila UERANSIM automáticamente en la VM).*
+
+---
+
+## 2. Control de Energía y Memoria
 
 Para gestionar el ciclo de vida de la máquina virtual y **liberar recursos del Mac**:
 
@@ -17,7 +32,7 @@ Para gestionar el ciclo de vida de la máquina virtual y **liberar recursos del 
 
 ---
 
-## 2. Gestión de Servicios Internos (Open5GS)
+## 3. Gestión de Servicios Internos (Open5GS)
 
 Si la VM está encendida pero necesitas reiniciar solo el Core 5G para aplicar cambios o liberar memoria interna:
 
@@ -38,7 +53,7 @@ limactl shell core5g sudo systemctl status "open5gs-*"
 
 ---
 
-## 3. Acceso y SSH
+## 4. Acceso y SSH
 
 Existen varias formas de entrar en la terminal de la máquina:
 
@@ -54,10 +69,10 @@ lima ssh core5g
 
 ---
 
-## 4. Gestión y Mantenimiento
+## 5. Gestión y Mantenimiento
 
 ### Editar recursos (CPU/RAM)
-Si notas que el sistema va lento, puedes aumentar los recursos asignados:
+Si notas que el sistema va lento, puedes aumentar los recursos asignados en `lima.yaml` o directamente editando el estado:
 ```bash
 limactl edit core5g
 ```
@@ -67,7 +82,7 @@ limactl edit core5g
 ### Transferencia de Archivos
 ```bash
 # Del Mac a la VM
-lima scp local-file.txt core5g:/home/aperezl/
+lima scp local-file.txt core5g:~/
 
 # De la VM al Mac
 lima scp core5g:/tmp/log.txt ./
@@ -75,11 +90,12 @@ lima scp core5g:/tmp/log.txt ./
 
 ---
 
-## 5. Notas Específicas para Unuko RSP
+## 6. Notas Específicas para Unuko RSP
 
 En tu entorno actual (`core5g`):
-- **WebUI de Open5GS**: [http://localhost:9999](http://localhost:9999) (Mapeado automáticamente).
-- **Rutas de Binarios**: `/home/aperezl/UERANSIM/build/`.
+- **WebUI de Open5GS**: [http://localhost:9999](http://localhost:9999) (Mapeado automáticamente al puerto 3000 de la VM).
+- **MongoDB**: Mapeado automáticamente al puerto 27017 en tu host local (puedes conectarte usando `mongodb://localhost:27017`).
+- **Rutas de Binarios**: `/opt/ueransim/build/` (Instalado de forma global y agnóstica para todos los desarrolladores).
 - **Logs en tiempo real**: 
   ```bash
   limactl shell core5g sudo tail -f /var/log/open5gs/*.log
@@ -87,14 +103,14 @@ En tu entorno actual (`core5g`):
 
 ---
 
-## 6. Resolución de Problemas
+## 7. Resolución de Problemas
 
-Si la máquina se queda en estado `Broken` o quieres **limpiar todo rastro**:
+Si la máquina se queda en estado `Broken` o quieres **reinstalar/limpiar todo rastro**:
 
-1. **Eliminar y Recrear** (Borra el disco de la VM):
+1. **Eliminar y Recrear** (Borra el disco de la VM y vuelve a provisionar de cero):
    ```bash
    limactl delete core5g
-   limactl start core5g
+   limactl start --name=core5g lima.yaml
    ```
 
 > [!TIP]

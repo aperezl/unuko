@@ -3,7 +3,7 @@ import { UeransimTransport } from '../transport/index.js';
 export class UeransimCliClient {
   constructor(
     private transport: UeransimTransport,
-    private binPath: string = '/home/aperezl.guest/UERANSIM/build/nr-cli'
+    private binPath: string = '/opt/ueransim/build/nr-cli'
   ) {}
 
   async exec(deviceId: string, command: string): Promise<string> {
