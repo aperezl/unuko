@@ -2,6 +2,27 @@ import { fromPromise } from 'xstate';
 import { z } from 'zod';
 import { WorkflowPorts, TaskDefinition } from '../../../domain/models/workflow.types';
 import { parseBERTLV } from '../../../infrastructure/mappers/sgp22-tlv.mapper';
+import fs from 'fs';
+import path from 'path';
+
+const getSmdpUrl = (smdpAddress: string | undefined, pathStr: string): string => {
+  let address = smdpAddress || 'localhost';
+  if (!address.includes(':')) {
+    let currentEnvironment = 'mock';
+    try {
+      const envPath = path.resolve(process.cwd(), './data/environment.json');
+      if (fs.existsSync(envPath)) {
+        const envData = fs.readFileSync(envPath, 'utf-8');
+        currentEnvironment = JSON.parse(envData).environment;
+      }
+    } catch (e) {
+      // ignore
+    }
+    const port = currentEnvironment === 'lima' ? '8081' : '8080';
+    address = `${address}:${port}`;
+  }
+  return `http://${address}${pathStr}`;
+};
 
 export const tasks: Record<string, TaskDefinition> = {
   initialize: {
@@ -22,11 +43,46 @@ export const tasks: Record<string, TaskDefinition> = {
     }),
     handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
       await ports.crypto.getDeviceCertificate();
+      
+      let bodySmdpAddress = input?.smdpAddress || 'localhost';
+      try {
+        const envPath = path.resolve(process.cwd(), './data/environment.json');
+        if (fs.existsSync(envPath)) {
+          const envData = fs.readFileSync(envPath, 'utf-8');
+          const currentEnvironment = JSON.parse(envData).environment;
+          if (currentEnvironment === 'lima' && (bodySmdpAddress === 'localhost' || bodySmdpAddress.startsWith('localhost:'))) {
+            bodySmdpAddress = 'testsmdpplus1.example.com';
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      let challengeBase64 = input?.euiccChallenge;
+      if (!challengeBase64) {
+        challengeBase64 = Buffer.from('unuko-challenge1').toString('base64');
+      } else {
+        try {
+          const buf = Buffer.from(challengeBase64, 'base64');
+          if (buf.length !== 16) {
+            challengeBase64 = Buffer.from('unuko-challenge1').toString('base64');
+          }
+        } catch (e) {
+          challengeBase64 = Buffer.from('unuko-challenge1').toString('base64');
+        }
+      }
+
+      const euiccInfo1Base64 = Buffer.from(
+        'BF20358203020200A9160414F54172BDF98A95D65CBEB88A38A1C11D800A85C3AA160414F54172BDF98A95D65CBEB88A38A1C11D800A85C3',
+        'hex'
+      ).toString('base64');
+
       return await ports.transport.post<{ transactionId: string }>({
-        url: `http://${input?.smdpAddress || 'localhost'}:8080/gsma/rsp2/es9plus/initiateAuthentication`,
+        url: getSmdpUrl(input?.smdpAddress, '/gsma/rsp2/es9plus/initiateAuthentication'),
         body: {
-          euiccChallenge: input?.euiccChallenge || Buffer.from('unuko-challenge').toString('base64'),
-          smdpAddress: input?.smdpAddress || 'localhost'
+          euiccChallenge: challengeBase64,
+          smdpAddress: bodySmdpAddress,
+          euiccInfo1: euiccInfo1Base64
         }
       });
     })
@@ -41,7 +97,7 @@ export const tasks: Record<string, TaskDefinition> = {
     }),
     handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
       const response = await ports.transport.post<{ boundProfilePackage: string }>({
-        url: `http://${input?.smdpAddress || 'localhost'}:8080/gsma/rsp2/es9plus/getBoundProfilePackage`,
+        url: getSmdpUrl(input?.smdpAddress, '/gsma/rsp2/es9plus/getBoundProfilePackage'),
         body: { transactionId: input.transactionId }
       });
       return Buffer.from(response.boundProfilePackage, 'base64');
@@ -113,7 +169,7 @@ export const tasks: Record<string, TaskDefinition> = {
     }),
     handler: (ports: WorkflowPorts) => fromPromise(async ({ input }: any) => {
       await ports.transport.post({
-        url: `http://${input?.smdpAddress || 'localhost'}:8080/gsma/rsp2/es9plus/handleNotification`,
+        url: getSmdpUrl(input?.smdpAddress, '/gsma/rsp2/es9plus/handleNotification'),
         body: {
           pendingNotification: {
             seqNumber: input.seqNumber,

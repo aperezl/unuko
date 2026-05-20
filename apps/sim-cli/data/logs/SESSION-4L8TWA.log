@@ -1,3 +1,0 @@
-{"sessionId":"SESSION-4L8TWA","category":"HARDWARE","level":"AUDIT","direction":"OUT","payload":{"apdu":"80E2910002BF28"},"description":"APDU Command","_id":"d71c41d5-b2e8-422c-8027-bb403ba4f398","timestamp":"2026-05-18T05:41:42.707Z"}
-{"sessionId":"SESSION-4L8TWA","category":"HARDWARE","level":"AUDIT","direction":"IN","payload":{"data":"","sw":"9000","success":true},"description":"APDU Response","_id":"069d2dd8-297f-4e18-a337-0c45a8ba89c3","timestamp":"2026-05-18T05:41:42.710Z"}
-{"sessionId":"SESSION-4L8TWA","category":"WORKFLOW","level":"INFO","direction":"INTERNAL","payload":"undefined","description":"Pending notifications retrieved successfully","_id":"08e8a891-146c-42cb-a2f2-e37497afdfd6","timestamp":"2026-05-18T05:41:42.711Z"}

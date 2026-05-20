@@ -29,6 +29,10 @@ portForwards:
   - guestPort: 27017
     hostPort: 27017
     proto: tcp
+  # Osmocom SM-DP+ Test Server
+  - guestPort: 8080
+    hostPort: 8081
+    proto: tcp
   # Disable automatic port forwarding for all other ports to keep logs clean and fast
   - guestPortRange: [1, 65535]
     hostPortRange: [1, 65535]
@@ -82,7 +86,9 @@ provision:
         software-properties-common \
         gnupg \
         mongodb-org \
-        open5gs
+        open5gs \
+        swig \
+        libpcsclite-dev
 
       # 5. Enable and start MongoDB & Open5GS
       echo "=== Starting Services ==="
@@ -115,6 +121,9 @@ provision:
       curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
       apt-get install -y nodejs
       curl -fsSL https://open5gs.org/open5gs/assets/webui/install | bash -
+      # Configure WebUI to listen on port 3000 to match host port forwarding
+      sed -i 's/Environment=NODE_ENV=production/Environment=NODE_ENV=production\nEnvironment=PORT=3000/g' /lib/systemd/system/open5gs-webui.service
+      systemctl daemon-reload
       systemctl enable --now open5gs-webui
 
       # 9. Clone and compile UERANSIM system-wide in /opt/ueransim
@@ -126,5 +135,36 @@ provision:
         # Grant global permissions so any non-root user can generate configuration files
         chmod -R 777 /opt/ueransim
       fi
+      # 10. Install osmo-smdpp (Python SM-DP+ test server)
+      echo "=== Installing osmo-smdpp ==="
+      apt-get install -y python3-pip
+      if [ ! -d "/opt/pysim" ]; then
+        git clone https://gitea.osmocom.org/sim-card/pysim.git /opt/pysim
+        cd /opt/pysim
+        pip3 install -r requirements.txt
+        pip3 install klein service-identity pyopenssl requests
+      fi
+
+      echo "=== Patching osmo-smdpp compatibility for python-cryptography ==="
+      sed -i 's/subject_pkid.key_identifier/subject_pkid.digest/g' /opt/pysim/osmo-smdpp.py
+      sed -i 's/ski_ext.key_identifier/ski_ext.digest/g' /opt/pysim/pySim/esim/x509_cert.py
+      sed -i 's/pkey.verify(signed.signature, signed.tbs_certificate_bytes, signed.signature_algorithm_parameters)/from cryptography.hazmat.primitives.asymmetric import ec\n    pkey.verify(signed.signature, signed.tbs_certificate_bytes, ec.ECDSA(signed.signature_hash_algorithm))/g' /opt/pysim/pySim/esim/x509_cert.py
+
+      echo "=== Configuring osmo-smdpp Service ==="
+      echo "[Unit]" > /etc/systemd/system/osmo-smdpp.service
+      echo "Description=Osmocom SM-DP+ Test Server" >> /etc/systemd/system/osmo-smdpp.service
+      echo "After=network.target" >> /etc/systemd/system/osmo-smdpp.service
+      echo "" >> /etc/systemd/system/osmo-smdpp.service
+      echo "[Service]" >> /etc/systemd/system/osmo-smdpp.service
+      echo "Type=simple" >> /etc/systemd/system/osmo-smdpp.service
+      echo "WorkingDirectory=/opt/pysim" >> /etc/systemd/system/osmo-smdpp.service
+      echo "ExecStart=/usr/bin/python3 /opt/pysim/osmo-smdpp.py -p 8080 --nossl" >> /etc/systemd/system/osmo-smdpp.service
+      echo "Restart=on-failure" >> /etc/systemd/system/osmo-smdpp.service
+      echo "" >> /etc/systemd/system/osmo-smdpp.service
+      echo "[Install]" >> /etc/systemd/system/osmo-smdpp.service
+      echo "WantedBy=multi-user.target" >> /etc/systemd/system/osmo-smdpp.service
+
+      systemctl daemon-reload
+      systemctl enable --now osmo-smdpp
 
       echo "=== System Provisioning Completed Successfully ==="

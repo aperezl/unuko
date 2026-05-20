@@ -34,12 +34,28 @@ export class HttpmTLSAdapter implements UniversalTransportPort {
       agent
     });
 
+    const rawBody = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`SM-DP+ Error (${response.status}): ${errorText}`);
+      const error = new Error(`SM-DP+ Error (${response.status}): ${rawBody}`) as any;
+      error.status = response.status;
+      error.rawBody = rawBody;
+      throw error;
     }
 
-    return response.json() as Promise<T>;
+    let json: any;
+    try {
+      json = JSON.parse(rawBody);
+    } catch (e) {
+      json = { data: rawBody };
+    }
+
+    if (json && typeof json === 'object') {
+      json._httpStatus = response.status;
+      json._rawBody = rawBody;
+    }
+
+    return json as T;
   }
 }
 

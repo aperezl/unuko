@@ -14,11 +14,28 @@ export class FetchTransportAdapter implements UniversalTransportPort {
         body: JSON.stringify(request.body)
       });
 
+      const rawBody = await response.text();
+
       if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        const error = new Error(`HTTP Error: ${response.status} ${response.statusText}`) as any;
+        error.status = response.status;
+        error.rawBody = rawBody;
+        throw error;
       }
 
-      return await response.json() as T;
+      let json: any;
+      try {
+        json = JSON.parse(rawBody);
+      } catch (e) {
+        json = { data: rawBody };
+      }
+
+      if (json && typeof json === 'object') {
+        json._httpStatus = response.status;
+        json._rawBody = rawBody;
+      }
+
+      return json as T;
     } catch (error) {
       console.error(`[HTTP FETCH] Failed to ${request.url}:`, error);
       throw error;

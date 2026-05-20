@@ -12,6 +12,8 @@ import { PKCS11Adapter } from '@unuko/adapter-pkcs11';
 import { HttpmTLSAdapter, WebhookNotificationAdapter } from '@unuko/adapter-http';
 import { createActor, AnyActor } from 'xstate';
 import fastify from 'fastify';
+import fs from 'fs';
+import { MockSdmAdapter, MockUeransimNetworkAdapter } from './adapters/MockInfrastructureAdapter';
 import {
   HardwareAuditOutboundAdapter,
   TransportAuditOutboundAdapter,
@@ -35,16 +37,18 @@ async function bootstrap() {
 
   const server = fastify();
 
-  // Capa de persistencia segregada
-  const persistence = new JsonPersistenceAdapter('./data');
-  const fileAudit = new FileAuditAdapter('./data');
   const consoleAudit = new ConsoleAuditAdapter();
-  
-  // Auditoría compuesta (Archivo + Consola)
-  const audit = new CompositeAuditAdapter([fileAudit, consoleAudit]);
 
-  // Inspector de sesiones para la UI
-  const inspector = new SessionInspector(persistence, fileAudit);
+  // Capa de persistencia segregada por entorno
+  const mockPersistence = new JsonPersistenceAdapter('./data/mock');
+  const mockFileAudit = new FileAuditAdapter('./data/mock');
+  const mockAudit = new CompositeAuditAdapter([mockFileAudit, consoleAudit]);
+  const mockInspector = new SessionInspector(mockPersistence, mockFileAudit);
+
+  const limaPersistence = new JsonPersistenceAdapter('./data/lima');
+  const limaFileAudit = new FileAuditAdapter('./data/lima');
+  const limaAudit = new CompositeAuditAdapter([limaFileAudit, consoleAudit]);
+  const limaInspector = new SessionInspector(limaPersistence, limaFileAudit);
 
   // Registro de actores activos en memoria
   const activeActors = new Map<string, AnyActor>();
@@ -60,14 +64,41 @@ async function bootstrap() {
   const notification = new WebhookNotificationAdapter('http://localhost:3000/v1/orchestrator/alerts/null'); // Silent local loop
   const ueransimNetwork = new UeransimNetworkAdapter('core5g');
   const sdmAdapter = new Open5gsSdmAdapter('core5g');
-  const network = new MockNetworkAdapter({ delayMs: 1000 });
+  const mockUeransimNetwork = new MockUeransimNetworkAdapter();
+  const mockSdmAdapter = new MockSdmAdapter();
+  const mockNetwork = new MockNetworkAdapter({ delayMs: 1000 });
+
+  // Load environment configuration
+  let currentEnvironment: 'mock' | 'lima' = 'mock';
+  try {
+    if (!fs.existsSync('./data')) {
+      fs.mkdirSync('./data', { recursive: true });
+    }
+    if (fs.existsSync('./data/environment.json')) {
+      const envData = fs.readFileSync('./data/environment.json', 'utf-8');
+      currentEnvironment = JSON.parse(envData).environment;
+    }
+  } catch (e) {
+    console.error('Failed to load environment configuration:', e);
+  }
+
+  const getActiveSdm = () => currentEnvironment === 'lima' ? sdmAdapter : mockSdmAdapter;
+  const getActiveUeransim = () => currentEnvironment === 'lima' ? ueransimNetwork : mockUeransimNetwork;
+  const getActivePersistence = () => currentEnvironment === 'lima' ? limaPersistence : mockPersistence;
+  const getActiveFileAudit = () => currentEnvironment === 'lima' ? limaFileAudit : mockFileAudit;
+  const getActiveAudit = () => currentEnvironment === 'lima' ? limaAudit : mockAudit;
+  const getActiveInspector = () => currentEnvironment === 'lima' ? limaInspector : mockInspector;
 
   // Función para inicializar y arrancar una sesión
   const startSession = async (sessionId: string, workflow: string = 'provisioning', snapshot?: any, workflowDefinition?: any) => {
     console.log(`[SYSTEM]: Starting ${workflowDefinition ? 'dynamic' : workflow} session ${sessionId}...`);
 
-    const hardware = new HardwareAuditOutboundAdapter(rawHardware, audit, sessionId);
-    const transport = new TransportAuditOutboundAdapter(rawTransport, audit, sessionId);
+    const activeAudit = getActiveAudit();
+    const activePersistence = getActivePersistence();
+
+    const hardware = new HardwareAuditOutboundAdapter(rawHardware, activeAudit, sessionId);
+    const transport = new TransportAuditOutboundAdapter(rawTransport, activeAudit, sessionId);
+    const network = currentEnvironment === 'lima' ? ueransimNetwork : mockNetwork;
 
     let machine;
     if (workflowDefinition) {
@@ -75,7 +106,7 @@ async function bootstrap() {
         hardware,
         crypto,
         transport,
-        audit,
+        audit: activeAudit,
         notification,
         network,
         sessionId
@@ -93,7 +124,7 @@ async function bootstrap() {
         hardware,
         crypto,
         transport,
-        audit,
+        audit: activeAudit,
         notification,
         network,
         sessionId
@@ -109,7 +140,7 @@ async function bootstrap() {
       console.log(`[${sessionId}]: ${currentState}`);
 
       const snapshot = actor.getSnapshot();
-      await persistence.saveSession(sessionId, {
+      await activePersistence.saveSession(sessionId, {
         value: snapshot.value,
         context: snapshot.context,
         status: snapshot.status
@@ -140,7 +171,7 @@ async function bootstrap() {
 
   // Listar todas las sesiones
   server.get('/v1/orchestrator/sessions', async () => {
-    const sessions = await persistence.listSessions();
+    const sessions = await getActivePersistence().listSessions();
     return sessions?.map(s => ({
       sessionId: s.sessionId,
       status: s.status,
@@ -175,15 +206,15 @@ async function bootstrap() {
       activeActors.delete(id);
     }
 
-    await persistence.deleteSession(id);
-    await fileAudit.deleteAuditLogs(id);
+    await getActivePersistence().deleteSession(id);
+    await getActiveFileAudit().deleteAuditLogs(id);
     return { status: 'deleted', sessionId: id };
   });
 
   // Consultar el estado vivo de la sesión
   server.get('/v1/orchestrator/session/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const details = await inspector.getFullDetails(id);
+    const details = await getActiveInspector().getFullDetails(id);
 
     if (!details) return reply.status(404).send({ error: 'Session not found' });
 
@@ -206,39 +237,39 @@ async function bootstrap() {
 
   // List all UEs (using sessions as proxy for now or querying the adapter)
   server.get('/v1/inventory/subscribers', async () => {
-    return await sdmAdapter.findAll();
+    return await getActiveSdm().findAll();
   });
 
   server.get('/v1/inventory/subscribers/:imsi', async (request, reply) => {
     const { imsi } = request.params as { imsi: string };
-    const sub = await sdmAdapter.findById(imsi);
+    const sub = await getActiveSdm().findById(imsi);
     if (!sub) return reply.status(404).send({ error: 'Subscriber not found' });
     return sub;
   });
 
   server.post('/v1/inventory/subscribers', async (request) => {
     const subscriber = request.body as any;
-    await sdmAdapter.upsert(subscriber);
+    await getActiveSdm().upsert(subscriber);
     return { status: 'ok' };
   });
 
   server.delete('/v1/inventory/subscribers/:imsi', async (request) => {
     const { imsi } = request.params as { imsi: string };
-    await sdmAdapter.delete(imsi);
+    await getActiveSdm().delete(imsi);
     return { status: 'ok' };
   });
 
   server.get('/v1/infrastructure/devices', async () => {
-    const controller = (ueransimNetwork as any).controller;
+    const controller = getActiveUeransim().controller;
     return await controller.getDevices();
   });
 
   server.delete('/v1/infrastructure/devices', async () => {
     // 1. Wipe subscriber DB
-    await sdmAdapter.clearAll();
+    await getActiveSdm().clearAll();
 
     // 2. Kill simulated processes and delete config/log files
-    const controller = (ueransimNetwork as any).controller;
+    const controller = getActiveUeransim().controller;
     await controller.removeAllDevices();
 
     return { status: 'all_cleared' };
@@ -246,40 +277,42 @@ async function bootstrap() {
 
   server.post('/v1/infrastructure/provision-all', async (request, reply) => {
     try {
-      const fs = await import('fs/promises');
+      const fsPromises = await import('fs/promises');
       const path = await import('path');
       
       console.log('=== Starting Resilient Automatic Seed Provisioning ===');
 
+      const sdm = getActiveSdm();
+      const ueransim = getActiveUeransim();
+
       // 1. Wipe Slate Clean: Delete all existing subscribers and simulated devices
       console.log('[SEED]: Clearing existing subscriber database...');
-      await sdmAdapter.clearAll();
+      await sdm.clearAll();
 
-      const controller = (ueransimNetwork as any).controller;
       console.log('[SEED]: Stopping and removing all simulated 5G devices...');
-      await controller.removeAllDevices();
+      await ueransim.controller.removeAllDevices();
       
       // Ensure the config directory exists
-      await controller.init();
+      await ueransim.controller.init();
 
       // 2. Seed subscribers in Open5GS MongoDB
       let subscribersCount = 0;
       const subsPath = path.resolve(__dirname, '../../../config/seeds/subscribers.json');
-      const subsData = await fs.readFile(subsPath, 'utf-8');
+      const subsData = await fsPromises.readFile(subsPath, 'utf-8');
       const subscribers = JSON.parse(subsData);
       for (const sub of subscribers) {
-        await sdmAdapter.upsert(sub);
+        await sdm.upsert(sub);
         subscribersCount++;
       }
-      console.log(`[SEED]: Registered ${subscribersCount} fresh subscribers in MongoDB`);
+      console.log(`[SEED]: Registered ${subscribersCount} fresh subscribers`);
 
       // 3. Seed gNB configurations and start them
       let gnbsCount = 0;
       const gnbsPath = path.resolve(__dirname, '../../../config/seeds/gnbs.json');
-      const gnbsData = await fs.readFile(gnbsPath, 'utf-8');
+      const gnbsData = await fsPromises.readFile(gnbsPath, 'utf-8');
       const gnbs = JSON.parse(gnbsData);
       for (const gnb of gnbs) {
-        await controller.startGNB(gnb, false);
+        await ueransim.controller.startGNB(gnb, false);
         gnbsCount++;
       }
       console.log(`[SEED]: Inventoried ${gnbsCount} slice-aware gNB simulated antennas`);
@@ -287,10 +320,10 @@ async function bootstrap() {
       // 4. Seed UE configurations and start them
       let uesCount = 0;
       const uesPath = path.resolve(__dirname, '../../../config/seeds/ues.json');
-      const uesData = await fs.readFile(uesPath, 'utf-8');
+      const uesData = await fsPromises.readFile(uesPath, 'utf-8');
       const ues = JSON.parse(uesData);
       for (const ue of ues) {
-        await controller.startUE(ue, false);
+        await ueransim.controller.startUE(ue, false);
         uesCount++;
       }
       console.log(`[SEED]: Inventoried ${uesCount} slice-aware UE simulated devices`);
@@ -315,7 +348,7 @@ async function bootstrap() {
     if (!imsi) return reply.status(400).send({ error: 'IMSI is required' });
 
     try {
-      const session = await ueransimNetwork.attachUE(imsi, { gnbAddress });
+      const session = await getActiveUeransim().attachUE(imsi, { gnbAddress });
       return { status: 'created', session };
     } catch (err: any) {
       return reply.status(500).send({ error: err.message });
@@ -327,7 +360,7 @@ async function bootstrap() {
     const config = request.body as any;
     
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       // Complete UE config with defaults
       const fullConfig = {
         supi: imsi,
@@ -355,7 +388,7 @@ async function bootstrap() {
     const config = request.body as any;
     
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       const fullConfig = {
         mcc: config.mcc || '999',
         mnc: config.mnc || '70',
@@ -381,7 +414,7 @@ async function bootstrap() {
     const config = request.body as any;
     
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       const fullConfig = {
         mcc: config.mcc || '999',
         mnc: config.mnc || '70',
@@ -405,7 +438,7 @@ async function bootstrap() {
   server.post('/v1/infrastructure/device/:id/stop', async (request, reply) => {
     const { id } = request.params as { id: string };
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       await controller.stopDevice(id);
       return { status: 'stopped', id };
     } catch (err: any) {
@@ -416,7 +449,7 @@ async function bootstrap() {
   server.delete('/v1/infrastructure/device/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       await controller.removeDevice(id);
       return { status: 'deleted', id };
     } catch (err: any) {
@@ -428,7 +461,7 @@ async function bootstrap() {
     const { id } = request.params as { id: string };
     
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       const devices = await controller.getDevices();
       const device = devices.find((d: any) => d.id === id);
       
@@ -449,7 +482,7 @@ async function bootstrap() {
   server.get('/v1/infrastructure/device/:id/logs', async (request, reply) => {
     const { id } = request.params as { id: string };
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       const logs = await controller.getLogs(id);
       return { logs };
     } catch (err: any) {
@@ -460,7 +493,7 @@ async function bootstrap() {
   server.get('/v1/infrastructure/device/:id/config', async (request, reply) => {
     const { id } = request.params as { id: string };
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       const config = await controller.getDeviceYaml(id);
       return { yaml: config };
     } catch (err: any) {
@@ -472,11 +505,205 @@ async function bootstrap() {
     const { id } = request.params as { id: string };
     const { yaml } = request.body as { yaml: string };
     try {
-      const controller = (ueransimNetwork as any).controller;
+      const controller = getActiveUeransim().controller;
       await controller.saveDeviceYaml(id, yaml);
       return { status: 'saved' };
     } catch (err: any) {
       return reply.status(500).send({ error: err.message });
+    }
+  });
+
+  // --- 9. MULTI-ENVIRONMENT ENDPOINTS ---
+  server.get('/v1/orchestrator/environment', async () => {
+    return { environment: currentEnvironment };
+  });
+
+  server.post('/v1/orchestrator/environment', async (request, reply) => {
+    const { environment } = request.body as { environment: 'mock' | 'lima' };
+    if (environment !== 'mock' && environment !== 'lima') {
+      return reply.status(400).send({ error: 'Invalid environment. Must be "mock" or "lima"' });
+    }
+    currentEnvironment = environment;
+    try {
+      fs.writeFileSync('./data/environment.json', JSON.stringify({ environment }, null, 2));
+    } catch (e) {
+      console.error('Failed to save environment configuration:', e);
+    }
+    console.log(`[SYSTEM]: Switched active environment to: ${currentEnvironment}`);
+    return { environment: currentEnvironment };
+  });
+
+  // Check the status of all available services
+  type ServiceEntry = {
+    name: string;
+    serviceName?: string;
+    type: string;
+    port: number | null;
+    host: string;
+    forwardedPort?: number;
+    status: string;
+    description: string;
+  };
+
+  server.get('/v1/orchestrator/services/status', async () => {
+    const net = await import('net');
+    const checkPort = (port: number, host: string = '127.0.0.1'): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const socket = new net.Socket();
+        let status = false;
+        socket.setTimeout(800);
+        socket.on('connect', () => { status = true; socket.destroy(); });
+        socket.on('timeout', () => socket.destroy());
+        socket.on('error', () => socket.destroy());
+        socket.on('close', () => resolve(status));
+        socket.connect(port, host);
+      });
+    };
+
+    const coreServices = [
+      { name: 'open5gs-amfd', label: 'AMF', desc: 'Access and Mobility Management Function', ip: '127.0.0.5', port: 38412 },
+      { name: 'open5gs-smfd', label: 'SMF', desc: 'Session Management Function', ip: '127.0.0.4', port: 80 },
+      { name: 'open5gs-upfd', label: 'UPF', desc: 'User Plane Function', ip: '127.0.0.7', port: 2152 },
+      { name: 'open5gs-udmd', label: 'UDM', desc: 'Unified Data Management', ip: '127.0.0.12', port: 80 },
+      { name: 'open5gs-udrd', label: 'UDR', desc: 'Unified Data Repository', ip: '127.0.0.20', port: 80 },
+      { name: 'open5gs-ausfd', label: 'AUSF', desc: 'Authentication Server Function', ip: '127.0.0.11', port: 80 },
+      { name: 'open5gs-nrfd', label: 'NRF', desc: 'Network Repository Function', ip: '127.0.0.10', port: 80 },
+      { name: 'open5gs-pcfd', label: 'PCF', desc: 'Policy Control Function', ip: '127.0.0.13', port: 80 },
+      { name: 'open5gs-nssfd', label: 'NSSF', desc: 'Network Slice Selection Function', ip: '127.0.0.14', port: 80 },
+      { name: 'open5gs-bsfd', label: 'BSF', desc: 'Binding Support Function', ip: '127.0.0.15', port: 80 }
+    ];
+
+    if (currentEnvironment === 'lima') {
+      const mongoOnline = await checkPort(27017);
+      const webUiOnline = await checkPort(9999);
+      const smdpOnline = await checkPort(8081);
+
+      let systemctlStatuses: string[] = [];
+      try {
+        const { execSync } = await import('child_process');
+        const serviceNames = coreServices.map(s => s.name).join(' ');
+        const output = execSync(`limactl shell core5g systemctl is-active ${serviceNames}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+        systemctlStatuses = output.trim().split('\n').map(s => s.trim());
+      } catch (e: any) {
+        if (e.stdout) {
+          systemctlStatuses = e.stdout.trim().split('\n').map((s: string) => s.trim());
+        }
+      }
+
+      const servicesList: ServiceEntry[] = [
+        {
+          name: 'MongoDB',
+          type: 'Database',
+          port: 27017,
+          host: '127.0.0.1',
+          status: mongoOnline ? 'online' : 'offline',
+          description: 'Open5GS subscriber database'
+        },
+        {
+          name: 'Open5GS WebUI',
+          type: 'Web Portal',
+          port: 3000,
+          forwardedPort: 9999,
+          host: '127.0.0.1',
+          status: webUiOnline ? 'online' : 'offline',
+          description: 'Core network management portal'
+        },
+        {
+          name: 'Osmocom SM-DP+',
+          type: 'RSP Server',
+          port: 8080,
+          forwardedPort: 8081,
+          host: '127.0.0.1',
+          status: smdpOnline ? 'online' : 'offline',
+          description: 'Subscription Manager Data Preparation server'
+        }
+      ];
+
+      coreServices.forEach((svc, idx) => {
+        const isOnline = systemctlStatuses[idx] === 'active';
+        servicesList.push({
+          name: svc.label,
+          serviceName: svc.name,
+          type: '5G Core Service',
+          port: svc.port,
+          host: svc.ip,
+          status: isOnline ? 'online' : 'offline',
+          description: svc.desc
+        });
+      });
+
+      return servicesList;
+    } else {
+      const smdpOnline = await checkPort(8080);
+      const dbWritable = fs.existsSync('./data/mock');
+
+      const servicesList: ServiceEntry[] = [
+        {
+          name: 'Mock SM-DP+ Server',
+          type: 'RSP Server',
+          port: 8080,
+          host: '127.0.0.1',
+          status: smdpOnline ? 'online' : 'offline',
+          description: 'Simulated SM-DP+ subscription profile server'
+        },
+        {
+          name: 'Mock Database (JSON)',
+          type: 'Database',
+          port: null,
+          host: 'Local',
+          status: dbWritable ? 'online' : 'offline',
+          description: 'Local flat-file json storage for mock subscriber profiles'
+        }
+      ];
+
+      coreServices.forEach(svc => {
+        servicesList.push({
+          name: `Mock ${svc.label}`,
+          serviceName: svc.name,
+          type: '5G Core Service',
+          port: svc.port,
+          host: 'Local',
+          status: 'online',
+          description: `Simulated ${svc.desc}`
+        });
+      });
+
+      return servicesList;
+    }
+  });
+
+  // Control the status of a specific systemd service (start/stop)
+  server.post('/v1/orchestrator/services/:name/state', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const { action } = request.body as { action: 'start' | 'stop' };
+
+    const allowedServices = [
+      'open5gs-amfd', 'open5gs-smfd', 'open5gs-upfd', 'open5gs-udmd', 'open5gs-udrd',
+      'open5gs-ausfd', 'open5gs-nrfd', 'open5gs-pcfd', 'open5gs-nssfd', 'open5gs-bsfd'
+    ];
+
+    if (!allowedServices.includes(name)) {
+      return reply.status(400).send({ error: 'Invalid service name' });
+    }
+
+    if (action !== 'start' && action !== 'stop') {
+      return reply.status(400).send({ error: 'Invalid action, must be start or stop' });
+    }
+
+    if (currentEnvironment !== 'lima') {
+      return { status: action === 'start' ? 'active' : 'inactive' };
+    }
+
+    try {
+      const { execSync } = await import('child_process');
+      execSync(`limactl shell core5g sudo systemctl ${action} ${name}`);
+      const checkOutput = execSync(`limactl shell core5g systemctl is-active ${name}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+      return { status: checkOutput.trim() };
+    } catch (e: any) {
+      if (e.stdout) {
+        return { status: e.stdout.trim() };
+      }
+      return { status: action === 'start' ? 'active' : 'inactive' };
     }
   });
 

@@ -36,12 +36,21 @@ export class TransportAuditOutboundAdapter implements UniversalTransportPort {
 
       return response;
     } catch (error) {
+      const payload: any = { error: error instanceof Error ? error.message : String(error) };
+      if (error && typeof error === 'object') {
+        if ('status' in error) {
+          payload._httpStatus = (error as any).status;
+        }
+        if ('rawBody' in error) {
+          payload._rawBody = (error as any).rawBody;
+        }
+      }
       await this.audit.log({
         sessionId: this.sessionId,
         category: 'TRANSPORT',
         level: 'ERROR',
         direction: 'IN',
-        payload: { error: error instanceof Error ? error.message : String(error) },
+        payload,
         description: `HTTP Failure from ${new URL(request.url).pathname}`
       });
       throw error;

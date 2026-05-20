@@ -46,7 +46,7 @@ const CopyButton = ({ text, label }: { text: string; label?: string }) => {
 };
 
 export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
-  const [activeTab, setActiveTab] = React.useState<'response' | 'request' | 'headers'>('response');
+  const [activeTab, setActiveTab] = React.useState<'response' | 'request' | 'headers' | 'raw'>('response');
   const isError = log.payload?.error || log.payload?.success === false;
 
   const statusText = isError 
@@ -68,6 +68,8 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
   const responseBody = processedPayload?.response || (log.direction === 'IN' ? processedPayload : null);
   const headers = processedPayload?.headers || null;
   const url = processedPayload?.url || null;
+  const httpStatus = processedPayload?._httpStatus || null;
+  const rawBody = processedPayload?._rawBody || null;
 
   const hexData = responseBody?.apdu || responseBody?.data || 
                  (typeof responseBody === 'string' && /^[0-9A-Fa-f]+$/.test(responseBody) ? responseBody : null);
@@ -155,7 +157,8 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
                   {[
                     { id: 'response', label: 'Response Body' },
                     { id: 'request', label: 'Request Body' },
-                    { id: 'headers', label: 'Network Headers' }
+                    { id: 'headers', label: 'Network Headers' },
+                    { id: 'raw', label: 'Raw' }
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -172,12 +175,16 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
                   <div className="flex-1" />
                   <div className="pr-2">
                     <CopyButton 
-                      text={JSON.stringify(
-                        activeTab === 'response' ? responseBody : 
-                        activeTab === 'request' ? requestBody : 
-                        headers, 
-                        null, 2
-                      )} 
+                      text={
+                        activeTab === 'raw'
+                          ? (rawBody ? `STATUS: ${httpStatus || '200 OK'}\n\n${rawBody}` : (responseBody ? JSON.stringify(responseBody) : ''))
+                          : JSON.stringify(
+                              activeTab === 'response' ? responseBody : 
+                              activeTab === 'request' ? requestBody : 
+                              headers, 
+                              null, 2
+                            )
+                      } 
                     />
                   </div>
                 </div>
@@ -196,10 +203,15 @@ export const LogItem = ({ log, isSelected, onClick }: LogItemProps) => {
                       <HexViewer data={hexData} />
                     </div>
                   ) : (
-                    <pre className="text-[10px] text-slate-500 font-mono bg-black/40 p-4 rounded-sm border border-slate-900/50 overflow-x-auto">
+                    <pre className="text-[10px] text-slate-500 font-mono bg-black/40 p-4 rounded-sm border border-slate-900/50 overflow-x-auto whitespace-pre-wrap break-all">
                       {activeTab === 'response' && responseBody ? JSON.stringify(responseBody, null, 2) : 
                        activeTab === 'request' && requestBody ? JSON.stringify(requestBody, null, 2) :
                        activeTab === 'headers' && headers ? JSON.stringify(headers, null, 2) :
+                       activeTab === 'raw' ? (
+                         rawBody 
+                           ? `STATUS: ${httpStatus || '200 OK'}\n\n${rawBody}`
+                           : (responseBody ? JSON.stringify(responseBody) : '// NO DATA AVAILABLE FOR THIS SEGMENT')
+                       ) :
                        '// NO DATA AVAILABLE FOR THIS SEGMENT'}
                     </pre>
                   )}

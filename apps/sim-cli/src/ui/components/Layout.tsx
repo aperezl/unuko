@@ -41,6 +41,34 @@ export const Layout = () => {
   const [collapsed, setCollapsed] = React.useState(() => {
     return localStorage.getItem('unuko-sidebar-collapsed') === 'true';
   });
+  const [environment, setEnvironment] = React.useState<'mock' | 'lima'>('mock');
+
+  React.useEffect(() => {
+    fetch('/v1/orchestrator/environment')
+      .then(res => res.json())
+      .then(data => {
+        if (data.environment) setEnvironment(data.environment);
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  const toggleEnvironment = async () => {
+    const nextEnv = environment === 'mock' ? 'lima' : 'mock';
+    try {
+      const response = await fetch('/v1/orchestrator/environment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ environment: nextEnv })
+      });
+      const data = await response.json();
+      if (data.environment) {
+        setEnvironment(data.environment);
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const toggleSidebar = () => {
     const nextValue = !collapsed;
@@ -183,6 +211,34 @@ export const Layout = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 bg-muted/60 border border-border p-0.5 rounded-lg mr-2">
+              <Button 
+                variant={environment === 'mock' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={environment === 'mock' ? undefined : toggleEnvironment}
+                className={cn(
+                  "h-7 text-[10px] font-black uppercase tracking-wider px-2.5 rounded-md transition-all duration-200",
+                  environment === 'mock' 
+                    ? "bg-amber-500 hover:bg-amber-600 text-black shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+                )}
+              >
+                Mock
+              </Button>
+              <Button 
+                variant={environment === 'lima' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={environment === 'lima' ? undefined : toggleEnvironment}
+                className={cn(
+                  "h-7 text-[10px] font-black uppercase tracking-wider px-2.5 rounded-md transition-all duration-200",
+                  environment === 'lima' 
+                    ? "bg-sky-500 hover:bg-sky-600 text-white shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+                )}
+              >
+                LIMA (5G)
+              </Button>
+            </div>
             <Button variant="ghost" size="icon" className="relative w-8 h-8 rounded-md text-muted-foreground">
               <Bell className="w-4 h-4" />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full" />

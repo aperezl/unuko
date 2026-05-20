@@ -1,3 +1,0 @@
-{"sessionId":"SESSION-NE5ZV6","category":"HARDWARE","level":"AUDIT","direction":"OUT","payload":{"apdu":"80E291000FBF310C5A0A89049032000001000000"},"description":"APDU Command","_id":"f337325a-8d60-499d-b733-8c788e410a9a","timestamp":"2026-05-18T05:41:32.438Z"}
-{"sessionId":"SESSION-NE5ZV6","category":"HARDWARE","level":"AUDIT","direction":"IN","payload":{"data":"","sw":"9000","success":true},"description":"APDU Response","_id":"6dd2c3c8-088a-47c6-b17b-66e3c48f1115","timestamp":"2026-05-18T05:41:32.439Z"}
-{"sessionId":"SESSION-NE5ZV6","category":"WORKFLOW","level":"INFO","direction":"INTERNAL","payload":{},"description":"Simulating Profile Refresh (REUICC) after action","_id":"845981f4-555d-499e-9707-c3d8e567ab69","timestamp":"2026-05-18T05:41:32.440Z"}
