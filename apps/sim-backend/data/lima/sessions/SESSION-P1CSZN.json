@@ -1,0 +1,16 @@
+{
+  "sessionId": "SESSION-P1CSZN",
+  "snapshot": {
+    "value": "failure",
+    "context": {
+      "error": null,
+      "retryCount": 0,
+      "smdpAddress": "localhost",
+      "iccid": 89049032000001000000,
+      "transactionId": "undefined"
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-20T07:42:20.533Z",
+  "status": "failure"
+}

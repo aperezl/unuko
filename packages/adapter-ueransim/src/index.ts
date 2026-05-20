@@ -74,7 +74,7 @@ export class UeransimHardwareAdapter implements UniversalHardwarePort {
 }
 
 export class UeransimNetworkAdapter implements UniversalNetworkPort {
-  private controller: UeransimController;
+  public controller: UeransimController;
 
   constructor(instanceName: string = 'core5g') {
     const transport = new LimaTransport(instanceName);
