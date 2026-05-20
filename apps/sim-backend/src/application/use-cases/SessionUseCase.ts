@@ -102,6 +102,19 @@ export class SessionUseCase {
       const currentState = typeof state.value === 'string' ? state.value : JSON.stringify(state.value);
       console.log(`[${sessionId}]: ${currentState}`);
 
+      try {
+        await activeAudit.log({
+          sessionId,
+          category: 'WORKFLOW',
+          level: 'INFO',
+          direction: 'INTERNAL',
+          payload: { state: currentState },
+          description: `State transitioned to: ${currentState}`
+        });
+      } catch (err) {
+        console.error(`[${sessionId}]: Failed to write state transition log:`, err);
+      }
+
       const currentSnapshot = actor.getSnapshot();
       await activePersistence.saveSession(sessionId, {
         value: currentSnapshot.value,

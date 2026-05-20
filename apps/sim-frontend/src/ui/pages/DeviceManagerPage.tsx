@@ -10,7 +10,6 @@ import {
   PowerOff,
   Play,
   Square,
-  Search,
   Terminal,
   ArrowDown,
   Settings,
@@ -18,33 +17,26 @@ import {
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn } from '../../lib/utils';
 import { Link, useLocation } from 'react-router-dom';
-import { DeviceForm } from '../components/DeviceForms';
-import { AILogAuditor } from '../components/AILogAuditor';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Badge } from '../components/ui/badge';
-import { Card } from '../components/ui/card';
+import { DeviceForm } from '../../components/DeviceForms';
+import { AILogAuditor } from '../../components/AILogAuditor';
+import { Button } from '../atoms/Button';
+import { Input } from '../atoms/Input';
+import { Badge } from '../atoms/Badge';
+import { SearchInput } from '../molecules/SearchInput';
+import { TableHeaderCell } from '../molecules/TableHeaderCell';
+import { deviceRepository } from '../../infrastructure/adapters/HttpDeviceRepository';
+import { Card } from '../../components/ui/card';
+import { Spinner } from '../atoms/Spinner';
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table";
-
-interface Device {
-  id: string;
-  type: 'UE' | 'GNB';
-  status: 'RUNNING' | 'STOPPED' | 'ERROR';
-  ip?: string;
-  connected?: boolean;
-  mcc?: string;
-  mnc?: string;
-  config?: any;
-}
+} from "../../components/ui/table";
+import { Device } from '../../core/domain/device.types';
 
 const LogLine = ({ line }: { line: string }) => {
   const match = line.match(/^(\[[^\]]+\])\s+(\[[^\]]+\])\s+(\[[^\]]+\])(.*)$/);
@@ -106,9 +98,8 @@ export const DeviceManagerPage = () => {
   const fetchYaml = async (id: string) => {
     setIsYamlLoading(true);
     try {
-      const response = await fetch(`/v1/infrastructure/device/${id}/config`);
-      const data = await response.json();
-      setYamlContent(data.yaml || '');
+      const data = await deviceRepository.getDeviceYaml(id);
+      setYamlContent(data);
     } catch (err) {
       setYamlContent('Failed to retrieve YAML configuration from VM.');
     } finally {
@@ -120,17 +111,9 @@ export const DeviceManagerPage = () => {
     if (!viewingYamlId) return;
     setIsSavingYaml(true);
     try {
-      const response = await fetch(`/v1/infrastructure/device/${viewingYamlId}/config`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ yaml: yamlContent })
-      });
-      if (response.ok) {
-        setViewingYamlId(null);
-        fetchDevices();
-      } else {
-        alert('Failed to save configuration.');
-      }
+      await deviceRepository.saveDeviceYaml(viewingYamlId, yamlContent);
+      setViewingYamlId(null);
+      fetchDevices();
     } catch (err) {
       console.error(err);
       alert('Failed to save configuration.');
@@ -160,7 +143,7 @@ export const DeviceManagerPage = () => {
     if (!isScrolledUp && logsContainerRef.current) {
       logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
     }
-  }, [logs]);
+  }, [logs, isScrolledUp]);
 
   React.useEffect(() => {
     if (viewingLogId && logsContainerRef.current) {
@@ -244,7 +227,7 @@ export const DeviceManagerPage = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [sidebarWidth]);
+  }, [sidebarWidth, aiAuditorWidth]);
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -266,8 +249,7 @@ export const DeviceManagerPage = () => {
   const fetchDevices = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/v1/infrastructure/devices');
-      const data = await response.json();
+      const data = await deviceRepository.getDevices();
       setDevices(data);
     } catch (err) {
       console.error('Failed to fetch devices:', err);
@@ -279,10 +261,8 @@ export const DeviceManagerPage = () => {
   const fetchLogs = async (id: string) => {
     setIsLogsLoading(true);
     try {
-      const response = await fetch(`/v1/infrastructure/device/${id}/logs`);
-      const data = await response.json();
-      const rawLogs = Array.isArray(data.logs) ? data.logs.join('\n') : (data.logs || '');
-      setLogs(rawLogs);
+      const data = await deviceRepository.getDeviceLogs(id);
+      setLogs(data);
     } catch (err) {
       setLogs('Failed to retrieve logs from VM.');
     } finally {
@@ -314,22 +294,23 @@ export const DeviceManagerPage = () => {
       const id = isUpdate ? editingDevice.id : (currentTab === 'ue' ? formData.imsi : formData.nci);
       const cleanId = id.replace('imsi-', '').replace('gnb-', '');
       
-      const url = isUpdate 
-        ? `/v1/infrastructure/${currentTab}/${cleanId}` 
-        : `/v1/infrastructure/${currentTab}`;
-      const method = isUpdate ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      
-      if (response.ok) {
-        fetchDevices();
-        setShowForm(false);
-        setEditingDevice(null);
+      if (currentTab === 'ue') {
+        if (isUpdate) {
+          await deviceRepository.updateUE(cleanId, formData);
+        } else {
+          await deviceRepository.attachUE(formData.imsi, formData.gnbAddress);
+        }
+      } else {
+        if (isUpdate) {
+          await deviceRepository.updateGNB(cleanId, formData);
+        } else {
+          await deviceRepository.startGNB(formData);
+        }
       }
+      
+      fetchDevices();
+      setShowForm(false);
+      setEditingDevice(null);
     } catch (err) {
       console.error('Failed to save device:', err);
     } finally {
@@ -340,8 +321,8 @@ export const DeviceManagerPage = () => {
   const handleDeleteDevice = async (id: string) => {
     if (!window.confirm('Are you sure you want to PERMANENTLY remove this configuration from the VM?')) return;
     try {
-      const response = await fetch(`/v1/infrastructure/device/${id}`, { method: 'DELETE' });
-      if (response.ok) fetchDevices();
+      await deviceRepository.removeDevice(id);
+      fetchDevices();
     } catch (err) {
       console.error('Failed to delete device:', err);
     }
@@ -351,8 +332,8 @@ export const DeviceManagerPage = () => {
     if (!window.confirm('Are you sure you want to stop ALL active simulations?')) return;
     setIsProcessing(true);
     try {
-      const response = await fetch('/v1/infrastructure/devices', { method: 'DELETE' });
-      if (response.ok) fetchDevices();
+      await deviceRepository.clearAllDevices();
+      fetchDevices();
     } catch (err) {
       console.error('Failed to stop all devices:', err);
     } finally {
@@ -363,8 +344,8 @@ export const DeviceManagerPage = () => {
   const handleStartDevice = async (id: string) => {
     setTransitioningIds(prev => new Set(prev).add(id));
     try {
-      const response = await fetch(`/v1/infrastructure/device/${id}/start`, { method: 'POST' });
-      if (response.ok) fetchDevices();
+      await deviceRepository.startDevice(id);
+      fetchDevices();
     } catch (err) {
       console.error('Failed to start device:', err);
     } finally {
@@ -381,8 +362,8 @@ export const DeviceManagerPage = () => {
   const handleStopDevice = async (id: string) => {
     setTransitioningIds(prev => new Set(prev).add(id));
     try {
-      const response = await fetch(`/v1/infrastructure/device/${id}/stop`, { method: 'POST' });
-      if (response.ok) fetchDevices();
+      await deviceRepository.stopDevice(id);
+      fetchDevices();
     } catch (err) {
       console.error('Failed to stop device:', err);
     } finally {
@@ -403,7 +384,7 @@ export const DeviceManagerPage = () => {
   );
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-hidden animate-in fade-in duration-500">
       <div className={cn(
         "space-y-8 max-w-6xl mx-auto transition-all duration-500 px-6 pt-10"
       )}>
@@ -418,14 +399,14 @@ export const DeviceManagerPage = () => {
             </h2>
             <div className="flex items-center gap-6 mt-4">
               <Link to="/devices/ue" className={cn(
-                "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative",
+                "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative cursor-pointer",
                 currentTab === 'ue' ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}>
                 User Equipments
                 {currentTab === 'ue' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
               </Link>
               <Link to="/devices/gnb" className={cn(
-                "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative",
+                "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative cursor-pointer",
                 currentTab === 'gnb' ? "text-purple-500" : "text-muted-foreground hover:text-foreground"
               )}>
                 gNodeB Antennas
@@ -477,14 +458,12 @@ export const DeviceManagerPage = () => {
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input 
-                    type="text"
+                <div className="relative w-48 focus-within:w-64 transition-all">
+                  <SearchInput 
                     placeholder="Search identity or IP..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 h-8 w-48 focus:w-64 transition-all text-xs"
+                    className="h-8 text-xs bg-background"
                   />
                 </div>
               </div>
@@ -494,11 +473,11 @@ export const DeviceManagerPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-16 text-center">Type</TableHead>
-                    <TableHead>Identity</TableHead>
-                    <TableHead>{currentTab === 'ue' ? 'Assigned IP' : 'Cell Info'}</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHeaderCell className="w-16 text-center">Type</TableHeaderCell>
+                    <TableHeaderCell>Identity</TableHeaderCell>
+                    <TableHeaderCell>{currentTab === 'ue' ? 'Assigned IP' : 'Cell Info'}</TableHeaderCell>
+                    <TableHeaderCell>Status</TableHeaderCell>
+                    <TableHeaderCell className="text-right">Actions</TableHeaderCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -608,7 +587,7 @@ export const DeviceManagerPage = () => {
                                 size="icon"
                                 onClick={() => setViewingLogId(device.id)}
                                 className={cn(
-                                  "h-8 w-8 transition-all prevent-sidebar-close",
+                                  "h-8 w-8 transition-all prevent-sidebar-close cursor-pointer",
                                   viewingLogId === device.id && "text-primary border-primary/50"
                                 )}
                                 title="View Logs"
@@ -620,7 +599,7 @@ export const DeviceManagerPage = () => {
                                 size="icon"
                                 onClick={() => setViewingYamlId(device.id)}
                                 className={cn(
-                                  "h-8 w-8 transition-all prevent-sidebar-close",
+                                  "h-8 w-8 transition-all prevent-sidebar-close cursor-pointer",
                                   viewingYamlId === device.id && "text-primary border-primary/50"
                                 )}
                                 title="Edit YAML Config"
@@ -632,7 +611,7 @@ export const DeviceManagerPage = () => {
                                   variant="outline"
                                   size="icon"
                                   onClick={() => handleStartDevice(device.id)}
-                                  className="h-8 w-8 hover:text-emerald-500 hover:border-emerald-500/50"
+                                  className="h-8 w-8 hover:text-emerald-500 hover:border-emerald-500/50 cursor-pointer"
                                   title="Start Simulation"
                                 >
                                   <Play className="w-3.5 h-3.5" />
@@ -642,7 +621,7 @@ export const DeviceManagerPage = () => {
                                   variant="outline"
                                   size="icon"
                                   onClick={() => handleStopDevice(device.id)}
-                                  className="h-8 w-8 hover:text-destructive hover:border-destructive/50"
+                                  className="h-8 w-8 hover:text-destructive hover:border-destructive/50 cursor-pointer"
                                   title="Stop Simulation"
                                 >
                                   <Square className="w-3.5 h-3.5 fill-current" />
@@ -655,7 +634,7 @@ export const DeviceManagerPage = () => {
                                   setEditingDevice(device);
                                   setShowForm(true);
                                 }}
-                                className="h-8 w-8 hover:text-amber-500 hover:border-amber-500/50"
+                                className="h-8 w-8 hover:text-amber-500 hover:border-amber-500/50 cursor-pointer"
                                 title="Edit Configuration"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -664,7 +643,7 @@ export const DeviceManagerPage = () => {
                                 variant="outline"
                                 size="icon"
                                 onClick={() => handleDeleteDevice(device.id)}
-                                className="h-8 w-8 hover:text-destructive hover:border-destructive/50"
+                                className="h-8 w-8 hover:text-destructive hover:border-destructive/50 cursor-pointer"
                                 title="Delete Device"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -721,7 +700,7 @@ export const DeviceManagerPage = () => {
                   size="icon"
                   onClick={toggleAiAuditor}
                   className={cn(
-                    "w-8 h-8 rounded-md transition-all relative flex items-center justify-center prevent-sidebar-close",
+                    "w-8 h-8 rounded-md transition-all relative flex items-center justify-center prevent-sidebar-close cursor-pointer",
                     showAiAuditor 
                       ? "bg-primary/20 text-primary border border-primary/30 shadow-[0_0_12px_rgba(56,189,248,0.2)]" 
                       : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -735,6 +714,7 @@ export const DeviceManagerPage = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setViewingLogId(null)}
+                  className="cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -771,7 +751,7 @@ export const DeviceManagerPage = () => {
                 {isScrolledUp && logs.length > 0 && (
                   <Button 
                     size="icon" 
-                    className="absolute bottom-20 right-6 rounded-full shadow-[0_0_20px_rgba(var(--color-primary),0.3)] bg-primary/10 text-primary hover:bg-primary/30 backdrop-blur-md z-50 border border-primary/20"
+                    className="absolute bottom-20 right-6 rounded-full shadow-[0_0_20px_rgba(var(--color-primary),0.3)] bg-primary/10 text-primary hover:bg-primary/30 backdrop-blur-md z-50 border border-primary/20 cursor-pointer"
                     onClick={() => {
                       if (logsContainerRef.current) {
                         logsContainerRef.current.scrollTo({ top: logsContainerRef.current.scrollHeight, behavior: 'smooth' });
@@ -792,7 +772,7 @@ export const DeviceManagerPage = () => {
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => fetchLogs(viewingLogId!)}
-                      className="text-[8px] font-black text-primary uppercase tracking-widest hover:text-primary/80 flex items-center gap-1.5 transition-colors"
+                      className="text-[8px] font-black text-primary uppercase tracking-widest hover:text-primary/80 flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <RefreshCw className={cn("w-3 h-3", isLogsLoading && "animate-spin")} />
                       Force Refresh
@@ -809,14 +789,14 @@ export const DeviceManagerPage = () => {
                 >
                   {/* Resizable Drag Handle */}
                   <div 
-                    className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 active:bg-primary/45 transition-colors z-50 hidden lg:block"
+                    className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/30 active:bg-primary/45 transition-colors z-50 hidden lg:block prevent-sidebar-close"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       isAiDragging.current = true;
                       document.body.style.cursor = 'col-resize';
                       document.body.style.userSelect = 'none';
                     }}
-                    title="Arrastra para cambiar el ancho del chat de IA"
+                    title="Drag to resize AI chat"
                   />
                   <AILogAuditor logs={logs} deviceId={viewingLogId!} />
                 </div>
@@ -862,6 +842,7 @@ export const DeviceManagerPage = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setViewingYamlId(null)}
+                className="cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -907,7 +888,7 @@ export const DeviceManagerPage = () => {
                   variant="outline" 
                   size="sm" 
                   onClick={() => setViewingYamlId(null)}
-                  className="text-[10px] font-black uppercase tracking-wider h-8"
+                  className="text-[10px] font-black uppercase tracking-wider h-8 cursor-pointer"
                 >
                   Cancel
                 </Button>
@@ -915,7 +896,7 @@ export const DeviceManagerPage = () => {
                   size="sm" 
                   onClick={handleSaveYaml}
                   disabled={isSavingYaml || isYamlLoading}
-                  className="text-[10px] font-black uppercase tracking-wider h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="text-[10px] font-black uppercase tracking-wider h-8 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
                 >
                   {isSavingYaml ? (
                     <>

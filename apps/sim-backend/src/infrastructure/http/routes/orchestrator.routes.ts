@@ -101,9 +101,12 @@ export async function orchestratorRoutes(fastify: FastifyInstance) {
       response: {
         200: z.object({
           sessionId: z.string(),
-          state: z.string(),
+          status: z.any(),
+          displayState: z.string().optional(),
+          progress: z.number().optional(),
           logs: z.array(z.any()),
-          context: z.any().optional()
+          context: z.any().optional(),
+          updatedAt: z.any().optional()
         }),
       },
     },

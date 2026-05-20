@@ -15,14 +15,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { WorkflowVisualGraph } from '../components/WorkflowVisualGraph';
-
-interface WorkflowEditorProps {
-  onExecute: (definition: any) => Promise<string | void>;
-}
+import { cn } from '../../lib/utils';
+import { Button } from '../atoms/Button';
+import { Input } from '../atoms/Input';
+import { WorkflowVisualGraph } from '../../components/WorkflowVisualGraph';
+import { sessionRepository } from '../../infrastructure/adapters/HttpSessionRepository';
 
 const SGP22_PROVISIONING_TEMPLATE = `id: sgp22-provisioning
 initial: initializing
@@ -159,7 +156,7 @@ const AVAILABLE_TASKS = [
   { id: 'sgp22/enableConnectivity', desc: 'UE Attach' },
 ];
 
-export const WorkflowEditorPage = ({ onExecute }: WorkflowEditorProps) => {
+export const WorkflowEditorPage = () => {
   const navigate = useNavigate();
   const [code, setCode] = useState(DEFAULT_WORKFLOW);
   const [fileName, setFileName] = useState('new-workflow.yaml');
@@ -306,7 +303,7 @@ export const WorkflowEditorPage = ({ onExecute }: WorkflowEditorProps) => {
     }
     try {
       const definition = yaml.load(code);
-      const sessionId = await onExecute(definition);
+      const sessionId = await sessionRepository.createSession('dynamic', definition);
       if (sessionId) {
         navigate(`/session/${sessionId}`);
       }
@@ -316,7 +313,7 @@ export const WorkflowEditorPage = ({ onExecute }: WorkflowEditorProps) => {
   };
 
   return (
-    <div className="flex h-full bg-background text-foreground overflow-hidden font-sans">
+    <div className="flex h-full bg-background text-foreground overflow-hidden font-sans animate-in fade-in duration-500">
       {/* Sidebar - Compact */}
       <div className={cn(
         "border-r border-border flex flex-col bg-muted/20 shrink-0 transition-all duration-300",

@@ -1,28 +1,30 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { 
   FileJson, 
   ListFilter, 
-  Search, 
   Download, 
   LayoutGrid, 
   Network, 
   ArrowLeft
 } from 'lucide-react';
-import { LogItem } from '../components/LogItem';
-import { VisualFlow } from '../components/VisualFlow';
-import { SessionData } from '../types';
-import { cn } from '../lib/utils';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { LogItem } from '../../components/LogItem';
+import { VisualFlow } from '../../components/VisualFlow';
+import { SessionData } from '../../core/domain/session.types';
+import { cn } from '../../lib/utils';
+import { Button } from '../atoms/Button';
+import { Spinner } from '../atoms/Spinner';
+import { TableHeaderCell } from '../molecules/TableHeaderCell';
+import { PageHeader } from '../organisms/PageHeader';
+import { SearchInput } from '../molecules/SearchInput';
+import { sessionRepository } from '../../infrastructure/adapters/HttpSessionRepository';
 import {
   Table,
   TableBody,
-  TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table";
+  TableCell
+} from "../../components/ui/table";
 
 export const SessionMonitorPage = () => {
   const { id } = useParams();
@@ -38,9 +40,7 @@ export const SessionMonitorPage = () => {
 
     const fetchData = async () => {
       try {
-        const response = await fetch(`/v1/orchestrator/session/${id}`);
-        if (!response.ok) throw new Error('Session not found');
-        const json = await response.json();
+        const json = await sessionRepository.getSession(id);
         if (json && json.logs) setData(json);
       } catch (err) {
         console.error('Failed to fetch session data:', err);
@@ -56,7 +56,7 @@ export const SessionMonitorPage = () => {
     return (
       <div className="h-full w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <Spinner className="w-8 h-8 text-primary" />
           <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-widest">Synchronizing...</p>
         </div>
       </div>
@@ -82,7 +82,7 @@ export const SessionMonitorPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-transparent">
+    <div className="h-full flex flex-col overflow-hidden bg-transparent animate-in fade-in duration-500">
       {/* Page Header */}
       <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-card/50">
         <div className="flex items-center gap-4">
@@ -100,7 +100,7 @@ export const SessionMonitorPage = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-[14px] font-black tracking-tight text-foreground uppercase">Activation Trace</h2>
-              <div className="px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+              <div className="px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
                 Real-time
               </div>
             </div>
@@ -115,7 +115,7 @@ export const SessionMonitorPage = () => {
             <button 
               onClick={() => setViewMode('table')}
               className={cn(
-                "px-3 py-1 rounded-sm transition-colors flex items-center gap-2",
+                "px-3 py-1 rounded-sm transition-colors flex items-center gap-2 cursor-pointer",
                 viewMode === 'table' ? "bg-card border border-border shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -125,7 +125,7 @@ export const SessionMonitorPage = () => {
             <button 
               onClick={() => setViewMode('flow')}
               className={cn(
-                "px-3 py-1 rounded-sm transition-colors flex items-center gap-2",
+                "px-3 py-1 rounded-sm transition-colors flex items-center gap-2 cursor-pointer",
                 viewMode === 'flow' ? "bg-card border border-border shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -195,7 +195,7 @@ export const SessionMonitorPage = () => {
                   key={cat.id}
                   onClick={() => setFilter(cat.id)}
                   className={cn(
-                    "w-full flex items-center justify-between p-2 rounded-sm border transition-colors",
+                    "w-full flex items-center justify-between p-2 rounded-sm border transition-colors cursor-pointer",
                     filter === cat.id ? "bg-muted/80 border-border text-foreground" : "bg-transparent border-transparent hover:bg-muted/40 text-muted-foreground hover:text-foreground"
                   )}
                  >
@@ -220,14 +220,12 @@ export const SessionMonitorPage = () => {
                    <h3 className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Activity Ledger</h3>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="relative group">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                    <Input 
-                      type="text" 
+                  <div className="relative group w-48">
+                    <SearchInput 
                       placeholder="Filter records..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8 h-7 text-[11px] font-bold w-48 bg-background"
+                      className="h-7 text-[11px] font-bold bg-background"
                     />
                   </div>
                   <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground">
@@ -238,13 +236,13 @@ export const SessionMonitorPage = () => {
 
               <div className="flex-1 overflow-y-auto scrollbar-hide">
                 <Table>
-                  <TableHeader className="sticky top-0 z-10 shadow-sm">
+                  <TableHeader className="sticky top-0 z-10 shadow-sm bg-card">
                     <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Domain</TableHead>
-                      <TableHead className="text-center w-16">Dir</TableHead>
-                      <TableHead>Signal Description</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHeaderCell>Time</TableHeaderCell>
+                      <TableHeaderCell>Domain</TableHeaderCell>
+                      <TableHeaderCell className="text-center w-16">Dir</TableHeaderCell>
+                      <TableHeaderCell>Signal Description</TableHeaderCell>
+                      <TableHeaderCell>Status</TableHeaderCell>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

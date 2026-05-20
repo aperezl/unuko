@@ -1,0 +1,16 @@
+{
+  "sessionId": "SESSION-YPT5M3",
+  "snapshot": {
+    "value": "failure",
+    "context": {
+      "error": null,
+      "retryCount": 0,
+      "smdpAddress": "localhost",
+      "iccid": 89049032000001000000,
+      "transactionId": "undefined"
+    },
+    "status": "done"
+  },
+  "updatedAt": "2026-05-20T09:16:28.323Z",
+  "status": "failure"
+}

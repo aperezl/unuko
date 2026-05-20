@@ -14,23 +14,17 @@ import {
   NetworkNode, 
   HardwareNode, 
   TopologyNodeData 
-} from '../components/topology/CustomNodes';
+} from '../../components/topology/CustomNodes';
 import { 
   Network, 
   Radio, 
-  Cpu, 
   RefreshCcw, 
   Activity, 
-  Database,
-  ArrowRightLeft,
-  Server,
-  Zap,
-  Globe,
   Terminal,
   Play
 } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { Button } from '../components/ui/button';
+import { cn } from '../../lib/utils';
+import { Button } from '../atoms/Button';
 
 // Node types registration for React Flow
 const nodeTypes = {
@@ -257,7 +251,6 @@ export const NetworkTopologyPage = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node<TopologyNodeData> | null>(null);
-  const [isSimulating, setIsSimulating] = useState(true);
 
   // Handle node click to display details
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -270,7 +263,6 @@ export const NetworkTopologyPage = () => {
 
   // Trigger temporary fast packet simulation along edges
   const triggerSimulation = () => {
-    setIsSimulating(true);
     setEdges((prev) => 
       prev.map((edge) => ({
         ...edge,
@@ -448,7 +440,7 @@ export const NetworkTopologyPage = () => {
                       )}
                     >
                       <span className="text-slate-500 uppercase tracking-tight">{key}</span>
-                      <span className="text-slate-200 font-medium text-right truncate max-w-[150px]">{val}</span>
+                      <span className="text-slate-200 font-medium text-right truncate max-w-[150px]">{val as string}</span>
                     </div>
                   ))}
                 </div>

@@ -9,10 +9,13 @@ import {
 } from 'lucide-react';
 import { 
   Card, CardContent, CardHeader, CardTitle 
-} from '../components/ui/card';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Button } from '../components/ui/button';
+} from '../../components/ui/card';
+import { Input } from '../atoms/Input';
+import { Button } from '../atoms/Button';
+import { Label } from '../../components/ui/label';
+import { FormField } from '../molecules/FormField';
+import { PageHeader } from '../organisms/PageHeader';
+import { subscriberRepository } from '../../infrastructure/adapters/HttpSubscriberRepository';
 
 const sliceSchema = z.object({
   sst: z.coerce.number().min(1).max(255),
@@ -57,10 +60,13 @@ export const ProvisioningFormPage: React.FC = () => {
 
   useEffect(() => {
     if (isEdit) {
-      fetch(`/v1/inventory/subscribers/${imsi}`)
-        .then(res => res.json())
+      subscriberRepository.getSubscriber(imsi)
         .then(data => {
-          form.reset(data);
+          form.reset(data as any);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
           setLoading(false);
         });
     }
@@ -75,11 +81,7 @@ export const ProvisioningFormPage: React.FC = () => {
         tauTimer: 12
       };
 
-      await fetch('/v1/inventory/subscribers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, ...extendedData })
-      });
+      await subscriberRepository.saveSubscriber({ ...data, ...extendedData });
       navigate('/inventory');
     } catch (err) {
       console.error('Failed to save subscriber:', err);
@@ -90,21 +92,17 @@ export const ProvisioningFormPage: React.FC = () => {
 
   return (
     <div className="p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="outline" size="icon" onClick={() => navigate('/inventory')}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground uppercase tracking-tight">
-            {isEdit ? `Edit Subscriber: ${imsi}` : 'Provision New 5G Subscriber'}
-          </h1>
-          <p className="text-muted-foreground text-sm font-mono mt-1">
-            Core: Open5GS • SDM Protocol: MongoDB Direct
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={isEdit ? `Edit Subscriber: ${imsi}` : 'Provision New 5G Subscriber'}
+        subtitle="Core: Open5GS • SDM Protocol: MongoDB Direct"
+        navigation={
+          <Button variant="outline" size="icon" onClick={() => navigate('/inventory')}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        }
+      />
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -113,49 +111,40 @@ export const ProvisioningFormPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="imsi">IMSI (Subscription Identifier)</Label>
+              <FormField label="IMSI (Subscription Identifier)" error={form.formState.errors.imsi?.message}>
                 <Input 
                   id="imsi"
                   disabled={isEdit}
                   placeholder="999700000000001"
                   {...form.register('imsi')}
-                  error={form.formState.errors.imsi?.message}
                   className="font-mono"
                 />
-              </div>
+              </FormField>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="k">Authentication Key (K)</Label>
+                <FormField label="Authentication Key (K)" error={form.formState.errors.k?.message}>
                   <Input 
                     id="k"
                     {...form.register('k')}
-                    error={form.formState.errors.k?.message}
                     className="font-mono text-primary"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="opc">Operator Key ({form.watch('opType')})</Label>
+                </FormField>
+                <FormField label={`Operator Key (${form.watch('opType')})`} error={form.formState.errors.opc?.message}>
                   <Input 
                     id="opc"
                     {...form.register('opc')}
-                    error={form.formState.errors.opc?.message}
                     className="font-mono text-primary"
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amf">AMF (Auth Mgmt)</Label>
+                <FormField label="AMF (Auth Mgmt)" error={form.formState.errors.amf?.message}>
                   <Input 
                     id="amf"
                     {...form.register('amf')}
-                    error={form.formState.errors.amf?.message}
                     className="font-mono"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="opType">Operator Type</Label>
+                </FormField>
+                <FormField label="Operator Type">
                   <select 
                     id="opType"
                     {...form.register('opType')}
@@ -164,7 +153,7 @@ export const ProvisioningFormPage: React.FC = () => {
                     <option value="OPC">OPC</option>
                     <option value="OP">OP</option>
                   </select>
-                </div>
+                </FormField>
               </div>
             </CardContent>
           </Card>
@@ -220,34 +209,28 @@ export const ProvisioningFormPage: React.FC = () => {
               <div key={field.id} className="border border-border rounded-md p-6 relative group bg-muted/20">
                 <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-l-md" />
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  <div className="space-y-2">
-                    <Label>Slice Service Type (SST)</Label>
+                  <FormField label="Slice Service Type (SST)" error={form.formState.errors.slices?.[index]?.sst?.message}>
                     <Input 
                       type="number"
                       {...form.register(`slices.${index}.sst`)}
-                      error={form.formState.errors.slices?.[index]?.sst?.message}
                       className="font-mono focus-visible:ring-amber-500"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Slice Differentiator (SD)</Label>
+                  </FormField>
+                  <FormField label="Slice Differentiator (SD)" error={form.formState.errors.slices?.[index]?.sd?.message}>
                     <Input 
                       {...form.register(`slices.${index}.sd`)}
-                      error={form.formState.errors.slices?.[index]?.sd?.message}
                       placeholder="010203"
                       className="font-mono focus-visible:ring-amber-500"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>APN / Data Network</Label>
+                  </FormField>
+                  <FormField label="APN / Data Network">
                     <Input value="internet" disabled className="font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>QoS Index (5QI)</Label>
+                  </FormField>
+                  <FormField label="QoS Index (5QI)">
                     <select disabled className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm opacity-50">
                       <option value="9">9 (Default Video/TCP)</option>
                     </select>
-                  </div>
+                  </FormField>
                 </div>
                 
                 <div className="mt-6 pt-4 border-t border-border flex justify-between items-center">

@@ -8,13 +8,15 @@ import {
   Radio, 
   CheckCircle2, 
   AlertTriangle,
-  Loader2,
-  Activity,
+  Server,
   RefreshCw,
-  ExternalLink,
-  Server
+  ExternalLink
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Button } from '../atoms/Button';
+import { Spinner } from '../atoms/Spinner';
+import { PageHeader } from '../organisms/PageHeader';
+import { deviceRepository } from '../../infrastructure/adapters/HttpDeviceRepository';
+import { serviceRepository } from '../../infrastructure/adapters/HttpServiceRepository';
 
 export const SettingsPage = () => {
   const [loading, setLoading] = React.useState(false);
@@ -42,20 +44,13 @@ export const SettingsPage = () => {
     
     setTogglingServices(prev => ({ ...prev, [serviceName]: true }));
     try {
-      const response = await fetch(`/v1/orchestrator/services/${serviceName}/state`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setServices(prev => prev.map(s => {
-          if (s.serviceName === serviceName) {
-            return { ...s, status: data.status === 'active' ? 'online' : 'offline' };
-          }
-          return s;
-        }));
-      }
+      const data = await serviceRepository.toggleServiceState(serviceName, action);
+      setServices(prev => prev.map(s => {
+        if (s.serviceName === serviceName) {
+          return { ...s, status: data.status === 'active' ? 'online' : 'offline' };
+        }
+        return s;
+      }));
     } catch (e) {
       console.error(`Failed to toggle service ${serviceName}:`, e);
     } finally {
@@ -66,11 +61,8 @@ export const SettingsPage = () => {
   const fetchServicesStatus = async () => {
     setServicesLoading(true);
     try {
-      const response = await fetch('/v1/orchestrator/services/status');
-      if (response.ok) {
-        const data = await response.json();
-        setServices(data);
-      }
+      const data = await serviceRepository.getServicesStatus();
+      setServices(data);
     } catch (e) {
       console.error('Failed to fetch services status:', e);
     } finally {
@@ -152,23 +144,16 @@ export const SettingsPage = () => {
     }, 120);
 
     try {
-      const response = await fetch('/v1/infrastructure/provision-all', {
-        method: 'POST'
-      });
-      const data = await response.json();
+      const data = await deviceRepository.provisionAll();
       
       completed = true;
       clearInterval(interval);
 
-      if (response.ok) {
-        setProgress(100);
-        setCurrentStepIndex(4);
-        addLog('SYSTEM: Hardware inventory and database sync completed successfully.');
-        addLog('SYSTEM: All elements successfully provisioned and ready in STOPPED state.');
-        setResult(data);
-      } else {
-        throw new Error(data.error || 'Failed to complete provisioning.');
-      }
+      setProgress(100);
+      setCurrentStepIndex(4);
+      addLog('SYSTEM: Hardware inventory and database sync completed successfully.');
+      addLog('SYSTEM: All elements successfully provisioned and ready in STOPPED state.');
+      setResult(data);
     } catch (err: any) {
       completed = true;
       clearInterval(interval);
@@ -215,27 +200,20 @@ export const SettingsPage = () => {
     }, 100);
 
     try {
-      const response = await fetch('/v1/infrastructure/devices', {
-        method: 'DELETE'
-      });
+      await deviceRepository.clearAllDevices();
       completed = true;
       clearInterval(interval);
 
-      if (response.ok) {
-        setProgress(100);
-        setCurrentStepIndex(2);
-        addLog('DATABASE: Cleared all subscriber records from MongoDB.');
-        addLog('SIMULATOR: Purged generated config and log files from VM.');
-        addLog('SYSTEM: Platform is in clean, pristine state.');
-        setResult({
-          message: 'All simulated 5G Core processes terminated and cleaned up successfully.',
-          details: { subscribersSeeded: 0, gnbsStarted: 0, uesStarted: 0 },
-          isTeardown: true
-        });
-      } else {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to clean up devices.');
-      }
+      setProgress(100);
+      setCurrentStepIndex(2);
+      addLog('DATABASE: Cleared all subscriber records from MongoDB.');
+      addLog('SIMULATOR: Purged generated config and log files from VM.');
+      addLog('SYSTEM: Platform is in clean, pristine state.');
+      setResult({
+        message: 'All simulated 5G Core processes terminated and cleaned up successfully.',
+        details: { subscribersSeeded: 0, gnbsStarted: 0, uesStarted: 0 },
+        isTeardown: true
+      });
     } catch (err: any) {
       completed = true;
       clearInterval(interval);
@@ -249,17 +227,16 @@ export const SettingsPage = () => {
   const isTeardown = cleaning || !!result?.isTeardown;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border pb-3">
-        <div className="p-1.5 rounded bg-primary/10 border border-primary/20">
-          <Settings className="w-4 h-4 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-md font-black uppercase tracking-tight leading-none">System Settings</h2>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mt-1">Platform management and dynamic twin orchestration</p>
-        </div>
-      </div>
+    <div className="p-4 max-w-4xl mx-auto space-y-4 animate-in fade-in duration-500">
+      <PageHeader
+        title="System Settings"
+        subtitle="Platform management and dynamic twin orchestration"
+        navigation={
+          <div className="p-1.5 rounded bg-primary/10 border border-primary/20">
+            <Settings className="w-4 h-4 text-primary" />
+          </div>
+        }
+      />
 
       {/* Tabs Selector */}
       <div className="flex items-center border-b border-border px-1 gap-2 mb-2">
@@ -309,7 +286,7 @@ export const SettingsPage = () => {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <Spinner className="w-3 h-3" />
                       Provisioning...
                     </>
                   ) : (
@@ -344,7 +321,7 @@ export const SettingsPage = () => {
                 >
                   {cleaning ? (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <Spinner className="w-3 h-3" />
                       Cleaning...
                     </>
                   ) : (
@@ -556,7 +533,7 @@ export const SettingsPage = () => {
               variant="outline"
               className="font-bold text-xs uppercase h-8 cursor-pointer gap-1.5"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${servicesLoading ? 'animate-spin' : ''}`} />
+              {servicesLoading ? <Spinner className="w-3.5 h-3.5" /> : <RefreshCw className="w-3.5 h-3.5" />}
               Refresh Status
             </Button>
           </div>
@@ -564,7 +541,7 @@ export const SettingsPage = () => {
           {/* Services Grid */}
           {servicesLoading && services.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 border border-border bg-card rounded-md space-y-3">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Spinner className="w-6 h-6 text-primary" />
               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Probing services...</p>
             </div>
           ) : (
@@ -675,7 +652,7 @@ export const SettingsPage = () => {
                                     >
                                       {isToggling ? (
                                         <span className="absolute inset-0 flex items-center justify-center">
-                                          <Loader2 className="w-2.5 h-2.5 animate-spin text-muted-foreground" />
+                                          <Spinner className="w-2.5 h-2.5 text-muted-foreground" />
                                         </span>
                                       ) : (
                                         <span

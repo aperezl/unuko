@@ -1,17 +1,20 @@
 import React from 'react';
-import { Subscriber } from '@unuko/core';
+import { Subscriber } from '../../core/domain/subscriber.types';
 import { useNavigate } from 'react-router-dom';
-import { Database, Plus, Trash2, RefreshCw, Info, Edit3 } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+import { Database, Plus, Trash2, Info, Edit3 } from 'lucide-react';
+import { Button } from '../atoms/Button';
+import { Badge } from '../atoms/Badge';
+import { Spinner } from '../atoms/Spinner';
+import { TableHeaderCell } from '../molecules/TableHeaderCell';
+import { PageHeader } from '../organisms/PageHeader';
+import { subscriberRepository } from '../../infrastructure/adapters/HttpSubscriberRepository';
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table";
+} from "../../components/ui/table";
 
 export const InventoryManagerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,8 +24,7 @@ export const InventoryManagerPage: React.FC = () => {
   const fetchSubscribers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/v1/inventory/subscribers');
-      const data = await response.json();
+      const data = await subscriberRepository.getSubscribers();
       setSubscribers(data);
     } catch (err) {
       console.error('Failed to fetch subscribers:', err);
@@ -38,7 +40,7 @@ export const InventoryManagerPage: React.FC = () => {
   const handleDelete = async (imsi: string) => {
     if (!confirm(`Are you sure you want to delete subscriber ${imsi}?`)) return;
     try {
-      await fetch(`/v1/inventory/subscribers/${imsi}`, { method: 'DELETE' });
+      await subscriberRepository.deleteSubscriber(imsi);
       fetchSubscribers();
     } catch (err) {
       console.error('Failed to delete subscriber:', err);
@@ -47,48 +49,46 @@ export const InventoryManagerPage: React.FC = () => {
 
   return (
     <div className="p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
-      <div className="flex justify-between items-center mb-10">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <Database className="w-8 h-8" />
-            </div>
-            5G SUBSCRIBER INVENTORY
-          </h1>
-          <p className="text-muted-foreground mt-2 flex items-center gap-2">
+      <PageHeader
+        title="5G Subscriber Inventory"
+        subtitle="Synchronized with Open5GS SDM (Subscriber Data Management)"
+        navigation={
+          <p className="text-muted-foreground text-xs flex items-center gap-2">
             <Info className="w-4 h-4" />
-            Synchronized with Open5GS SDM (Subscriber Data Management)
+            Active database tracking profiles
           </p>
-        </div>
-        <div className="flex gap-3">
-          <Button 
-            variant="outline"
-            size="icon"
-            onClick={fetchSubscribers}
-            title="Refresh"
-            className="h-12 w-12 rounded-xl"
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button 
-            onClick={() => navigate('/inventory/new')}
-            className="flex items-center gap-2 px-5 h-12 font-bold rounded-xl shadow-lg shadow-primary/20"
-          >
-            <Plus className="w-5 h-5" />
-            PROVISION NEW IMSI
-          </Button>
-        </div>
-      </div>
+        }
+        actions={
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              size="icon"
+              onClick={fetchSubscribers}
+              title="Refresh"
+              className="h-12 w-12 rounded-xl"
+            >
+              {loading ? <Spinner className="w-5 h-5" /> : <Database className="w-5 h-5" />}
+            </Button>
+            <Button 
+              onClick={() => navigate('/inventory/new')}
+              className="flex items-center gap-2 px-5 h-12 font-bold rounded-xl shadow-lg shadow-primary/20"
+            >
+              <Plus className="w-5 h-5" />
+              PROVISION NEW IMSI
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="bg-card rounded-md border border-border flex flex-col overflow-hidden shadow-xl">
+      <div className="bg-card rounded-md border border-border flex flex-col overflow-hidden shadow-xl mt-8">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16 text-center">Icon</TableHead>
-              <TableHead>Subscriber IMSI</TableHead>
-              <TableHead>Security Credentials</TableHead>
-              <TableHead>Network Slices</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHeaderCell className="w-16 text-center">Icon</TableHeaderCell>
+              <TableHeaderCell>Subscriber IMSI</TableHeaderCell>
+              <TableHeaderCell>Security Credentials</TableHeaderCell>
+              <TableHeaderCell>Network Slices</TableHeaderCell>
+              <TableHeaderCell className="text-right">Actions</TableHeaderCell>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -96,7 +96,7 @@ export const InventoryManagerPage: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={5} className="h-48 text-center">
                   <div className="flex flex-col items-center justify-center gap-4 opacity-50">
-                    <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+                    <Spinner className="w-8 h-8 text-muted-foreground" />
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synchronizing with 5G Core...</p>
                   </div>
                 </TableCell>
@@ -121,7 +121,7 @@ export const InventoryManagerPage: React.FC = () => {
                         <span className="text-primary font-mono tracking-[0.2em]">••••••••••••••••</span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px]">
-                        <span className="text-muted-foreground font-bold uppercase tracking-widest">{sub.opType}:</span>
+                        <span className="text-muted-foreground font-bold uppercase tracking-widest">{sub.opType || 'OPC'}:</span>
                         <span className="text-primary font-mono tracking-[0.2em]">••••••••••••••••</span>
                       </div>
                     </div>
@@ -129,12 +129,12 @@ export const InventoryManagerPage: React.FC = () => {
 
                   <TableCell>
                     <div className="flex gap-2 flex-wrap">
-                      {sub.slices.map((slice, i) => (
+                      {sub.slices && sub.slices.map((slice: any, i: number) => (
                         <Badge key={i} variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-500 text-[9px] font-black uppercase tracking-widest py-0">
                           SST:{slice.sst} {slice.sd ? `SD:${slice.sd}` : ''} {slice.isDefault ? '• DEF' : ''}
                         </Badge>
                       ))}
-                      {sub.slices.length === 0 && (
+                      {(!sub.slices || sub.slices.length === 0) && (
                         <Badge variant="outline" className="bg-amber-500/10 border-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-widest py-0">
                           No Slices
                         </Badge>

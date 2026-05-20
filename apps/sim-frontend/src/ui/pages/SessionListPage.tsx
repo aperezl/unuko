@@ -1,5 +1,5 @@
 import React from 'react';
-import { SessionSummary } from '../types';
+import { SessionSummary } from '../../core/domain/session.types';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
@@ -15,34 +15,49 @@ import {
   AlertTriangle,
   X,
   Download,
-  Search,
   Filter,
-  FileCode,
-  Terminal
+  FileCode
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '../../lib/utils';
+import { Button } from '../atoms/Button';
+import { Spinner } from '../atoms/Spinner';
+import { TableHeaderCell } from '../molecules/TableHeaderCell';
+import { PageHeader } from '../organisms/PageHeader';
+import { SearchInput } from '../molecules/SearchInput';
+import { sessionRepository } from '../../infrastructure/adapters/HttpSessionRepository';
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table";
+} from "../../components/ui/table";
 
-interface SessionListProps {
-  sessions: SessionSummary[];
-  onCreate: (workflow: string, definition?: any) => Promise<string | void>;
-  onDelete: (id: string) => Promise<void>;
-}
-
-export const SessionListPage = ({ sessions, onCreate, onDelete }: SessionListProps) => {
+export const SessionListPage = () => {
   const navigate = useNavigate();
+  const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [sessionToDelete, setSessionToDelete] = React.useState<string | null>(null);
   const [showWorkflowSelector, setShowWorkflowSelector] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [library, setLibrary] = React.useState<{ name: string; content: string }[]>([]);
+
+  const fetchSessions = async () => {
+    try {
+      const data = await sessionRepository.getSessions();
+      setSessions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch sessions:', err);
+      setSessions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchSessions();
+  }, []);
 
   React.useEffect(() => {
     const saved = localStorage.getItem('unuko-workflows');
@@ -201,7 +216,7 @@ states:
   const handleLaunchWorkflow = async (content: string) => {
     try {
       const definition = yaml.load(content);
-      const sessionId = await onCreate('dynamic', definition);
+      const sessionId = await sessionRepository.createSession('dynamic', definition);
       if (sessionId) {
         setShowWorkflowSelector(false);
         navigate(`/session/${sessionId}`);
@@ -215,8 +230,9 @@ states:
     if (!sessionToDelete) return;
     setIsDeleting(true);
     try {
-      await onDelete(sessionToDelete);
+      await sessionRepository.deleteSession(sessionToDelete);
       setSessionToDelete(null);
+      fetchSessions();
     } catch (err) {
       console.error('Delete failed:', err);
     } finally {
@@ -224,45 +240,41 @@ states:
     }
   };
 
-  const filteredSessions = sessions.filter(s => 
+  const filteredSessions = Array.isArray(sessions) ? sessions.filter(s => 
     s.sessionId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) : [];
 
   return (
-    <div className="h-full flex flex-col p-6 bg-transparent relative overflow-hidden">
+    <div className="h-full flex flex-col p-6 bg-transparent relative overflow-hidden animate-in fade-in duration-500">
       <div className="max-w-6xl mx-auto w-full flex flex-col gap-6 flex-1 min-h-0">
-        {/* Header - Compact */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <PageHeader
+          title="Session Explorer"
+          subtitle="Telemetry Database Persistence"
+          navigation={
             <div className="w-8 h-8 rounded-sm bg-sky-900/40 border border-sky-500/30 flex items-center justify-center">
               <History className="w-4 h-4 text-sky-400" />
             </div>
-            <div>
-              <h1 className="text-[15px] font-black text-white tracking-tight uppercase">Session Explorer</h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Telemetry Database Persistence</p>
+          }
+          actions={
+            <div className="flex items-center gap-3">
+              <div className="relative group hidden md:block w-52">
+                <SearchInput 
+                  placeholder="Find session..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-slate-900/60 border border-slate-800/60 rounded-sm py-1.5 text-[12px] font-medium"
+                />
+              </div>
+              <Button
+                onClick={() => setShowWorkflowSelector(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-sm font-bold uppercase tracking-wider text-[12px] transition-colors active:scale-[0.98]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Simulation
+              </Button>
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-             <div className="relative group hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600" />
-              <input 
-                type="text" 
-                placeholder="Find session..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-slate-900/60 border border-slate-800/60 rounded-sm pl-8 pr-3 py-1.5 text-[12px] font-medium focus:outline-none focus:border-sky-500/30 transition-colors w-52"
-              />
-            </div>
-            <button
-              onClick={() => setShowWorkflowSelector(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-sm font-bold uppercase tracking-wider text-[12px] transition-colors active:scale-[0.98]"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              New Simulation
-            </button>
-          </div>
-        </header>
+          }
+        />
 
         {/* Stats Grid - High Density */}
         <div className="grid grid-cols-3 gap-4">
@@ -290,8 +302,8 @@ states:
             </div>
             <div>
               <p className="text-[10px] uppercase font-black text-slate-600 tracking-widest">Sync</p>
-              <p className="text-xl font-black text-white leading-none mt-1">
-                {sessions.length > 0 ? format(new Date(sessions[0].updatedAt), 'HH:mm:ss') : '--:--:--'}
+              <p className="text-xl font-black text-white leading-none mt-1 font-mono">
+                {sessions.length > 0 && sessions[0].updatedAt ? format(new Date(sessions[0].updatedAt), 'HH:mm:ss') : '--:--:--'}
               </p>
             </div>
           </div>
@@ -314,16 +326,25 @@ states:
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-20 text-center">ID</TableHead>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHeaderCell className="w-20 text-center">ID</TableHeaderCell>
+                  <TableHeaderCell>Session</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Time</TableHeaderCell>
+                  <TableHeaderCell>Date</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Actions</TableHeaderCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSessions.length > 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-48 text-center">
+                      <div className="flex flex-col items-center justify-center gap-4 opacity-50">
+                        <Spinner className="w-8 h-8 text-muted-foreground" />
+                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Loading Telemetry Feed...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredSessions.length > 0 ? (
                   filteredSessions.map((session, index) => (
                     <TableRow key={session.sessionId} className="group cursor-pointer" onClick={() => navigate(`/session/${session.sessionId}`)}>
                       <TableCell className="text-center font-mono">
@@ -346,10 +367,10 @@ states:
                         </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground font-bold">
-                        {format(new Date(session.updatedAt), 'HH:mm:ss')}
+                        {session.updatedAt ? format(new Date(session.updatedAt), 'HH:mm:ss') : ''}
                       </TableCell>
                       <TableCell className="text-muted-foreground font-mono">
-                        {format(new Date(session.updatedAt), 'yyyy-MM-dd')}
+                        {session.updatedAt ? format(new Date(session.updatedAt), 'yyyy-MM-dd') : ''}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -425,7 +446,7 @@ states:
                   onClick={confirmDelete}
                   className="flex-1 py-2 rounded-sm bg-rose-700 hover:bg-rose-600 font-bold text-[10px] text-white uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
                 >
-                  {isDeleting ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Delete Data'}
+                  {isDeleting ? <Spinner className="w-3.5 h-3.5 text-white" /> : 'Delete Data'}
                 </button>
               </div>
             </motion.div>
