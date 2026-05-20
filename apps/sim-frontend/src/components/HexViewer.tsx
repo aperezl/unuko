@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../lib/utils';
 
 interface HexViewerProps {
-  data: string | Buffer;
+  data: string | Buffer | Uint8Array;
   className?: string;
 }
 
