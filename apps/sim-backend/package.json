@@ -18,6 +18,7 @@
     "@unuko/adapter-open5gs-sdm": "workspace:*",
     "@unuko/adapter-pkcs11": "workspace:*",
     "@unuko/adapter-ueransim": "workspace:*",
+    "@unuko/cli": "workspace:*",
     "@unuko/core": "workspace:*",
     "fastify": "^5.8.5",
     "fastify-type-provider-zod": "^6.1.0",

@@ -46,6 +46,15 @@ vi.mock('child_process', async (importOriginal) => {
         err.stdout = 'inactive\n';
         throw err;
       }
+      if (typeof cmd === 'string' && cmd.includes('limactl list')) {
+        return JSON.stringify({
+          name: 'core5g',
+          status: 'Running',
+          cpus: 4,
+          memory: 4294967296,
+          sshLocalPort: 49203
+        });
+      }
       return mockExecSyncOutput;
     })
   };

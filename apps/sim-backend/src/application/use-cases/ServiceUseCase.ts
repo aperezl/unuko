@@ -1,8 +1,8 @@
 import net from 'net';
 import fs from 'fs';
-import { execSync } from 'child_process';
 import { CONFIG } from '../../config/config.js';
 import { container } from '../../infrastructure/di/DependencyContainer.js';
+import { limaManager } from '@unuko/cli';
 
 export type ServiceEntry = {
   name: string;
@@ -40,13 +40,14 @@ export class ServiceUseCase {
 
       let systemctlStatuses: string[] = [];
       try {
-        const serviceNames = coreServices.map(s => s.name).join(' ');
-        const output = execSync(`limactl shell core5g systemctl is-active ${serviceNames}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
-        systemctlStatuses = output.trim().split('\n').map(s => s.trim());
+        const richStatus = limaManager.getRichStatus('core5g');
+        const serviceNames = coreServices.map(s => s.name);
+        systemctlStatuses = serviceNames.map(name => {
+          const found = richStatus.services.find(s => s.name === name);
+          return found ? found.status : 'inactive';
+        });
       } catch (e: any) {
-        if (e.stdout) {
-          systemctlStatuses = e.stdout.trim().split('\n').map((s: string) => s.trim());
-        }
+        systemctlStatuses = coreServices.map(() => 'inactive');
       }
 
       const servicesList: ServiceEntry[] = [
@@ -138,16 +139,8 @@ export class ServiceUseCase {
       return { status: action === 'start' ? 'active' : 'inactive' };
     }
 
-    try {
-      execSync(`limactl shell core5g sudo systemctl ${action} ${name}`);
-      const checkOutput = execSync(`limactl shell core5g systemctl is-active ${name}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
-      return { status: checkOutput.trim() };
-    } catch (e: any) {
-      if (e.stdout) {
-        return { status: e.stdout.trim() };
-      }
-      return { status: action === 'start' ? 'active' : 'inactive' };
-    }
+    const newStatus = limaManager.toggleService('core5g', name, action);
+    return { status: newStatus };
   }
 }
 
