@@ -20,24 +20,24 @@ El CLI de `unuko` simplifica y automatiza el inicio y la coordinación de estas 
     *   **Operator Key (OPc)**: `E8ED289DEBA952E4283B54E88E6183CA`
 5.  Haz clic en **Save** para confirmar.
 
+## 2. Monitoreo de Dispositivos con `unuko`
+
+El CLI de `unuko` permite listar todos los dispositivos simulados por la pila UERANSIM (antenas gNodeB y teléfonos UE) que han sido aprovisionados y registrados en el entorno:
+
+### Listar los dispositivos activos
+```bash
+unuko core5g devices
+```
+*Este comando consultará el controlador de UERANSIM dentro de la máquina virtual y mostrará el identificador del dispositivo, su tipo, estado de ejecución, dirección IP asignada y estado de conexión.*
+
 ---
 
-## 2. Configuración e Inicio de la Simulación con `unuko`
+## 3. Inspección de Logs en Tiempo Real
 
-En lugar de levantar manualmente los binarios `nr-gnb` y `nr-ue` en consolas separadas, el CLI de `unuko` se encarga de arrancar y enlazar la antena (gNodeB) y el terminal de usuario (UE) en un solo paso:
+Puedes inspeccionar y seguir los logs detallados de cualquier dispositivo UE o gNodeB simulado directamente usando el CLI:
 
-### Iniciar la simulación de radio
+### Seguir logs de un dispositivo
 ```bash
-unuko up ueransim
+unuko core5g logs <device-id>
 ```
-*Este comando arrancará la antena virtual, esperará a que establezca la comunicación SCTP con el AMF de Open5GS y, posteriormente, levantará el móvil creando la interfaz TUN `uesimtun0`.*
-
----
-
-## 3. Pruebas de Tráfico
-
-Una vez levantada la interfaz virtual, puedes verificar que el móvil 5G tiene salida a Internet forzando que los pings viajen a través del túnel de simulación:
-```bash
-unuko ping google.com
-```
-*El comando `unuko ping` encapsula la llamada usando la interfaz virtual `uesimtun0` y reporta la latencia real y el tráfico a través del Core Network 5G.*
+*Por ejemplo, para seguir el registro de conexión de un móvil específico: `unuko core5g logs imsi-999700000000001`.*

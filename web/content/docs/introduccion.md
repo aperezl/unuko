@@ -20,7 +20,7 @@ Frente a la rigidez habitual del ecosistema de telecomunicaciones clásico, Unuk
 
 Unuko ToolKit coordina y expone la interacción de múltiples componentes:
 
-1.  **CLI de `unuko`**: La interfaz de comandos global que orquesta y despliega toda la suite con comandos simples (como `unuko up core5g` o `unuko status`).
+1.  **CLI de `unuko`**: La interfaz de comandos global que orquesta y despliega toda la suite con comandos simples (como `unuko core5g start` o `unuko core5g status`).
 2.  **osmo-smdpp & Mock Server**: Servidores de pruebas SM-DP+ de Osmocom que responden a las APIs REST definidas por la GSMA (ES9+ para consumo, ESips para IoT) entregando los perfiles de eSIM encriptados (`BoundProfilePackage`).
 3.  **eUICC (SIM Virtual)**: Emulación del chip de la tarjeta SIM (eUICC) en UERANSIM, capaz de recibir y procesar comandos de APDU para la instalación segura de perfiles.
 4.  **Core Network (Open5GS)**: Un núcleo de red 5G Standalone real (AMF, SMF, UPF, UDM) que gestiona el registro del dispositivo y el establecimiento de la sesión de datos.

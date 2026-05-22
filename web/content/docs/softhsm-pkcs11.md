@@ -8,7 +8,7 @@ El CLI de `unuko` se encarga de automatizar la inicialización y el montaje del 
 
 ## Inicialización del Token (Bajo el Capó)
 
-Durante la fase de configuración, el comando `unuko up` ejecuta internamente la inicialización de la ranura virtual de SoftHSM:
+Durante la fase de configuración, el comando `unuko core5g start` ejecuta internamente la inicialización de la ranura virtual de SoftHSM:
 
 ```bash
 softhsm2-util --init-token --slot 0 --label "unuko-token" --pin 1234 --so-pin 1234
@@ -20,14 +20,14 @@ softhsm2-util --init-token --slot 0 --label "unuko-token" --pin 1234 --so-pin 12
 
 ---
 
-## Verificación Manual de Slots Activos
+## Verificación Manual del Token
 
-Si deseas inspeccionar los tokens criptográficos y comprobar su estado o ranura asignada:
+Si deseas inspeccionar el token criptográfico y comprobar su estado o ranura asignada:
 
 ```bash
-unuko status --hsm
+unuko core5g status
 ```
-*Este comando listará los slots lógicos detectados en el sistema por el driver dinámico de SoftHSM.*
+*Este comando listará el estado del token y el servicio SM-DP+ que interactúa directamente con SoftHSM.*
 
 ---
 

@@ -11,7 +11,7 @@ export function UseCases() {
     },
     {
       title: "Sandbox de Desarrollo Local",
-      description: "Experimenta y desarrolla localmente sin ensuciar tu sistema host. Controla la inicialización de bases de datos, simuladores de radio e interfaces de red virtual con 'unuko up core5g' y 'unuko down core5g'.",
+      description: "Experimenta y desarrolla localmente sin ensuciar tu sistema host. Controla la inicialización de bases de datos, simuladores de radio e interfaces de red virtual con 'unuko core5g start' y 'unuko core5g stop'.",
       metric: "Entorno local rápido y efímero",
     },
     {

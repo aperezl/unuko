@@ -71,7 +71,7 @@ export function Hero() {
                 <span className="text-xs text-slate-500 font-mono ml-2">unuko-cli ~ /lab</span>
               </div>
               <div className="p-6 font-mono text-sm text-slate-400 overflow-x-auto relative min-h-[300px]">
-                <div className="text-cyan-400"><span className="text-slate-600">~/lab $</span> unuko up --profile=standalone-5g</div>
+                <div className="text-cyan-400"><span className="text-slate-600">~/lab $</span> unuko core5g start</div>
                 <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5 }} className="mt-2 text-indigo-400">⠋ Parsing deployment manifest (lab.yaml)...</motion.div>
                 <div className="text-slate-500">⠙ Pulling Open5GS & UERANSIM images...</div>
                 <div className="text-slate-300 mt-2">✓ Configured Control Plane (AMF, SMF)</div>

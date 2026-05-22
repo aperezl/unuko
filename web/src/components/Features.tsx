@@ -7,7 +7,7 @@ export function Features() {
   const features = [
     {
       name: "CLI Unificado `unuko`",
-      description: "Abstrae toda la complejidad del laboratorio. Despliega el entorno con 'unuko up core5g' o de forma modular usando flags como '--without-upf'.",
+      description: "Abstrae toda la complejidad del laboratorio. Despliega el entorno con 'unuko core5g start' y contrólalo de forma rápida y sencilla.",
       icon: Terminal,
     },
     {

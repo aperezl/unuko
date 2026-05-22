@@ -34,4 +34,4 @@ sudo sysctl -w net.ipv4.conf.eth0.rp_filter=0
 sudo iptables -t nat -A POSTROUTING -s 10.45.0.0/16 -o eth0 -j MASQUERADE
 ```
 
-El CLI de `unuko` valida que estas reglas estén activas cada vez que ejecutas `unuko up core5g` o `unuko status`.
+El CLI de `unuko` valida que estas reglas estén activas cada vez que ejecutas `unuko core5g start` o `unuko core5g status`.

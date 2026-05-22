@@ -8,36 +8,44 @@ Esta herramienta abstrae la complejidad de interactuar directamente con máquina
 
 ## Comandos Principales
 
-### 1. Levantar el laboratorio completo (`unuko up`)
-Para iniciar todos los servicios del núcleo 5G (Open5GS), el simulador de SIM (UERANSIM) y el servidor SM-DP+ (osmo-smdpp):
+El formato estándar para interactuar con redes específicas es:
 ```bash
-unuko up core5g
+unuko <network> <command> [options]
 ```
 
-### 2. Modulación y Optimización (Flags)
-Si deseas arrancar el laboratorio omitiendo funciones de red no esenciales para tu caso de uso de prueba (por ejemplo, para acelerar el arranque o ahorrar memoria RAM):
+### 1. Listar Redes Disponibles (`unuko list`)
+Muestra un listado de las redes 5G configuradas y su estado actual:
 ```bash
-unuko up core5g --without-udr --without-upf
+unuko list
 ```
 
-### 3. Consultar el estado del entorno (`unuko status`)
-Muestra en tiempo real qué Network Functions, puertos y servicios están levantados y listos:
+### 2. Arrancar el Laboratorio (`unuko <network> start`)
+Inicia la máquina virtual Lima de la red especificada y arranca todos los servicios asociados:
 ```bash
-unuko status
-```
-*Salida esperada:*
-```text
-[unuko] Estado de la suite de servicios:
-  ● MongoDB Database                 [ ACTIVO - Puerto 27017 ]
-  ● Open5GS (AMF, SMF, UPF)          [ ACTIVO - Enlace 127.0.0.5 ]
-  ● Osmocom SM-DP+ (osmo-smdpp)      [ ACTIVO - Puerto 8081 ]
-  ● SoftHSM Token (unuko-token)      [ INICIALIZADO - PKCS11 ]
-  ● UERANSIM gNodeB / UE             [ CONECTADO - uesimtun0 ]
+unuko core5g start
 ```
 
-### 4. Apagar y limpiar el laboratorio (`unuko down`)
-Detiene de forma segura los servicios en ejecución y libera los recursos del host:
+### 3. Consultar el Estado del Entorno (`unuko <network> status`)
+Muestra un dashboard interactivo detallando las especificaciones de la VM y el estado de cada microservicio del Core 5G y servicios del sistema:
 ```bash
-unuko down core5g
+unuko core5g status
 ```
-*Este comando descarga las interfaces virtuales de red TUN (`uesimtun0`) y detiene de forma limpia las conexiones de sockets.*
+*También puedes exportar este estado en formato JSON estructurado usando el flag `--format=json`: `unuko core5g status --format=json`.*
+
+### 4. Listar Dispositivos Simulados (`unuko <network> devices`)
+Permite ver las antenas y terminales UERANSIM activos con su correspondiente estado y direcciones IP:
+```bash
+unuko core5g devices
+```
+
+### 5. Reiniciar Servicios Core (`unuko <network> restart`)
+Reinicia de manera rápida los microservicios systemd de Open5GS sin apagar la máquina virtual:
+```bash
+unuko core5g restart
+```
+
+### 6. Detener el Laboratorio (`unuko <network> stop`)
+Apaga la máquina virtual liberando todos los recursos de memoria y procesador asignados al host:
+```bash
+unuko core5g stop
+```
