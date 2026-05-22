@@ -1,8 +1,8 @@
 # Introducción a Unuko ToolKit
 
-**Unuko ToolKit** es un entorno de desarrollo, simulación y pruebas extensible y de código abierto para el aprovisionamiento remoto de tarjetas eSIM en redes 5G.
+**Unuko ToolKit** nació de mi propia frustración tras años trabajando en telecomunicaciones en el ecosistema JavaScript. Probar flujos de eSIM y redes 5G en entornos reales suele ser increíblemente complejo, costoso y propenso a errores de configuración.
 
-El proyecto está diseñado bajo la licencia **GNU AGPLv3** para dotar a los ingenieros y desarrolladores de telecomunicaciones de una suite de herramientas moderna, interactiva y totalmente extensible que sustituye el software cerrado tradicional o los engorrosos scripts de bajo nivel.
+Creé este ToolKit de código abierto (**GNU AGPLv3**) para que cualquier desarrollador, especialmente si viene del mundo TypeScript/JavaScript, pueda levantar laboratorios completos, simular tarjetas eUICC y experimentar con aprovisionamiento remoto sin depender de costosos servidores cerrados ni hardware físico.
 
 ---
 

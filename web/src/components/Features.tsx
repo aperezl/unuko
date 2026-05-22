@@ -2,37 +2,40 @@
 
 import { motion } from "motion/react";
 import { Braces, ShieldCheck, Terminal, Cpu, Sparkles, Network } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function Features() {
+  const { dict } = useLanguage();
+
   const features = [
     {
-      name: "CLI Unificado `unuko`",
-      description: "Abstrae toda la complejidad del laboratorio. Despliega el entorno con 'unuko core5g start' y contrólalo de forma rápida y sencilla.",
+      name: dict.features.items.cli.name,
+      description: dict.features.items.cli.description,
       icon: Terminal,
     },
     {
-      name: "Extensibilidad Total",
-      description: "Unuko es un ToolKit completo pensado para desarrolladores. Extiende y modifica los flujos lógicos, añade estados personalizados o integra tus propios módulos de red sin restricciones.",
+      name: dict.features.items.extensible.name,
+      description: dict.features.items.extensible.description,
       icon: Braces,
     },
     {
-      name: "Stack Telco Disruptivo",
-      description: "Traemos la fiabilidad del software moderno a las telecomunicaciones. Olvídate del código legacy; orquesta con TypeScript, Fastify, validaciones estrictas con Zod y máquinas de estados en XState.",
+      name: dict.features.items.telco.name,
+      description: dict.features.items.telco.description,
       icon: Network,
     },
     {
-      name: "Estándares GSMA Nativos",
-      description: "Soporte completo e integrado para perfiles de eSIM de Consumo (SGP.22) y el nuevo estándar IoT (SGP.32) con aprovisionamiento push.",
+      name: dict.features.items.gsma.name,
+      description: dict.features.items.gsma.description,
       icon: ShieldCheck,
     },
     {
-      name: "Auditoría con IA",
-      description: "El auditor integrado con Gemini traduce y desglosa las peticiones del SM-DP+ y los crípticos códigos hex de los comandos APDU del chip en diagnósticos comprensibles.",
+      name: dict.features.items.ai.name,
+      description: dict.features.items.ai.description,
       icon: Sparkles,
     },
     {
-      name: "Seguridad Real por HSM",
-      description: "Emulación de almacenamiento seguro a nivel de hardware usando SoftHSM y PKCS#11. Genera y resguarda firmas y pares de claves elípticas secp256r1 localmente.",
+      name: dict.features.items.cryptography.name,
+      description: dict.features.items.cryptography.description,
       icon: Cpu,
     },
   ];
@@ -41,14 +44,14 @@ export function Features() {
     <section id="features" className="py-24 sm:py-32 shrink-0 bg-slate-950 relative">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
         <div className="mx-auto max-w-2xl lg:text-center">
-          <div className="inline-block px-3 py-1 border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 text-xs font-mono rounded-full mb-4 uppercase tracking-widest shadow-[0_0_15px_rgba(99,102,241,0.1)]">
-            Unuko ToolKit Core
+          <div className="inline-block px-3 py-1 border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 text-xs font-mono rounded-full mb-4 uppercase tracking-widest shadow-[0_0_15px_rgba(99,102,241,0.15)]">
+            {dict.features.badge}
           </div>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Un stack disruptivo para ingeniería de red
+            {dict.features.title}
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-slate-400 font-light">
-            Unuko ToolKit rompe con el ecosistema de telecomunicaciones tradicional al introducir herramientas modernas, extensibles y de código abierto para desarrolladores.
+            {dict.features.subtitle}
           </p>
         </div>
         <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
@@ -81,3 +84,5 @@ export function Features() {
     </section>
   );
 }
+
+

@@ -1,24 +1,27 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function UseCases() {
+  const { dict } = useLanguage();
+
   const cases = [
     {
-      title: "Integración Continua (CI)",
-      description: "Ejecuta pruebas automatizadas de red y flujos de aprovisionamiento de eSIM en tus pipelines de GitHub Actions o GitLab. El CLI de unuko permite inicializar y desmontar el core 5G y osmo-smdpp de forma desatendida.",
-      metric: "Pipelines de red 100% automatizados",
+      title: dict.useCases.ci.title,
+      description: dict.useCases.ci.description,
+      metric: dict.useCases.ci.metric,
     },
     {
-      title: "Sandbox de Desarrollo Local",
-      description: "Experimenta y desarrolla localmente sin ensuciar tu sistema host. Controla la inicialización de bases de datos, simuladores de radio e interfaces de red virtual con 'unuko core5g start' y 'unuko core5g stop'.",
-      metric: "Entorno local rápido y efímero",
+      title: dict.useCases.sandbox.title,
+      description: dict.useCases.sandbox.description,
+      metric: dict.useCases.sandbox.metric,
     },
     {
-      title: "I+D Extensible y Protocolos",
-      description: "Unuko ToolKit es 100% modular y modificable. El uso de TypeScript y XState permite a los ingenieros de software y telecomunicaciones clonar el repositorio, extender el CLI, e implementar sus propias lógicas de red o APDUs.",
-      metric: "Diseñado para ser modificado y extendido",
-    }
+      title: dict.useCases.research.title,
+      description: dict.useCases.research.description,
+      metric: dict.useCases.research.metric,
+    },
   ];
 
   return (
@@ -28,17 +31,17 @@ export function UseCases() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-3 items-start">
           <div className="lg:col-span-1 sticky top-32">
             <h2 className="text-3xl font-extrabold tracking-tight text-white leading-tight">
-              Construido para <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">ingenieros de telecomunicaciones</span>
+              {dict.useCases.titlePart1} <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">{dict.useCases.titlePart2}</span>
             </h2>
             <p className="mt-4 text-lg text-slate-400 leading-relaxed font-light">
-              Olvídate del software telco cerrado. Unuko ToolKit proporciona un entorno de desarrollo abierto y extensible que acelera los flujos de pruebas de eSIM 5G.
+              {dict.useCases.subtitle}
             </p>
           </div>
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               {cases.map((useCase, index) => (
                 <motion.div 
-                  key={useCase.title}
+                   key={useCase.title}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -66,3 +69,4 @@ export function UseCases() {
     </section>
   );
 }
+

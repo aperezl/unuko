@@ -1,8 +1,11 @@
 "use client";
 
 import { RadioTower, MessageSquare } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function Footer() {
+  const { dict } = useLanguage();
+
   return (
     <footer className="border-t border-slate-900 bg-slate-950/50 py-12 shrink-0 backdrop-blur-sm relative z-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -37,7 +40,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-center text-sm leading-5 text-slate-500 font-light">
-              &copy; {new Date().getFullYear()} Unuko Project. Código abierto bajo licencia GNU AGPLv3.
+              &copy; {new Date().getFullYear()} {dict.footer.copyright}
             </p>
           </div>
         </div>
@@ -45,3 +48,4 @@ export function Footer() {
     </footer>
   );
 }
+

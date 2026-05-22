@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, CheckCircle2, AlertCircle } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function BetaProgram() {
+  const { dict } = useLanguage();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -13,7 +15,7 @@ export function BetaProgram() {
     e.preventDefault();
     if (!email || !email.includes("@")) {
       setStatus("error");
-      setErrorMessage("Por favor, introduce un correo electrónico válido.");
+      setErrorMessage(dict.beta.error);
       return;
     }
 
@@ -36,19 +38,19 @@ export function BetaProgram() {
           
           <div className="text-center max-w-2xl mx-auto">
             <span className="inline-block px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-mono rounded-full mb-6 uppercase tracking-widest shadow-[0_0_15px_rgba(99,102,241,0.1)]">
-              Programa de Beta Testers
+              {dict.beta.badge}
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
-              ¿Quieres probar Unuko RSP en tu laboratorio?
+              {dict.beta.title}
             </h2>
             <p className="text-slate-400 text-base sm:text-lg mb-8 leading-relaxed font-light">
-              Buscamos ingenieros de telecomunicaciones y desarrolladores de IoT interesados en testear las capacidades de aprovisionamiento de perfiles y orquestación 5G local. Regístrate para obtener acceso prioritario.
+              {dict.beta.description}
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <input
                 type="email"
-                placeholder="tu-correo@empresa.com"
+                placeholder={dict.beta.placeholder}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -66,7 +68,7 @@ export function BetaProgram() {
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                 ) : (
                   <>
-                    Registrarme <Send className="w-4 h-4" />
+                    {dict.beta.button} <Send className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -81,7 +83,7 @@ export function BetaProgram() {
                     exit={{ opacity: 0, y: -10 }}
                     className="flex items-center gap-2 text-emerald-400 text-sm font-medium font-sans"
                   >
-                    <CheckCircle2 className="w-4 h-4 shrink-0" /> ¡Gracias! Te contactaremos pronto con las instrucciones de la Beta.
+                    <CheckCircle2 className="w-4 h-4 shrink-0" /> {dict.beta.success}
                   </motion.div>
                 )}
 
@@ -103,3 +105,4 @@ export function BetaProgram() {
     </section>
   );
 }
+

@@ -2,16 +2,19 @@
 
 import { motion } from "motion/react";
 import { Server, Radio, KeyRound, Cpu } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function TechStack() {
+  const { dict } = useLanguage();
+
   const stack = [
     {
       name: "Open5GS",
-      category: "5G Core Network",
-      description: "Integración nativa con Open5GS. Despliega Network Functions (AMF, SMF, UPF) configuradas dinámicamente y expón sus interfaces en tu entorno de desarrollo local sin fricciones.",
+      category: dict.techStack.open5gs.category,
+      description: dict.techStack.open5gs.description,
       features: [
-        "Aprovisionamiento dinámico vía API/MongoDB",
-        "Configuración automática de PLMN y Slices",
+        dict.techStack.open5gs.f1,
+        dict.techStack.open5gs.f2,
       ],
       icon: Server,
       color: "from-indigo-500/20 to-indigo-600/20",
@@ -21,11 +24,11 @@ export function TechStack() {
     },
     {
       name: "UERANSIM",
-      category: "RAN & UE Simulator",
-      description: "Simula antenas gNodeB y terminales móviles 5G. Unuko emula el socket eUICC del dispositivo móvil para recibir e instalar perfiles eSIM mediante comandos APDU.",
+      category: dict.techStack.ueransim.category,
+      description: dict.techStack.ueransim.description,
       features: [
-        "Mapeo de UEs a interfaces TUN locales",
-        "Comandos APDU enrutados por TCP/IP",
+        dict.techStack.ueransim.f1,
+        dict.techStack.ueransim.f2,
       ],
       icon: Radio,
       color: "from-cyan-500/20 to-teal-500/20",
@@ -35,11 +38,11 @@ export function TechStack() {
     },
     {
       name: "osmo-smdpp & Mock Server",
-      category: "Subscription Manager",
-      description: "Servidor de pruebas SM-DP+ de Osmocom integrado. Genera perfiles de eSIM encriptados y responde a las llamadas REST ES9+/ESips conformes a la GSMA.",
+      category: dict.techStack.smdpp.category,
+      description: dict.techStack.smdpp.description,
       features: [
-        "Fases ES9+ de Autenticación y Descarga",
-        "Generación y firmas de BoundProfilePackage",
+        dict.techStack.smdpp.f1,
+        dict.techStack.smdpp.f2,
       ],
       icon: KeyRound,
       color: "from-emerald-500/20 to-teal-500/20",
@@ -49,11 +52,11 @@ export function TechStack() {
     },
     {
       name: "SoftHSM & PKCS#11",
-      category: "Criptografía de Tarjeta",
-      description: "Gestión de claves y firmas usando tokens criptográficos por software. Emula el almacenamiento seguro y los algoritmos elípticos de un chip físico eUICC.",
+      category: dict.techStack.softhsm.category,
+      description: dict.techStack.softhsm.description,
       features: [
-        "Par de claves ECDSA secp256r1",
-        "Firmas criptográficas conformes al estándar",
+        dict.techStack.softhsm.f1,
+        dict.techStack.softhsm.f2,
       ],
       icon: Cpu,
       color: "from-purple-500/20 to-pink-500/20",
@@ -71,13 +74,13 @@ export function TechStack() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
         <div className="mx-auto max-w-2xl lg:text-center mb-16">
           <div className="inline-block px-3 py-1 border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 text-xs font-mono rounded-full mb-4 uppercase tracking-widest shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-            Ecosistema del Laboratorio
+            {dict.techStack.badge}
           </div>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Soportado por estándares y software libre
+            {dict.techStack.title}
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-slate-400 font-light">
-            Unuko ToolKit orquesta las herramientas libres de telecomunicaciones más potentes del sector y expone sus capacidades mediante un CLI y panel web unificados.
+            {dict.techStack.subtitle}
           </p>
         </div>
 
@@ -122,3 +125,4 @@ export function TechStack() {
     </section>
   );
 }
+

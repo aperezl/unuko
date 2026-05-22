@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
+import { CreatorStory } from "@/components/CreatorStory";
 import { TechStack } from "@/components/TechStack";
 import { UseCases } from "@/components/UseCases";
 import { BetaProgram } from "@/components/BetaProgram";
@@ -27,6 +28,7 @@ export default function Home() {
         <main className="flex-grow flex flex-col">
           <Hero />
           <Features />
+          <CreatorStory />
           <TechStack />
           <UseCases />
           <BetaProgram />

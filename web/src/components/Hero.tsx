@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { Terminal, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function Hero() {
+  const { dict } = useLanguage();
   const [lines, setLines] = useState<React.ReactNode[]>([]);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
 
@@ -34,7 +36,7 @@ export function Hero() {
 
         const listOutput = (
           <div key={`list-output-${Math.random()}`} className="mt-2 text-xs leading-relaxed">
-            <div className="text-cyan-400 font-bold">  Available 5G Networks (Lima VM Instances)</div>
+            <div className="text-cyan-400 font-bold">  {dict.hero.terminal.availableNetworks}</div>
             <div className="text-slate-500 font-medium">  =========================================</div>
             <div className="grid grid-cols-[100px_120px_100px_1fr] gap-x-4 text-slate-400 mt-2 font-bold whitespace-nowrap">
               <span>NETWORK</span>
@@ -45,7 +47,7 @@ export function Hero() {
             <div className="text-slate-600">---------------------------------------------------</div>
             <div className="grid grid-cols-[100px_120px_100px_1fr] gap-x-4 text-slate-300 whitespace-nowrap">
               <span>core5g</span>
-              <span className="text-rose-400 font-semibold">🔴 Stopped</span>
+              <span className="text-rose-400 font-semibold">🔴 {dict.hero.terminal.stopped}</span>
               <span>N/A</span>
               <span>4 CPU / 4 GiB</span>
             </div>
@@ -60,12 +62,12 @@ export function Hero() {
         if (!active) break;
         await sleep(600);
 
-        const startLog1 = <div key={`start-log-1-${Math.random()}`} className="mt-2 text-blue-400 font-semibold text-xs">🚀 Starting Lima VM (core5g)...</div>;
+        const startLog1 = <div key={`start-log-1-${Math.random()}`} className="mt-2 text-blue-400 font-semibold text-xs">🚀 {dict.hero.terminal.startingVm}</div>;
         setLines((prev) => [...prev, startLog1]);
         await sleep(1500);
         if (!active) break;
 
-        const startLog2 = <div key={`start-log-2-${Math.random()}`} className="text-emerald-400 font-bold text-xs">✔ Lima VM (core5g) started successfully.</div>;
+        const startLog2 = <div key={`start-log-2-${Math.random()}`} className="text-emerald-400 font-bold text-xs">✔ {dict.hero.terminal.startedVm}</div>;
         setLines((prev) => [...prev, startLog2]);
         await sleep(2500);
         if (!active) break;
@@ -77,63 +79,63 @@ export function Hero() {
 
         const statusOutput = (
           <div key={`status-output-${Math.random()}`} className="mt-2 text-xs leading-relaxed">
-            <div className="text-cyan-400 font-bold">  Unuko 5G Core & RSP Simulation Dashboard</div>
+            <div className="text-cyan-400 font-bold">  {dict.hero.terminal.dashboardTitle}</div>
             <div className="text-slate-500 font-medium">  ========================================</div>
             <div className="text-slate-300 mt-2">  Lima VM (core5g): <span className="text-emerald-400 font-bold">🟢 Running</span></div>
             <div className="text-slate-500">  [Specs: CPUs: 4 | RAM: 4GiB | SSH Port: 63914]</div>
             <div className="text-slate-600">  ----------------------------------------</div>
-            <div className="text-amber-400 font-bold mt-2">  System Services:</div>
+            <div className="text-amber-400 font-bold mt-2">  {dict.hero.terminal.systemServices}:</div>
 
             <div className="space-y-1 mt-1">
               <div className="grid grid-cols-[100px_95px_130px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
-                <span className="text-emerald-400">  🟢 online</span>
-                <span className="text-slate-100 font-bold">Database</span>
+                <span className="text-emerald-400">  🟢 {dict.hero.terminal.online}</span>
+                <span className="text-slate-100 font-bold">{dict.hero.terminal.database}</span>
                 <span className="text-slate-500">(mongod)</span>
-                <span className="text-slate-400">- Subscriber DB</span>
+                <span className="text-slate-400">- {dict.hero.terminal.subscriberDb}</span>
               </div>
               <div className="grid grid-cols-[100px_95px_130px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
-                <span className="text-emerald-400">  🟢 online</span>
-                <span className="text-slate-100 font-bold">Web UI</span>
+                <span className="text-emerald-400">  🟢 {dict.hero.terminal.online}</span>
+                <span className="text-slate-100 font-bold">{dict.hero.terminal.webui}</span>
                 <span className="text-slate-500">(open5gs-webui)</span>
-                <span className="text-slate-400">- Admin portal</span>
+                <span className="text-slate-400">- {dict.hero.terminal.adminPortal}</span>
               </div>
               <div className="grid grid-cols-[100px_95px_130px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
-                <span className="text-emerald-400">  🟢 online</span>
-                <span className="text-slate-100 font-bold">SM-DP+</span>
+                <span className="text-emerald-400">  🟢 {dict.hero.terminal.online}</span>
+                <span className="text-slate-100 font-bold">{dict.hero.terminal.smdpp}</span>
                 <span className="text-slate-500">(osmo-smdpp)</span>
-                <span className="text-slate-400">- eSIM server</span>
+                <span className="text-slate-400">- {dict.hero.terminal.esimServer}</span>
               </div>
             </div>
 
-            <div className="text-amber-400 font-bold mt-3">  5G Core Services (Open5GS):</div>
+            <div className="text-amber-400 font-bold mt-3">  {dict.hero.terminal.fivegServices} (Open5GS):</div>
             <div className="space-y-1 mt-1">
               <div className="grid grid-cols-[100px_95px_130px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
-                <span className="text-emerald-400">  🟢 online</span>
+                <span className="text-emerald-400">  🟢 {dict.hero.terminal.online}</span>
                 <span className="text-slate-100 font-bold">AMF</span>
                 <span className="text-slate-500">(open5gs-amfd)</span>
-                <span className="text-slate-400">- Mobility mgmt</span>
+                <span className="text-slate-400">- {dict.hero.terminal.mobilityMgmt}</span>
               </div>
               <div className="grid grid-cols-[100px_95px_130px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
-                <span className="text-emerald-400">  🟢 online</span>
+                <span className="text-emerald-400">  🟢 {dict.hero.terminal.online}</span>
                 <span className="text-slate-100 font-bold">SMF</span>
                 <span className="text-slate-500">(open5gs-smfd)</span>
-                <span className="text-slate-400">- Session mgmt</span>
+                <span className="text-slate-400">- {dict.hero.terminal.sessionMgmt}</span>
               </div>
               <div className="grid grid-cols-[100px_95px_130px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
-                <span className="text-emerald-400">  🟢 online</span>
+                <span className="text-emerald-400">  🟢 {dict.hero.terminal.online}</span>
                 <span className="text-slate-100 font-bold">UPF</span>
                 <span className="text-slate-500">(open5gs-upfd)</span>
-                <span className="text-slate-400">- User plane data</span>
+                <span className="text-slate-400">- {dict.hero.terminal.userPlane}</span>
               </div>
               <div className="grid grid-cols-[100px_95px_130px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
-                <span className="text-emerald-400">  🟢 online</span>
+                <span className="text-emerald-400">  🟢 {dict.hero.terminal.online}</span>
                 <span className="text-slate-100 font-bold">UDM</span>
                 <span className="text-slate-500">(open5gs-udmd)</span>
-                <span className="text-slate-400">- Subscriber data</span>
+                <span className="text-slate-400">- {dict.hero.terminal.subscriberData}</span>
               </div>
             </div>
             <div className="text-slate-500 font-light italic mt-1.5 ml-4">
-              ... +6 other core network functions online
+              {dict.hero.terminal.otherServices}
             </div>
           </div>
         );
@@ -148,9 +150,9 @@ export function Hero() {
 
         const devicesOutput = (
           <div key={`devices-output-${Math.random()}`} className="mt-2 text-xs leading-relaxed">
-            <div className="text-cyan-400 font-bold">  Ueransim Simulated 5G Devices</div>
+            <div className="text-cyan-400 font-bold">  {dict.hero.terminal.ueransimDevices}</div>
             <div className="text-slate-500 font-medium">  =============================</div>
-            <div className="text-slate-400 mt-1">  Connecting to UERANSIM simulation controller...</div>
+            <div className="text-slate-400 mt-1">  {dict.hero.terminal.connectingUeransim}</div>
 
             <div className="grid grid-cols-[130px_70px_100px_100px_1fr] gap-x-2 text-slate-400 mt-3 font-bold whitespace-nowrap">
               <span>ID</span>
@@ -166,28 +168,28 @@ export function Hero() {
                 <span>GNB</span>
                 <span className="text-rose-500 font-semibold">STOPPED</span>
                 <span>N/A</span>
-                <span className="text-rose-500">🔴 Disconnected</span>
+                <span className="text-rose-500">🔴 {dict.hero.terminal.disconnected}</span>
               </div>
               <div className="grid grid-cols-[130px_70px_100px_100px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
                 <span>gnb-0x00002</span>
                 <span>GNB</span>
                 <span className="text-rose-500 font-semibold">STOPPED</span>
                 <span>N/A</span>
-                <span className="text-rose-500">🔴 Disconnected</span>
+                <span className="text-rose-500">🔴 {dict.hero.terminal.disconnected}</span>
               </div>
               <div className="grid grid-cols-[130px_70px_100px_100px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
                 <span>imsi-9997001</span>
                 <span>UE</span>
                 <span className="text-rose-500 font-semibold">STOPPED</span>
                 <span>N/A</span>
-                <span className="text-rose-500">🔴 Disconnected</span>
+                <span className="text-rose-500">🔴 {dict.hero.terminal.disconnected}</span>
               </div>
               <div className="grid grid-cols-[130px_70px_100px_100px_1fr] gap-x-2 text-slate-300 whitespace-nowrap">
                 <span>imsi-9997002</span>
                 <span>UE</span>
                 <span className="text-rose-500 font-semibold">STOPPED</span>
                 <span>N/A</span>
-                <span className="text-rose-500">🔴 Disconnected</span>
+                <span className="text-rose-500">🔴 {dict.hero.terminal.disconnected}</span>
               </div>
             </div>
             <div className="text-slate-500 italic mt-1.5 ml-2">
@@ -264,7 +266,7 @@ export function Hero() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [dict]);
 
   return (
     <section className="relative pt-24 pb-32 shrink-0 overflow-hidden">
@@ -281,7 +283,7 @@ export function Hero() {
             >
               <span className="inline-block px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-medium rounded-full mb-6 flex items-center gap-2 max-w-fit shadow-[0_0_15px_rgba(99,102,241,0.15)] backdrop-blur-sm">
                 <span className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)] animate-pulse"></span>
-                Desarrollo Activo — Código Abierto AGPLv3
+                {dict.hero.badge}
               </span>
             </motion.div>
 
@@ -291,7 +293,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-4xl lg:text-5xl font-extrabold text-white leading-[1.1] mb-6 tracking-tight drop-shadow-sm animate-fade-in"
             >
-              Unuko ToolKit <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-teal-300">La suite eSIM 5G para programadores.</span>
+              {dict.hero.titlePart1} <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-teal-300">{dict.hero.titlePart2}</span>
             </motion.h1>
 
             <motion.p
@@ -300,7 +302,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-lg text-slate-400 leading-relaxed mb-8 max-w-xl font-light"
             >
-              Despliega laboratorios completos de Open5GS, emula chips eUICC (UERANSIM) y levanta servidores de aprovisionamiento como osmo-smdpp con una sola herramienta. Extensible, modular y controlado desde una CLI moderna y un panel de control interactivo.
+              {dict.hero.description}
             </motion.p>
 
             <motion.div
@@ -310,10 +312,10 @@ export function Hero() {
               className="flex items-center gap-4 flex-wrap"
             >
               <div className="flex items-center gap-2 rounded-xl bg-slate-900/80 border border-slate-800 px-5 py-3.5 font-mono text-sm text-slate-300 shadow-xl backdrop-blur-md flex-1 md:flex-none">
-                <span className="text-indigo-400">$</span> unuko core5g start
+                <span className="text-indigo-400">$</span> {dict.hero.commandPrompt}
               </div>
               <a href="#beta-program" className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 font-medium text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:bg-indigo-500 transition-all hover:scale-105 flex-1 md:flex-none">
-                Probar la Beta <span aria-hidden="true">→</span>
+                {dict.hero.betaButton} <span aria-hidden="true">→</span>
               </a>
             </motion.div>
           </div>
@@ -341,15 +343,15 @@ export function Hero() {
 
             <div className="absolute -top-6 -right-4 bg-slate-900/95 backdrop-blur-xl px-5 py-3 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-slate-800 hidden sm:flex gap-5 transform group-hover:-translate-y-1 transition-transform duration-500 z-10">
               <div className="text-center">
-                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1">Licencia</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1">{dict.hero.licenseLabel}</div>
                 <div className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 font-mono flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> AGPLv3
                 </div>
               </div>
               <div className="w-px h-10 bg-slate-800 self-center"></div>
               <div className="text-center">
-                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1">Extensibilidad</div>
-                <div className="text-sm font-bold text-slate-200 font-mono">100% Modificable</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1">{dict.hero.extensibilityLabel}</div>
+                <div className="text-sm font-bold text-slate-200 font-mono">{dict.hero.modifiableLabel}</div>
               </div>
             </div>
           </motion.div>
