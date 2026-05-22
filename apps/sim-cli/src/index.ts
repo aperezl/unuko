@@ -5,14 +5,32 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import fs from 'fs';
 import net from 'net';
+import os from 'os';
 import { limaManager } from '@unuko/cli';
 import { UeransimNetworkAdapter } from '@unuko/adapter-ueransim';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const LIMA_YAML_PATH = path.resolve(__dirname, '../../../lima.yaml');
-const PROJECT_ROOT = path.resolve(__dirname, '../../../');
-const SCRATCH_DIR = path.join(PROJECT_ROOT, 'scratch');
+
+const IS_DEV = process.env.UNUKO_ENV === 'development';
+
+const PROJECT_ROOT = IS_DEV
+  ? path.resolve(__dirname, '../../../')
+  : path.resolve(__dirname, '..');
+
+const LIMA_YAML_PATH = IS_DEV
+  ? path.join(PROJECT_ROOT, 'lima.yaml')
+  : path.join(PROJECT_ROOT, 'lima.yaml');
+
+const SCRATCH_DIR = IS_DEV
+  ? path.join(PROJECT_ROOT, 'scratch')
+  : path.join(os.homedir(), '.unuko');
+
+// Ensure scratch/data directory exists
+if (!fs.existsSync(SCRATCH_DIR)) {
+  fs.mkdirSync(SCRATCH_DIR, { recursive: true });
+}
+
 const DASHBOARD_PID_FILE = path.join(SCRATCH_DIR, 'dashboard-state.json');
 
 const CORE_SERVICES = [
@@ -392,7 +410,7 @@ async function handleDashboardStart(isJson: boolean) {
   const busyPorts = [];
   if (await checkPort(3000)) busyPorts.push(3000);
   if (await checkPort(8080)) busyPorts.push(8080);
-  if (await checkPort(5173)) busyPorts.push(5173);
+  if (IS_DEV && await checkPort(5173)) busyPorts.push(5173);
 
   if (busyPorts.length > 0) {
     if (isJson) {
@@ -413,30 +431,74 @@ async function handleDashboardStart(isJson: boolean) {
 
   if (!isJson) {
     console.log(chalk.blue('\n🚀 Starting UNUKO Simulation Dashboard...'));
-    console.log(chalk.gray('  Logs will be written to scratch/ folder.'));
+    console.log(chalk.gray(`  Logs will be written to ${IS_DEV ? 'scratch/' : '~/.unuko/'} folder.`));
   }
 
   const backendLog = fs.openSync(path.join(SCRATCH_DIR, 'sim-backend.log'), 'a');
   const smdpMockLog = fs.openSync(path.join(SCRATCH_DIR, 'smdp-mock.log'), 'a');
   const frontendLog = fs.openSync(path.join(SCRATCH_DIR, 'sim-frontend.log'), 'a');
 
-  // 1. Start SM-DP+ mock
-  if (!isJson) console.log(chalk.gray('  Starting Mock SM-DP+ server...'));
-  const smdpProcess = spawn('pnpm', ['--filter', '@unuko/smdp-mock', 'dev'], {
-    detached: true,
-    stdio: ['ignore', smdpMockLog, smdpMockLog],
-    cwd: PROJECT_ROOT,
-  });
-  smdpProcess.unref();
+  let smdpProcess;
+  let backendProcess;
+  let frontendProcess;
 
-  // 2. Start Backend
-  if (!isJson) console.log(chalk.gray('  Starting simulation backend...'));
-  const backendProcess = spawn('pnpm', ['--filter', 'sim-backend', 'dev'], {
-    detached: true,
-    stdio: ['ignore', backendLog, backendLog],
-    cwd: PROJECT_ROOT,
-  });
-  backendProcess.unref();
+  if (IS_DEV) {
+    // 1. Start SM-DP+ mock
+    if (!isJson) console.log(chalk.gray('  Starting Mock SM-DP+ server...'));
+    smdpProcess = spawn('pnpm', ['--filter', '@unuko/smdp-mockv2', 'dev'], {
+      detached: true,
+      stdio: ['ignore', smdpMockLog, smdpMockLog],
+      cwd: PROJECT_ROOT,
+      env: {
+        ...process.env,
+        UNUKO_ENV: 'development',
+      },
+    });
+    smdpProcess.unref();
+
+    // 2. Start Backend
+    if (!isJson) console.log(chalk.gray('  Starting simulation backend...'));
+    backendProcess = spawn('pnpm', ['--filter', 'sim-backend', 'dev'], {
+      detached: true,
+      stdio: ['ignore', backendLog, backendLog],
+      cwd: PROJECT_ROOT,
+      env: {
+        ...process.env,
+        UNUKO_ENV: 'development',
+      },
+    });
+    backendProcess.unref();
+  } else {
+    // Production Mode: spawn using node directly
+    const backendPath = path.join(PROJECT_ROOT, 'assets/sim-backend/dist/index.js');
+    const smdpPath = path.join(PROJECT_ROOT, 'assets/smdp-mockv2/dist/index.js');
+
+    // 1. Start SM-DP+ mock
+    if (!isJson) console.log(chalk.gray('  Starting Mock SM-DP+ server (Production)...'));
+    smdpProcess = spawn('node', [smdpPath], {
+      detached: true,
+      stdio: ['ignore', smdpMockLog, smdpMockLog],
+      cwd: PROJECT_ROOT,
+      env: {
+        ...process.env,
+        UNUKO_ENV: 'production',
+      },
+    });
+    smdpProcess.unref();
+
+    // 2. Start Backend
+    if (!isJson) console.log(chalk.gray('  Starting simulation backend (Production)...'));
+    backendProcess = spawn('node', [backendPath], {
+      detached: true,
+      stdio: ['ignore', backendLog, backendLog],
+      cwd: PROJECT_ROOT,
+      env: {
+        ...process.env,
+        UNUKO_ENV: 'production',
+      },
+    });
+    backendProcess.unref();
+  }
 
   // 3. Wait for Backend and SM-DP+ Mock to bind ports
   if (!isJson) console.log(chalk.gray('  Waiting for backend and mock SM-DP+ to be online...'));
@@ -453,7 +515,7 @@ async function handleDashboardStart(isJson: boolean) {
       console.error(chalk.bold.red('\n✖ Error: Services failed to start within timeout.'));
       console.error(chalk.red(`  Backend online: ${backendReady ? 'Yes' : 'No'}`));
       console.error(chalk.red(`  SM-DP+ Mock online: ${smdpReady ? 'Yes' : 'No'}`));
-      console.error(chalk.red('  Please check logs in scratch/ folder.'));
+      console.error(chalk.red(`  Please check logs in ${IS_DEV ? 'scratch/' : '~/.unuko/'} folder.`));
     }
     
     if (smdpProcess.pid) killProcessGroup(smdpProcess.pid);
@@ -461,41 +523,43 @@ async function handleDashboardStart(isJson: boolean) {
     process.exit(1);
   }
 
-  // 4. Start Frontend
-  if (!isJson) console.log(chalk.gray('  Starting frontend dashboard...'));
-  const frontendProcess = spawn('pnpm', ['--filter', 'sim-frontend', 'dev'], {
-    detached: true,
-    stdio: ['ignore', frontendLog, frontendLog],
-    cwd: PROJECT_ROOT,
-  });
-  frontendProcess.unref();
+  if (IS_DEV) {
+    // 4. Start Frontend
+    if (!isJson) console.log(chalk.gray('  Starting frontend dashboard...'));
+    frontendProcess = spawn('pnpm', ['--filter', 'sim-frontend', 'dev'], {
+      detached: true,
+      stdio: ['ignore', frontendLog, frontendLog],
+      cwd: PROJECT_ROOT,
+    });
+    frontendProcess.unref();
 
-  // Wait for Frontend
-  if (!isJson) console.log(chalk.gray('  Waiting for frontend dashboard to be online...'));
-  const frontendReady = await waitForPort(5173, 20000);
+    // Wait for Frontend
+    if (!isJson) console.log(chalk.gray('  Waiting for frontend dashboard to be online...'));
+    const frontendReady = await waitForPort(5173, 20000);
 
-  if (!frontendReady) {
-    if (isJson) {
-      console.log(JSON.stringify({ 
-        status: 'error', 
-        message: 'Frontend failed to start.' 
-      }));
-    } else {
-      console.error(chalk.bold.red('\n✖ Error: Frontend dashboard failed to start.'));
-      console.error(chalk.red('  Please check logs in scratch/ folder.'));
+    if (!frontendReady) {
+      if (isJson) {
+        console.log(JSON.stringify({ 
+          status: 'error', 
+          message: 'Frontend failed to start.' 
+        }));
+      } else {
+        console.error(chalk.bold.red('\n✖ Error: Frontend dashboard failed to start.'));
+        console.error(chalk.red('  Please check logs in scratch/ folder.'));
+      }
+      
+      if (smdpProcess.pid) killProcessGroup(smdpProcess.pid);
+      if (backendProcess.pid) killProcessGroup(backendProcess.pid);
+      if (frontendProcess.pid) killProcessGroup(frontendProcess.pid);
+      process.exit(1);
     }
-    
-    if (smdpProcess.pid) killProcessGroup(smdpProcess.pid);
-    if (backendProcess.pid) killProcessGroup(backendProcess.pid);
-    if (frontendProcess.pid) killProcessGroup(frontendProcess.pid);
-    process.exit(1);
   }
 
   // 5. Save state
   const state = {
     backendPid: backendProcess.pid,
     smdpMockPid: smdpProcess.pid,
-    frontendPid: frontendProcess.pid,
+    frontendPid: IS_DEV ? (frontendProcess?.pid) : undefined,
     status: 'running',
     timestamp: new Date().toISOString()
   };
@@ -508,15 +572,19 @@ async function handleDashboardStart(isJson: boolean) {
       pids: {
         backend: backendProcess.pid,
         smdpMock: smdpProcess.pid,
-        frontend: frontendProcess.pid
+        frontend: state.frontendPid
       }
     }));
   } else {
     console.log(chalk.bold.green('\n✔ Dashboard services started successfully!'));
-    console.log(`  ${chalk.bold('Frontend')}:    ${chalk.cyan('http://localhost:5173')}`);
-    console.log(`  ${chalk.bold('Backend API')}: ${chalk.cyan('http://localhost:3000')}`);
+    if (IS_DEV) {
+      console.log(`  ${chalk.bold('Frontend')}:    ${chalk.cyan('http://localhost:5173')}`);
+      console.log(`  ${chalk.bold('Backend API')}: ${chalk.cyan('http://localhost:3000')}`);
+    } else {
+      console.log(`  ${chalk.bold('Dashboard')}:   ${chalk.cyan('http://localhost:3000')}`);
+    }
     console.log(`  ${chalk.bold('SM-DP+ Mock')}: ${chalk.cyan('http://localhost:8080')}`);
-    console.log(`  ${chalk.bold('Logs')}:        ${chalk.gray('scratch/sim-backend.log, scratch/smdp-mock.log, scratch/sim-frontend.log')}`);
+    console.log(`  ${chalk.bold('Logs')}:        ${chalk.gray(`Logs are in ${IS_DEV ? 'scratch/' : '~/.unuko/'}`)}`);
     console.log();
   }
 }

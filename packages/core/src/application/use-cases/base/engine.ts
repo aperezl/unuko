@@ -89,7 +89,7 @@ export class WorkflowEngine implements IWorkflowEngine {
       initial: z.string().refine((val: string) => validStates.includes(val), {
         message: `Initial state "${config.initial}" does not exist in states list.`
       }),
-      states: z.record(z.object({
+      states: z.record(z.string(), z.object({
         type: z.enum(['final', 'parallel', 'compound', 'atomic']).optional(),
         invoke: z.object({
           src: z.string().refine((val: string) => !!this.registry[val], {
@@ -114,7 +114,7 @@ export class WorkflowEngine implements IWorkflowEngine {
             }
           }
         }),
-        on: z.record(transitionValidator).optional()
+        on: z.record(z.string(), transitionValidator).optional()
       }))
     });
 

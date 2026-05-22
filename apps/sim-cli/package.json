@@ -1,20 +1,46 @@
 {
-  "name": "sim-cli",
+  "name": "unuko",
   "version": "0.1.0",
   "type": "module",
+  "description": "5G Core network virtualization and simulation control CLI",
   "bin": {
     "unuko": "./dist/index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aperezl/unuko-rsp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aperezl/unuko-rsp/issues"
+  },
+  "homepage": "https://github.com/aperezl/unuko-rsp#readme",
+  "files": [
+    "dist",
+    "assets",
+    "lima.yaml"
+  ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --clean",
+    "build": "tsup",
     "dev": "tsup src/index.ts --format esm --watch",
+    "copy-assets": "node scripts/copy-assets.js",
     "start": "node dist/index.js"
   },
   "dependencies": {
     "@unuko/cli": "workspace:*",
     "@unuko/adapter-ueransim": "workspace:*",
     "chalk": "^4.1.2",
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.1.1",
+    "fastify": "^5.8.5",
+    "@fastify/cors": "^10.0.1",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.6",
+    "@fastify/static": "^8.0.0",
+    "fastify-type-provider-zod": "^6.1.0",
+    "xstate": "^5.31.1",
+    "zod": "^4.4.3",
+    "zod-to-json-schema": "^3.24.1",
+    "pkcs11js": "^2.1.6",
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "tsup": "^8.5.1",

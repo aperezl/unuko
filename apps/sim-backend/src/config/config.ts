@@ -1,8 +1,14 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const IS_DEV = process.env.UNUKO_ENV === 'development' || process.env.NODE_ENV === 'test' || !!process.env.VITEST;
+const DATA_DIR = IS_DEV
+  ? path.resolve(__dirname, '../../data')
+  : path.join(os.homedir(), '.unuko', 'data');
 
 export const CONFIG = {
   SERVER: {
@@ -10,12 +16,12 @@ export const CONFIG = {
     HOST: '0.0.0.0',
   },
   PATHS: {
-    DATA_DIR: './data',
-    ENVIRONMENT_FILE: './data/environment.json',
-    MOCK_PERSISTENCE_DIR: './data/mock',
-    LIMA_PERSISTENCE_DIR: './data/lima',
-    MOCK_FILE_AUDIT_DIR: './data/mock',
-    LIMA_FILE_AUDIT_DIR: './data/lima',
+    DATA_DIR,
+    ENVIRONMENT_FILE: path.join(DATA_DIR, 'environment.json'),
+    MOCK_PERSISTENCE_DIR: path.join(DATA_DIR, 'mock'),
+    LIMA_PERSISTENCE_DIR: path.join(DATA_DIR, 'lima'),
+    MOCK_FILE_AUDIT_DIR: path.join(DATA_DIR, 'mock'),
+    LIMA_FILE_AUDIT_DIR: path.join(DATA_DIR, 'lima'),
     SUBSCRIBERS_SEED: path.resolve(__dirname, '../../../../config/seeds/subscribers.json'),
     GNBS_SEED: path.resolve(__dirname, '../../../../config/seeds/gnbs.json'),
     UES_SEED: path.resolve(__dirname, '../../../../config/seeds/ues.json'),

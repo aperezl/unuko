@@ -44,3 +44,16 @@ next-env.d.ts
 # Turborepo
 .turbo
 turbo.log
+
+# local runtime logs and states
+/scratch/*.log
+/scratch/*.json
+
+# local backend runtime data
+/apps/sim-backend/data/lima/
+/apps/sim-backend/data/mock/
+/apps/sim-backend/data/*.json
+
+# unused credentials zip
+/osmo-smdpp-keys.zip
+

@@ -10,11 +10,11 @@ export function generateWorkflowSchema(taskDefinitions: TaskDefinition[]) {
     z.string(),
     z.object({
       target: z.string(),
-      assign: z.record(z.any()).optional()
+      assign: z.record(z.string(), z.any()).optional()
     })
   ]);
 
-  const transitionJsonSchema = zodToJsonSchema(transitionSchema, { target: 'jsonSchema7' });
+  const transitionJsonSchema = zodToJsonSchema(transitionSchema as any, { target: 'jsonSchema7' });
 
   // Base invoke schema
   const invokeSchema: any = {
@@ -44,7 +44,7 @@ export function generateWorkflowSchema(taskDefinitions: TaskDefinition[]) {
           };
           
           if (task.input) {
-            const inputSchema: any = zodToJsonSchema(task.input, { target: 'jsonSchema7' });
+            const inputSchema: any = zodToJsonSchema(task.input as any, { target: 'jsonSchema7' });
             
             // Delete description to ensure Monaco merges this exactly with the base 'input'
             // This prevents the duplicate 'input' entry in the autocomplete list.
@@ -72,17 +72,18 @@ export function generateWorkflowSchema(taskDefinitions: TaskDefinition[]) {
   const workflowZodSchema = z.object({
     id: z.string().describe('Unique identifier for the workflow'),
     initial: z.string().describe('The initial state of the workflow'),
-    context: z.record(z.any()).optional().describe('Initial context data'),
+    context: z.record(z.string(), z.any()).optional().describe('Initial context data'),
     states: z.record(
+      z.string(),
       z.object({
         type: z.enum(['final', 'parallel', 'compound', 'atomic']).optional(),
         invoke: z.any().optional(),
-        on: z.record(transitionSchema).optional()
+        on: z.record(z.string(), transitionSchema).optional()
       })
     )
   }).describe('Unuko Workflow Definition');
 
-  const jsonSchema: any = zodToJsonSchema(workflowZodSchema, {
+  const jsonSchema: any = zodToJsonSchema(workflowZodSchema as any, {
     target: 'jsonSchema7'
   });
 

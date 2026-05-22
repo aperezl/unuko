@@ -1,5 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
+import path from 'path';
+import { CONFIG } from '../config/config';
 
 // Mock fs module
 vi.mock('fs', () => {
@@ -81,7 +83,7 @@ describe('MockInfrastructureAdapter', () => {
 
     it('should handle fs errors gracefully', async () => {
       const adapter = new MockSdmAdapter();
-      fsMock._setFile('./data/mock-subscribers.json', '[]');
+      fsMock._setFile(path.join(CONFIG.PATHS.DATA_DIR, 'mock-subscribers.json'), '[]');
       vi.spyOn(fs, 'readFileSync').mockImplementationOnce(() => {
         throw new Error('Read error');
       });

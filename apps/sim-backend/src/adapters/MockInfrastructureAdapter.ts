@@ -2,9 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { Subscriber, UniversalNetworkPort, UESession, NetworkMetrics, AttachOptions } from '@unuko/core';
+import { CONFIG } from '../config/config.js';
 
 export class MockSdmAdapter {
-  private filePath = './data/mock-subscribers.json';
+  private filePath = path.join(CONFIG.PATHS.DATA_DIR, 'mock-subscribers.json');
 
   private read(): Subscriber[] {
     try {
@@ -69,7 +70,7 @@ export class MockSdmAdapter {
 }
 
 export class MockUeransimController {
-  private filePath = './data/mock-devices.json';
+  private filePath = path.join(CONFIG.PATHS.DATA_DIR, 'mock-devices.json');
 
   private read(): any[] {
     try {
@@ -92,7 +93,7 @@ export class MockUeransimController {
   }
 
   async init() {
-    fs.mkdirSync('./data', { recursive: true });
+    fs.mkdirSync(CONFIG.PATHS.DATA_DIR, { recursive: true });
   }
 
   async getDevices() {
