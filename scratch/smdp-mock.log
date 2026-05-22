@@ -13,3 +13,8 @@
 > node --watch --experimental-strip-types src/index.ts
 
 🚀 SM-DP+ Mock server running at http://localhost:8080
+
+> @unuko/smdp-mock@0.1.0 dev /Users/aperezl/mio/telcom/unuko-rsp/apps/smdp-mock
+> node --watch --experimental-strip-types src/index.ts
+
+🚀 SM-DP+ Mock server running at http://localhost:8080
