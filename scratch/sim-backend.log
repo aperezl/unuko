@@ -1,0 +1,48 @@
+
+> sim-backend@0.1.0 dev /Users/aperezl/mio/telcom/unuko-rsp/apps/sim-backend
+> tsx watch src/index.ts
+
+🚀 UNUKO Orchestrator - Starting Resilient Product API
+
+---
+🌐 UNUKO Digital Twin - Backend ready at http://localhost:3000
+📖 OpenAPI/Swagger Docs ready at http://localhost:3000/documentation
+✨ For Live Reload (HMR), use: http://localhost:5173
+---
+
+21:08:29 [tsx] Previous process hasn't exited yet. Force killing...
+/Users/aperezl/mio/telcom/unuko-rsp/apps/sim-backend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  sim-backend@0.1.0 dev: `tsx watch src/index.ts`
+Exit status 143
+
+> sim-backend@0.1.0 dev /Users/aperezl/mio/telcom/unuko-rsp/apps/sim-backend
+> tsx watch src/index.ts
+
+🚀 UNUKO Orchestrator - Starting Resilient Product API
+
+---
+🌐 UNUKO Digital Twin - Backend ready at http://localhost:3000
+📖 OpenAPI/Swagger Docs ready at http://localhost:3000/documentation
+✨ For Live Reload (HMR), use: http://localhost:5173
+---
+
+21:09:24 [tsx] Previous process hasn't exited yet. Force killing...
+/Users/aperezl/mio/telcom/unuko-rsp/apps/sim-backend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  sim-backend@0.1.0 dev: `tsx watch src/index.ts`
+Exit status 143
+
+> sim-backend@0.1.0 dev /Users/aperezl/mio/telcom/unuko-rsp/apps/sim-backend
+> tsx watch src/index.ts
+
+🚀 UNUKO Orchestrator - Starting Resilient Product API
+
+---
+🌐 UNUKO Digital Twin - Backend ready at http://localhost:3000
+📖 OpenAPI/Swagger Docs ready at http://localhost:3000/documentation
+✨ For Live Reload (HMR), use: http://localhost:5173
+---
+
+21:29:52 [tsx] Previous process hasn't exited yet. Force killing...
+/Users/aperezl/mio/telcom/unuko-rsp/apps/sim-backend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  sim-backend@0.1.0 dev: `tsx watch src/index.ts`
+Exit status 143

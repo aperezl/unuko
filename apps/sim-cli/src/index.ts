@@ -3,12 +3,17 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
+import fs from 'fs';
+import net from 'net';
 import { limaManager } from '@unuko/cli';
 import { UeransimNetworkAdapter } from '@unuko/adapter-ueransim';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LIMA_YAML_PATH = path.resolve(__dirname, '../../../lima.yaml');
+const PROJECT_ROOT = path.resolve(__dirname, '../../../');
+const SCRATCH_DIR = path.join(PROJECT_ROOT, 'scratch');
+const DASHBOARD_PID_FILE = path.join(SCRATCH_DIR, 'dashboard-state.json');
 
 const CORE_SERVICES = [
   { name: 'open5gs-amfd', label: 'AMF', desc: 'Access and Mobility Management Function' },
@@ -33,20 +38,25 @@ function printHelp() {
   console.log(chalk.bold.cyan('\n  Unuko 5G Core & RSP Simulation CLI'));
   console.log(chalk.gray('  ==================================\n'));
   console.log('  Usage: ' + chalk.green('unuko <network> <command> [options]'));
+  console.log('         ' + chalk.green('unuko dashboard start|stop'));
   console.log('         ' + chalk.green('unuko list [options]\n'));
   console.log('  Parameters:');
   console.log(`    ${chalk.bold('<network>')}        Name of the Lima VM network instance (e.g., core5g)`);
   console.log('\n  Commands:');
   console.log(`    ${chalk.bold('list')}              List all available networks (Lima VM instances)`);
+  console.log(`    ${chalk.bold('create')}            Create and provision a new Lima VM instance`);
+  console.log(`    ${chalk.bold('destroy')}           Stop and delete a Lima VM instance`);
   console.log(`    ${chalk.bold('start')}             Boot the Lima VM & start services`);
   console.log(`    ${chalk.bold('stop')}              Shut down the Lima VM`);
   console.log(`    ${chalk.bold('status')}            Display environment status dashboard`);
   console.log(`    ${chalk.bold('restart')}           Restart all systemd core network services`);
   console.log(`    ${chalk.bold('devices')}           List active UERANSIM simulated GNB and UE devices`);
   console.log(`    ${chalk.bold('logs <device-id>')}  View and follow logs for a simulated device`);
+  console.log(`    ${chalk.bold('dashboard start')}   Start dashboard services (backend, mock SM-DP+, frontend)`);
+  console.log(`    ${chalk.bold('dashboard stop')}    Stop all running dashboard services`);
   console.log(`    ${chalk.bold('help')}              Show this help menu\n`);
   console.log('  Options:');
-  console.log(`    ${chalk.bold('--format=json')}    Output result in JSON format (supported for list, status, devices, start, stop, restart)\n`);
+  console.log(`    ${chalk.bold('--format=json')}    Output result in JSON format (supported for list, status, devices, start, stop, restart, create, destroy)\n`);
 }
 
 async function main() {
@@ -71,7 +81,27 @@ async function main() {
     process.exit(0);
   }
 
-  const KNOWN_COMMANDS = ['start', 'stop', 'status', 'restart', 'devices', 'logs'];
+  if (firstArg === 'dashboard') {
+    const subCommand = cleanArgs[1];
+    if (!subCommand || (subCommand !== 'start' && subCommand !== 'stop')) {
+      if (isJson) {
+        console.log(JSON.stringify({ status: 'error', message: 'Usage: unuko dashboard start|stop' }));
+      } else {
+        console.error(chalk.bold.red('\n  Error: Invalid dashboard command.'));
+        console.error(chalk.red('  Usage: unuko dashboard start|stop\n'));
+      }
+      process.exit(1);
+    }
+
+    if (subCommand === 'start') {
+      await handleDashboardStart(isJson);
+    } else {
+      await handleDashboardStop(isJson);
+    }
+    process.exit(0);
+  }
+
+  const KNOWN_COMMANDS = ['start', 'stop', 'status', 'restart', 'devices', 'logs', 'create', 'destroy'];
 
   if (KNOWN_COMMANDS.includes(firstArg)) {
     if (isJson) {
@@ -199,6 +229,81 @@ async function main() {
       await showDevices(network, isJson);
       break;
 
+    case 'create':
+      if (!isJson) {
+        console.log(chalk.blue(`\n🏗 Creating and provisioning Lima VM (${network})...`));
+      }
+      try {
+        const status = limaManager.getVMStatus(network);
+        if (status) {
+          if (isJson) {
+            console.log(JSON.stringify({ status: 'error', message: `VM '${network}' already exists.` }));
+          } else {
+            console.error(chalk.bold.red(`\n✖ Error: Lima VM (${network}) already exists.`));
+            console.error(chalk.red(`  To start it, run: unuko ${network} start`));
+            console.error(chalk.red(`  To delete/destroy it first, run: unuko ${network} destroy\n`));
+          }
+          process.exit(1);
+        }
+
+        limaManager.startVM(network, LIMA_YAML_PATH, { stdio: isJson ? 'ignore' : 'inherit' });
+        if (isJson) {
+          console.log(JSON.stringify({ status: 'success', message: `Lima VM (${network}) created and provisioned successfully.` }));
+        } else {
+          console.log(chalk.bold.green(`\n✔ Lima VM (${network}) created and provisioned successfully.`));
+        }
+      } catch (err: any) {
+        if (isJson) {
+          console.log(JSON.stringify({ status: 'error', message: `Failed to create Lima VM: ${err.message}` }));
+        } else {
+          console.error(chalk.bold.red(`\n✖ Failed to create Lima VM: ${err.message}`));
+        }
+        process.exit(1);
+      }
+      break;
+
+    case 'destroy':
+      if (!isJson) {
+        console.log(chalk.blue(`\n💥 Destroying Lima VM (${network})...`));
+      }
+      try {
+        const status = limaManager.getVMStatus(network);
+        if (!status) {
+          if (isJson) {
+            console.log(JSON.stringify({ status: 'error', message: `VM '${network}' does not exist.` }));
+          } else {
+            console.log(chalk.yellow(`⚠ VM '${network}' does not exist.`));
+          }
+          process.exit(0);
+        }
+
+        if (status === 'Running') {
+          if (!isJson) {
+            console.log(chalk.gray('  Stopping VM first...'));
+          }
+          limaManager.stopVM(network, true, { stdio: isJson ? 'ignore' : 'inherit' });
+        }
+
+        if (!isJson) {
+          console.log(chalk.gray('  Deleting VM instances and disk images...'));
+        }
+        limaManager.deleteVM(network, { stdio: isJson ? 'ignore' : 'inherit' });
+
+        if (isJson) {
+          console.log(JSON.stringify({ status: 'success', message: `Lima VM (${network}) destroyed successfully.` }));
+        } else {
+          console.log(chalk.bold.green(`\n✔ Lima VM (${network}) destroyed successfully.`));
+        }
+      } catch (err: any) {
+        if (isJson) {
+          console.log(JSON.stringify({ status: 'error', message: `Failed to destroy VM: ${err.message}` }));
+        } else {
+          console.error(chalk.bold.red(`\n✖ Failed to destroy VM: ${err.message}`));
+        }
+        process.exit(1);
+      }
+      break;
+
     case 'logs':
       const deviceId = cleanArgs[2];
       if (!deviceId) {
@@ -211,6 +316,256 @@ async function main() {
       }
       await showLogs(network, deviceId);
       break;
+  }
+}
+
+function checkPort(port: number, host = 'localhost', timeout = 1000): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    const onError = () => {
+      socket.destroy();
+      resolve(false);
+    };
+    socket.setTimeout(timeout);
+    socket.once('error', onError);
+    socket.once('timeout', onError);
+    socket.connect(port, host, () => {
+      socket.end();
+      resolve(true);
+    });
+  });
+}
+
+async function waitForPort(port: number, timeoutMs = 15000): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (await checkPort(port)) {
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return false;
+}
+
+function killProcessGroup(pid: number) {
+  try {
+    process.kill(-pid, 'SIGTERM');
+  } catch (err: any) {
+    try {
+      process.kill(-pid, 'SIGKILL');
+    } catch (e) {
+      // Ignore
+    }
+  }
+}
+
+async function handleDashboardStart(isJson: boolean) {
+  // Check PID file
+  if (fs.existsSync(DASHBOARD_PID_FILE)) {
+    try {
+      const state = JSON.parse(fs.readFileSync(DASHBOARD_PID_FILE, 'utf8'));
+      let anyRunning = false;
+      const pids = [state.backendPid, state.smdpMockPid, state.frontendPid].filter(Boolean);
+      for (const pid of pids) {
+        try {
+          process.kill(pid, 0);
+          anyRunning = true;
+        } catch {
+          // ignore
+        }
+      }
+      if (anyRunning) {
+        if (isJson) {
+          console.log(JSON.stringify({ status: 'error', message: 'Dashboard is already running.' }));
+        } else {
+          console.log(chalk.yellow(`\n⚠ Dashboard is already running (PIDs: ${pids.join(', ')}).`));
+          console.log(chalk.gray("  Use 'unuko dashboard stop' to stop it first.\n"));
+        }
+        process.exit(0);
+      }
+    } catch {
+      // ignore parsing error, proceed
+    }
+  }
+
+  // Check if ports are already busy
+  const busyPorts = [];
+  if (await checkPort(3000)) busyPorts.push(3000);
+  if (await checkPort(8080)) busyPorts.push(8080);
+  if (await checkPort(5173)) busyPorts.push(5173);
+
+  if (busyPorts.length > 0) {
+    if (isJson) {
+      console.log(JSON.stringify({ 
+        status: 'error', 
+        message: `Ports already in use: ${busyPorts.join(', ')}. Please stop them or run 'unuko dashboard stop' first.` 
+      }));
+    } else {
+      console.error(chalk.bold.red(`\n✖ Error: Ports already in use: ${busyPorts.join(', ')}`));
+      console.error(chalk.red("  Please check if another service is running or run: unuko dashboard stop\n"));
+    }
+    process.exit(1);
+  }
+
+  if (!fs.existsSync(SCRATCH_DIR)) {
+    fs.mkdirSync(SCRATCH_DIR, { recursive: true });
+  }
+
+  if (!isJson) {
+    console.log(chalk.blue('\n🚀 Starting UNUKO Simulation Dashboard...'));
+    console.log(chalk.gray('  Logs will be written to scratch/ folder.'));
+  }
+
+  const backendLog = fs.openSync(path.join(SCRATCH_DIR, 'sim-backend.log'), 'a');
+  const smdpMockLog = fs.openSync(path.join(SCRATCH_DIR, 'smdp-mock.log'), 'a');
+  const frontendLog = fs.openSync(path.join(SCRATCH_DIR, 'sim-frontend.log'), 'a');
+
+  // 1. Start SM-DP+ mock
+  if (!isJson) console.log(chalk.gray('  Starting Mock SM-DP+ server...'));
+  const smdpProcess = spawn('pnpm', ['--filter', '@unuko/smdp-mock', 'dev'], {
+    detached: true,
+    stdio: ['ignore', smdpMockLog, smdpMockLog],
+    cwd: PROJECT_ROOT,
+  });
+  smdpProcess.unref();
+
+  // 2. Start Backend
+  if (!isJson) console.log(chalk.gray('  Starting simulation backend...'));
+  const backendProcess = spawn('pnpm', ['--filter', 'sim-backend', 'dev'], {
+    detached: true,
+    stdio: ['ignore', backendLog, backendLog],
+    cwd: PROJECT_ROOT,
+  });
+  backendProcess.unref();
+
+  // 3. Wait for Backend and SM-DP+ Mock to bind ports
+  if (!isJson) console.log(chalk.gray('  Waiting for backend and mock SM-DP+ to be online...'));
+  const backendReady = await waitForPort(3000, 20000);
+  const smdpReady = await waitForPort(8080, 20000);
+
+  if (!backendReady || !smdpReady) {
+    if (isJson) {
+      console.log(JSON.stringify({ 
+        status: 'error', 
+        message: `Services failed to start. Backend ready: ${backendReady}, SM-DP+ ready: ${smdpReady}` 
+      }));
+    } else {
+      console.error(chalk.bold.red('\n✖ Error: Services failed to start within timeout.'));
+      console.error(chalk.red(`  Backend online: ${backendReady ? 'Yes' : 'No'}`));
+      console.error(chalk.red(`  SM-DP+ Mock online: ${smdpReady ? 'Yes' : 'No'}`));
+      console.error(chalk.red('  Please check logs in scratch/ folder.'));
+    }
+    
+    if (smdpProcess.pid) killProcessGroup(smdpProcess.pid);
+    if (backendProcess.pid) killProcessGroup(backendProcess.pid);
+    process.exit(1);
+  }
+
+  // 4. Start Frontend
+  if (!isJson) console.log(chalk.gray('  Starting frontend dashboard...'));
+  const frontendProcess = spawn('pnpm', ['--filter', 'sim-frontend', 'dev'], {
+    detached: true,
+    stdio: ['ignore', frontendLog, frontendLog],
+    cwd: PROJECT_ROOT,
+  });
+  frontendProcess.unref();
+
+  // Wait for Frontend
+  if (!isJson) console.log(chalk.gray('  Waiting for frontend dashboard to be online...'));
+  const frontendReady = await waitForPort(5173, 20000);
+
+  if (!frontendReady) {
+    if (isJson) {
+      console.log(JSON.stringify({ 
+        status: 'error', 
+        message: 'Frontend failed to start.' 
+      }));
+    } else {
+      console.error(chalk.bold.red('\n✖ Error: Frontend dashboard failed to start.'));
+      console.error(chalk.red('  Please check logs in scratch/ folder.'));
+    }
+    
+    if (smdpProcess.pid) killProcessGroup(smdpProcess.pid);
+    if (backendProcess.pid) killProcessGroup(backendProcess.pid);
+    if (frontendProcess.pid) killProcessGroup(frontendProcess.pid);
+    process.exit(1);
+  }
+
+  // 5. Save state
+  const state = {
+    backendPid: backendProcess.pid,
+    smdpMockPid: smdpProcess.pid,
+    frontendPid: frontendProcess.pid,
+    status: 'running',
+    timestamp: new Date().toISOString()
+  };
+  fs.writeFileSync(DASHBOARD_PID_FILE, JSON.stringify(state, null, 2), 'utf8');
+
+  if (isJson) {
+    console.log(JSON.stringify({ 
+      status: 'success', 
+      message: 'Dashboard services started successfully.',
+      pids: {
+        backend: backendProcess.pid,
+        smdpMock: smdpProcess.pid,
+        frontend: frontendProcess.pid
+      }
+    }));
+  } else {
+    console.log(chalk.bold.green('\n✔ Dashboard services started successfully!'));
+    console.log(`  ${chalk.bold('Frontend')}:    ${chalk.cyan('http://localhost:5173')}`);
+    console.log(`  ${chalk.bold('Backend API')}: ${chalk.cyan('http://localhost:3000')}`);
+    console.log(`  ${chalk.bold('SM-DP+ Mock')}: ${chalk.cyan('http://localhost:8080')}`);
+    console.log(`  ${chalk.bold('Logs')}:        ${chalk.gray('scratch/sim-backend.log, scratch/smdp-mock.log, scratch/sim-frontend.log')}`);
+    console.log();
+  }
+}
+
+async function handleDashboardStop(isJson: boolean) {
+  if (!fs.existsSync(DASHBOARD_PID_FILE)) {
+    if (isJson) {
+      console.log(JSON.stringify({ status: 'error', message: 'No running dashboard found.' }));
+    } else {
+      console.log(chalk.yellow('\n⚠ No dashboard state found. It might not be running.'));
+    }
+    return;
+  }
+
+  if (!isJson) {
+    console.log(chalk.blue('\n🛑 Stopping UNUKO Simulation Dashboard...'));
+  }
+
+  try {
+    const state = JSON.parse(fs.readFileSync(DASHBOARD_PID_FILE, 'utf8'));
+    
+    if (state.frontendPid) {
+      if (!isJson) console.log(chalk.gray(`  Stopping frontend (PID: ${state.frontendPid})...`));
+      killProcessGroup(state.frontendPid);
+    }
+    if (state.backendPid) {
+      if (!isJson) console.log(chalk.gray(`  Stopping backend (PID: ${state.backendPid})...`));
+      killProcessGroup(state.backendPid);
+    }
+    if (state.smdpMockPid) {
+      if (!isJson) console.log(chalk.gray(`  Stopping SM-DP+ mock (PID: ${state.smdpMockPid})...`));
+      killProcessGroup(state.smdpMockPid);
+    }
+
+    // Clean up file
+    fs.unlinkSync(DASHBOARD_PID_FILE);
+
+    if (isJson) {
+      console.log(JSON.stringify({ status: 'success', message: 'Dashboard stopped successfully.' }));
+    } else {
+      console.log(chalk.bold.green('\n✔ All dashboard services stopped and ports freed.\n'));
+    }
+  } catch (err: any) {
+    if (isJson) {
+      console.log(JSON.stringify({ status: 'error', message: `Failed to stop dashboard: ${err.message}` }));
+    } else {
+      console.error(chalk.bold.red(`\n✖ Failed to stop dashboard: ${err.message}\n`));
+    }
+    process.exit(1);
   }
 }
 

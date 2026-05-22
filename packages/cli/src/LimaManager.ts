@@ -112,7 +112,7 @@ export class LimaManager {
   deleteVM(name: string, options: ExecuteOptions = {}): void {
     console.error(`[LimaManager] Deleting VM '${name}'...`);
     const stdioOpt = options.stdio || 'inherit';
-    execSync(`limactl delete ${name}`, { stdio: stdioOpt });
+    execSync(`limactl delete ${name} --tty=false`, { stdio: stdioOpt });
   }
 
   /**

@@ -1,0 +1,40 @@
+
+> sim-frontend@0.1.0 dev /Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend
+> vite
+
+21:08:12 [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v8.0.12  ready in 237 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+/Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  sim-frontend@0.1.0 dev: `vite`
+Exit status 143
+
+> sim-frontend@0.1.0 dev /Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend
+> vite
+
+
+  VITE v8.0.12  ready in 131 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+/Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  sim-frontend@0.1.0 dev: `vite`
+Exit status 143
+
+> sim-frontend@0.1.0 dev /Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend
+> vite
+
+21:28:52 [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v8.0.12  ready in 233 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+Sourcemap for "/Users/aperezl/mio/telcom/unuko-rsp/node_modules/.pnpm/monaco-yaml@5.5.0_monaco-editor@0.54.0/node_modules/monaco-yaml/yaml.worker.js" points to missing source files
+21:29:09 [vite] (client) ✨ new dependencies optimized: path-browserify
+/Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  sim-frontend@0.1.0 dev: `vite`
+Exit status 143
