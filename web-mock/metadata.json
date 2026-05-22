@@ -1,6 +1,0 @@
-{
-  "name": "Unuko",
-  "description": "Herramienta open-source orientada a la experiencia de desarrollador (DX) para orquestar laboratorios 5G efímeros.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
