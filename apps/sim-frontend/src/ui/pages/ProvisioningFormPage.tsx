@@ -91,18 +91,14 @@ export const ProvisioningFormPage: React.FC = () => {
   if (loading) return <div className="p-20 text-center font-mono text-muted-foreground animate-pulse">Loading subscriber data...</div>;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-6 w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <PageHeader
         title={isEdit ? `Edit Subscriber: ${imsi}` : 'Provision New 5G Subscriber'}
         subtitle="Core: Open5GS • SDM Protocol: MongoDB Direct"
-        navigation={
-          <Button variant="outline" size="icon" onClick={() => navigate('/inventory')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        }
+        backAction={() => navigate('/inventory')}
       />
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>

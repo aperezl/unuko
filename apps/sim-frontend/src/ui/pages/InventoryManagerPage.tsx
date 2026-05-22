@@ -48,7 +48,7 @@ export const InventoryManagerPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+    <div className="p-6 w-full flex flex-col gap-6 animate-in fade-in duration-500">
       <PageHeader
         title="5G Subscriber Inventory"
         subtitle="Synchronized with Open5GS SDM (Subscriber Data Management)"
@@ -65,22 +65,21 @@ export const InventoryManagerPage: React.FC = () => {
               size="icon"
               onClick={fetchSubscribers}
               title="Refresh"
-              className="h-12 w-12 rounded-xl"
             >
-              {loading ? <Spinner className="w-5 h-5" /> : <Database className="w-5 h-5" />}
+              {loading ? <Spinner className="w-4 h-4" /> : <Database className="w-4 h-4" />}
             </Button>
             <Button 
               onClick={() => navigate('/inventory/new')}
-              className="flex items-center gap-2 px-5 h-12 font-bold rounded-xl shadow-lg shadow-primary/20"
+              className="flex items-center gap-2 px-4 h-10 font-bold uppercase tracking-wider text-[12px] transition-colors active:scale-[0.98]"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-3.5 h-3.5" />
               PROVISION NEW IMSI
             </Button>
           </div>
         }
       />
 
-      <div className="bg-card rounded-md border border-border flex flex-col overflow-hidden shadow-xl mt-8">
+      <div className="bg-card rounded-md border border-border flex flex-col overflow-hidden shadow-xl">
         <Table>
           <TableHeader>
             <TableRow>
@@ -113,7 +112,7 @@ export const InventoryManagerPage: React.FC = () => {
                   <TableCell>
                     <div className="text-sm font-mono font-bold text-foreground">{sub.imsi}</div>
                   </TableCell>
-
+                  
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-[10px]">
@@ -172,7 +171,7 @@ export const InventoryManagerPage: React.FC = () => {
       </div>
 
       {!loading && subscribers.length === 0 && (
-        <div className="text-center py-20 bg-muted/20 rounded-3xl border border-border border-dashed mt-6">
+        <div className="text-center py-20 bg-muted/20 rounded-md border border-border border-dashed">
           <Database className="w-16 h-16 mx-auto mb-6 text-muted-foreground" />
           <h3 className="text-xl font-bold text-foreground mb-2">Empty Core Database</h3>
           <p className="text-muted-foreground">No subscribers found in the Open5GS SDM. Provision your first IMSI to get started.</p>

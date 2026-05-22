@@ -21,6 +21,7 @@ import { cn } from '../../lib/utils';
 import { Link, useLocation } from 'react-router-dom';
 import { DeviceForm } from '../../components/DeviceForms';
 import { AILogAuditor } from '../../components/AILogAuditor';
+import { PageHeader } from '../organisms/PageHeader';
 import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Badge } from '../atoms/Badge';
@@ -384,37 +385,30 @@ export const DeviceManagerPage = () => {
   );
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden animate-in fade-in duration-500">
-      <div className={cn(
-        "space-y-8 max-w-6xl mx-auto transition-all duration-500 px-6 pt-10"
-      )}>
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase flex items-center gap-3">
-              Infrastructure <span className="text-primary">Orchestrator</span>
-              <div className="h-4 w-px bg-border mx-2 hidden md:block" />
-              <span className="text-xs font-mono text-muted-foreground mt-1 hidden md:block">
-                UERANSIM v3.2.6 @ Lima-Core5G
-              </span>
-            </h2>
-            <div className="flex items-center gap-6 mt-4">
-              <Link to="/devices/ue" className={cn(
-                "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative cursor-pointer",
-                currentTab === 'ue' ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              )}>
-                User Equipments
-                {currentTab === 'ue' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
-              </Link>
-              <Link to="/devices/gnb" className={cn(
-                "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative cursor-pointer",
-                currentTab === 'gnb' ? "text-purple-500" : "text-muted-foreground hover:text-foreground"
-              )}>
-                gNodeB Antennas
-                {currentTab === 'gnb' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />}
-              </Link>
-            </div>
+    <div className="p-6 w-full flex flex-col gap-6 animate-in fade-in duration-500">
+      <PageHeader
+        title="Infrastructure"
+        highlight="Orchestrator"
+        subtitle="UERANSIM v3.2.6 @ Lima-Core5G"
+        navigation={
+          <div className="flex items-center gap-6">
+            <Link to="/devices/ue" className={cn(
+              "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative cursor-pointer",
+              currentTab === 'ue' ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}>
+              User Equipments
+              {currentTab === 'ue' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+            </Link>
+            <Link to="/devices/gnb" className={cn(
+              "text-[10px] font-black uppercase tracking-[0.2em] pb-2 transition-all relative cursor-pointer",
+              currentTab === 'gnb' ? "text-purple-500" : "text-muted-foreground hover:text-foreground"
+            )}>
+              gNodeB Antennas
+              {currentTab === 'gnb' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />}
+            </Link>
           </div>
-
+        }
+        actions={
           <div className="flex items-center gap-3">
             <Button 
               variant="destructive"
@@ -443,10 +437,10 @@ export const DeviceManagerPage = () => {
               Deploy {currentTab === 'ue' ? 'UE' : 'Tower'}
             </Button>
           </div>
-        </header>
+        }
+      />
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1 space-y-6">
+      <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 text-muted-foreground">
                 <div className="p-1.5 bg-muted/50 border border-border rounded-md">
@@ -656,10 +650,8 @@ export const DeviceManagerPage = () => {
                   </AnimatePresence>
                 </TableBody>
               </Table>
-            </div>
-          </div>
-        </div>
       </div>
+    </div>
 
       {/* Log Viewer Sidebar */}
       <AnimatePresence>

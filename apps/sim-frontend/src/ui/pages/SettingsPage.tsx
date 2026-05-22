@@ -227,7 +227,7 @@ export const SettingsPage = () => {
   const isTeardown = cleaning || !!result?.isTeardown;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-4 animate-in fade-in duration-500">
+    <div className="p-6 w-full flex flex-col gap-6 animate-in fade-in duration-500">
       <PageHeader
         title="System Settings"
         subtitle="Platform management and dynamic twin orchestration"

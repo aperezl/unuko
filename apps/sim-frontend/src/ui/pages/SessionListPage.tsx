@@ -246,7 +246,7 @@ states:
 
   return (
     <div className="h-full flex flex-col p-6 bg-transparent relative overflow-hidden animate-in fade-in duration-500">
-      <div className="max-w-6xl mx-auto w-full flex flex-col gap-6 flex-1 min-h-0">
+      <div className="w-full flex flex-col gap-6 flex-1 min-h-0">
         <PageHeader
           title="Session Explorer"
           subtitle="Telemetry Database Persistence"

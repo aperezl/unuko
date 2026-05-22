@@ -82,74 +82,59 @@ export const SessionMonitorPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-transparent animate-in fade-in duration-500">
-      {/* Page Header */}
-      <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-card/50">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline"
-            size="icon"
-            onClick={() => navigate('/sessions')}
-            className="w-8 h-8 rounded-sm text-muted-foreground"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div className="w-8 h-8 rounded-sm bg-primary flex items-center justify-center shadow-sm">
-             <FileJson className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-[14px] font-black tracking-tight text-foreground uppercase">Activation Trace</h2>
-              <div className="px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
-                Real-time
+    <div className="h-full flex flex-col p-6 bg-transparent relative overflow-hidden animate-in fade-in duration-500">
+      <div className="w-full flex flex-col gap-6 flex-1 min-h-0">
+        <PageHeader
+          title="Activation Trace"
+          subtitle={`UUID: ${data.sessionId}`}
+          backAction={() => navigate('/sessions')}
+          navigation={
+            <div className="px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
+              Real-time
+            </div>
+          }
+          actions={
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-1 p-1 bg-muted/50 border border-border rounded-sm">
+                <button 
+                  onClick={() => setViewMode('table')}
+                  className={cn(
+                    "px-3 py-1 rounded-sm transition-colors flex items-center gap-2 cursor-pointer",
+                    viewMode === 'table' ? "bg-card border border-border shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <LayoutGrid className="w-3 h-3" />
+                  <span className="text-[11px] font-bold uppercase tracking-tight">Table</span>
+                </button>
+                <button 
+                  onClick={() => setViewMode('flow')}
+                  className={cn(
+                    "px-3 py-1 rounded-sm transition-colors flex items-center gap-2 cursor-pointer",
+                    viewMode === 'flow' ? "bg-card border border-border shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Network className="w-3 h-3" />
+                  <span className="text-[11px] font-bold uppercase tracking-tight">Flow</span>
+                </button>
+              </div>
+
+              <div className="text-right">
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-black">Status</p>
+                <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_4px_rgba(16,185,129,0.3)]"></div>
+                  <span className="text-emerald-500 font-black text-[11px] uppercase tracking-widest">{data.status}</span>
+                </div>
+              </div>
+              <div className="h-8 w-px bg-border"></div>
+              <div className="text-right">
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-black">Context</p>
+                <p className="text-[11px] font-bold font-mono text-primary mt-0.5">{data.context.transactionId || 'NOT_SET'}</p>
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
-              UUID: <span className="text-muted-foreground font-mono ml-1">{data.sessionId}</span>
-            </p>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="flex items-center gap-6">
-           <div className="flex items-center gap-1 p-1 bg-muted/50 border border-border rounded-sm">
-            <button 
-              onClick={() => setViewMode('table')}
-              className={cn(
-                "px-3 py-1 rounded-sm transition-colors flex items-center gap-2 cursor-pointer",
-                viewMode === 'table' ? "bg-card border border-border shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <LayoutGrid className="w-3 h-3" />
-              <span className="text-[11px] font-bold uppercase tracking-tight">Table</span>
-            </button>
-            <button 
-              onClick={() => setViewMode('flow')}
-              className={cn(
-                "px-3 py-1 rounded-sm transition-colors flex items-center gap-2 cursor-pointer",
-                viewMode === 'flow' ? "bg-card border border-border shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Network className="w-3 h-3" />
-              <span className="text-[11px] font-bold uppercase tracking-tight">Flow</span>
-            </button>
-          </div>
-
-          <div className="text-right">
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-black">Status</p>
-            <div className="flex items-center gap-1.5 justify-end mt-0.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_4px_rgba(16,185,129,0.3)]"></div>
-              <span className="text-emerald-500 font-black text-[11px] uppercase tracking-widest">{data.status}</span>
-            </div>
-          </div>
-          <div className="h-8 w-px bg-border"></div>
-          <div className="text-right">
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-black">Context</p>
-            <p className="text-[11px] font-bold font-mono text-primary mt-0.5">{data.context.transactionId || 'NOT_SET'}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 grid grid-cols-12 gap-4 p-4 overflow-hidden">
+        <div className="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
         {/* Left Side (Stats) */}
         <div className="col-span-2 flex flex-col gap-4 overflow-y-auto pr-1 scrollbar-hide">
           <div className="bg-card rounded-md p-4 border border-border flex flex-col">
@@ -278,5 +263,6 @@ export const SessionMonitorPage = () => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
