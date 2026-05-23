@@ -1,6 +1,6 @@
 {
   "name": "unuko",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "5G Core network virtualization and simulation control CLI",
   "bin": {
@@ -8,12 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aperezl/unuko-rsp.git"
+    "url": "git+https://github.com/aperezl/unuko.git"
   },
   "bugs": {
-    "url": "https://github.com/aperezl/unuko-rsp/issues"
+    "url": "https://github.com/aperezl/unuko/issues"
   },
-  "homepage": "https://github.com/aperezl/unuko-rsp#readme",
+  "homepage": "https://github.com/aperezl/unuko#readme",
   "files": [
     "dist",
     "assets",
