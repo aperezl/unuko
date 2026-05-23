@@ -33,6 +33,7 @@ yarn-error.log*
 .env.test
 .env.production
 .env.development
+.npmrc
 
 # vercel
 .vercel
