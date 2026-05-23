@@ -1,6 +1,6 @@
 {
   "name": "unuko",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "5G Core network virtualization and simulation control CLI",
   "bin": {
@@ -26,8 +26,6 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@unuko/cli": "workspace:*",
-    "@unuko/adapter-ueransim": "workspace:*",
     "chalk": "^4.1.2",
     "js-yaml": "^4.1.1",
     "fastify": "^5.8.5",
@@ -43,6 +41,8 @@
     "express": "^4.19.2"
   },
   "devDependencies": {
+    "@unuko/cli": "workspace:*",
+    "@unuko/adapter-ueransim": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "@types/node": "^25.7.0"
