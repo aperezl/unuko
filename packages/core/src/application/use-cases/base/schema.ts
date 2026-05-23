@@ -88,7 +88,25 @@ export function generateWorkflowSchema(taskDefinitions: TaskDefinition[]) {
   });
 
   // Inject our refined invokeSchema into the generated JSON Schema
-  jsonSchema.properties.states.additionalProperties.properties.invoke = invokeSchema;
+  // We locate where 'states' is defined, handling potential wrapper definitions
+  let targetSchema = jsonSchema;
+  if (jsonSchema && jsonSchema.$ref) {
+    const defName = jsonSchema.$ref.split('/').pop();
+    if (defName) {
+      if (jsonSchema.definitions && jsonSchema.definitions[defName]) {
+        targetSchema = jsonSchema.definitions[defName];
+      } else if (jsonSchema.$defs && jsonSchema.$defs[defName]) {
+        targetSchema = jsonSchema.$defs[defName];
+      }
+    }
+  }
+
+  if (targetSchema && targetSchema.properties && targetSchema.properties.states) {
+    const statesSchema = targetSchema.properties.states;
+    if (statesSchema.additionalProperties && statesSchema.additionalProperties.properties) {
+      statesSchema.additionalProperties.properties.invoke = invokeSchema;
+    }
+  }
 
   return {
     uri: 'https://unuko.com/schemas/workflow.json',
