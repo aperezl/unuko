@@ -57,7 +57,8 @@ function printHelp() {
   console.log(chalk.gray('  ==================================\n'));
   console.log('  Usage: ' + chalk.green('unuko <command> <network> [options]'));
   console.log('         ' + chalk.green('unuko dashboard start|stop'));
-  console.log('         ' + chalk.green('unuko list [options]\n'));
+  console.log('         ' + chalk.green('unuko list [options]'));
+  console.log('         ' + chalk.green('unuko version\n'));
   console.log('  Parameters:');
   console.log(`    ${chalk.bold('<network>')}        Name of the Lima VM network instance (e.g., core5g)`);
   console.log('\n  Commands:');
@@ -72,6 +73,7 @@ function printHelp() {
   console.log(`    ${chalk.bold('logs <device-id>')}  View and follow logs for a simulated device`);
   console.log(`    ${chalk.bold('dashboard start')}   Start dashboard services (backend, mock SM-DP+, frontend)`);
   console.log(`    ${chalk.bold('dashboard stop')}    Stop all running dashboard services`);
+  console.log(`    ${chalk.bold('version')}           Show the installed version`);
   console.log(`    ${chalk.bold('help')}              Show this help menu\n`);
   console.log('  Options:');
   console.log(`    ${chalk.bold('--format=json')}    Output result in JSON format (supported for list, status, devices, start, stop, restart, create, destroy)\n`);
@@ -91,6 +93,26 @@ async function main() {
 
   if (firstArg === 'help' || firstArg === '--help' || firstArg === '-h') {
     printHelp();
+    process.exit(0);
+  }
+
+  if (firstArg === 'version' || firstArg === '--version' || firstArg === '-v') {
+    try {
+      const pkgPath = path.resolve(__dirname, '../package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      if (isJson) {
+        console.log(JSON.stringify({ version: pkg.version }));
+      } else {
+        console.log(pkg.version);
+      }
+    } catch (err: any) {
+      if (isJson) {
+        console.log(JSON.stringify({ status: 'error', message: `Failed to read version: ${err.message}` }));
+      } else {
+        console.error(chalk.red(`Error reading version: ${err.message}`));
+      }
+      process.exit(1);
+    }
     process.exit(0);
   }
 
