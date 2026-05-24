@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "AGPL-3.0-only",
   "packageManager": "pnpm@10.33.2",
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
