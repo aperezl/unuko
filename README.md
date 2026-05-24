@@ -31,13 +31,13 @@ npm install -g ./apps/sim-cli
 Para crear, descargar la imagen Ubuntu, instalar dependencias e iniciar los servicios de red 5G dentro de la VM automáticamente:
 
 ```bash
-unuko core5g create
+unuko create core5g
 ```
 *(Nota: El primer arranque tomará unos minutos mientras descarga y compila UERANSIM y Open5GS automáticamente).*
 
 Para arranques posteriores:
 ```bash
-unuko core5g start
+unuko start core5g
 ```
 
 ### 3. Iniciar el Dashboard de Simulación
@@ -62,7 +62,7 @@ Cuando termines de trabajar y quieras liberar memoria RAM en tu Mac:
 unuko dashboard stop
 
 # Detiene la máquina virtual Lima core5g
-unuko core5g stop
+unuko stop core5g
 ```
 
 ---
@@ -72,7 +72,7 @@ unuko core5g stop
 La herramienta `unuko` expone comandos fáciles para orquestar la red de simulación:
 
 ```text
-unuko <network> <command> [options]
+unuko <command> <network> [options]
 unuko dashboard start|stop
 unuko list [options]
 ```
@@ -83,14 +83,14 @@ unuko list [options]
 * `unuko dashboard stop`: Apaga de forma limpia todos los procesos del dashboard liberando puertos.
 
 ### Comandos del Entorno (`network` como `core5g`):
-* `unuko core5g create`: Crea, configura e instala de forma limpia una nueva instancia virtualizada.
-* `unuko core5g start`: Enciende la VM e inicia la base de datos y servicios del Core 5GS.
-* `unuko core5g stop`: Apaga la VM liberando recursos del Mac.
-* `unuko core5g restart`: Reinicia todos los servicios del Core 5G dentro de la VM sin apagar la máquina virtual.
-* `unuko core5g status`: Muestra un panel de salud interactivo del estado de la VM y de los servicios internos (mongod, open5gs, etc.).
-* `unuko core5g devices`: Lista los dispositivos gNodeB y UEs simulados por UERANSIM.
-* `unuko core5g logs <device-id>`: Sigue los logs en tiempo real de un dispositivo simulado específico (ej. `gnb-0x000000010` o `imsi-999700000000001`).
-* `unuko core5g destroy`: Detiene y elimina permanentemente la máquina virtual y sus discos del Mac.
+* `unuko create core5g`: Crea, configura e instala de forma limpia una nueva instancia virtualizada.
+* `unuko start core5g`: Enciende la VM e inicia la base de datos y servicios del Core 5GS.
+* `unuko stop core5g`: Apaga la VM liberando recursos del Mac.
+* `unuko restart core5g`: Reinicia todos los servicios del Core 5G dentro de la VM sin apagar la máquina virtual.
+* `unuko status core5g`: Muestra un panel de salud interactivo del estado de la VM y de los servicios internos (mongod, open5gs, etc.).
+* `unuko devices core5g`: Lista los dispositivos gNodeB y UEs simulados por UERANSIM.
+* `unuko logs core5g <device-id>`: Sigue los logs en tiempo real de un dispositivo simulado específico (ej. `gnb-0x000000010` o `imsi-999700000000001`).
+* `unuko destroy core5g`: Detiene y elimina permanentemente la máquina virtual y sus discos del Mac.
 
 *Nota: Añade `--format=json` a cualquiera de los comandos anteriores para obtener una salida estructurada y programable.*
 

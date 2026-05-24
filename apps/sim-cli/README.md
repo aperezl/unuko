@@ -33,13 +33,13 @@ npm install -g unuko
 To create, download the Ubuntu image, install dependencies, and automatically start the 5G network services inside the VM:
 
 ```bash
-unuko core5g create
+unuko create core5g
 ```
 *(Note: The first boot will take a few minutes as it automatically downloads and builds UERANSIM and Open5GS).*
 
 For subsequent starts:
 ```bash
-unuko core5g start
+unuko start core5g
 ```
 
 ### 3. Start the Simulation Dashboard
@@ -64,7 +64,7 @@ When you're done working and want to free up RAM on your Mac:
 unuko dashboard stop
 
 # Stops the Lima core5g virtual machine
-unuko core5g stop
+unuko stop core5g
 ```
 
 ---
@@ -74,7 +74,7 @@ unuko core5g stop
 The `unuko` tool exposes simple commands to orchestrate the simulation network:
 
 ```text
-unuko <network> <command> [options]
+unuko <command> <network> [options]
 unuko dashboard start|stop
 unuko list [options]
 ```
@@ -85,14 +85,14 @@ unuko list [options]
 * `unuko dashboard stop`: Cleanly shuts down all dashboard processes, freeing up ports.
 
 ### Environment Commands (`network` such as `core5g`):
-* `unuko core5g create`: Cleanly creates, configures, and installs a new virtualized instance.
-* `unuko core5g start`: Turns on the VM and starts the 5GS Core services and database.
-* `unuko core5g stop`: Shuts down the VM to free up Mac resources.
-* `unuko core5g restart`: Restarts all 5G Core services inside the VM without powering off the virtual machine.
-* `unuko core5g status`: Shows an interactive health panel displaying VM status and internal services (mongod, open5gs, etc.).
-* `unuko core5g devices`: Lists the gNodeB and UEs simulated by UERANSIM.
-* `unuko core5g logs <device-id>`: Follows real-time logs of a specific simulated device (e.g., `gnb-0x000000010` or `imsi-999700000000001`).
-* `unuko core5g destroy`: Stops and permanently removes the virtual machine and its disks from your Mac.
+* `unuko create core5g`: Cleanly creates, configures, and installs a new virtualized instance.
+* `unuko start core5g`: Turns on the VM and starts the 5GS Core services and database.
+* `unuko stop core5g`: Shuts down the VM to free up Mac resources.
+* `unuko restart core5g`: Restarts all 5G Core services inside the VM without powering off the virtual machine.
+* `unuko status core5g`: Shows an interactive health panel displaying VM status and internal services (mongod, open5gs, etc.).
+* `unuko devices core5g`: Lists the gNodeB and UEs simulated by UERANSIM.
+* `unuko logs core5g <device-id>`: Follows real-time logs of a specific simulated device (e.g., `gnb-0x000000010` or `imsi-999700000000001`).
+* `unuko destroy core5g`: Stops and permanently removes the virtual machine and its disks from your Mac.
 
 *Note: Append `--format=json` to any command above to get structured, programmable output.*
 
