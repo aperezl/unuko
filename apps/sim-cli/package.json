@@ -1,6 +1,6 @@
 {
   "name": "unuko",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "description": "5G Core network virtualization and simulation control CLI",
   "bin": {

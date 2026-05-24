@@ -55,7 +55,7 @@ const SYSTEM_SERVICES = [
 function printHelp() {
   console.log(chalk.bold.cyan('\n  Unuko 5G Core & RSP Simulation CLI'));
   console.log(chalk.gray('  ==================================\n'));
-  console.log('  Usage: ' + chalk.green('unuko <network> <command> [options]'));
+  console.log('  Usage: ' + chalk.green('unuko <command> <network> [options]'));
   console.log('         ' + chalk.green('unuko dashboard start|stop'));
   console.log('         ' + chalk.green('unuko list [options]\n'));
   console.log('  Parameters:');
@@ -121,44 +121,34 @@ async function main() {
 
   const KNOWN_COMMANDS = ['start', 'stop', 'status', 'restart', 'devices', 'logs', 'create', 'destroy'];
 
-  if (KNOWN_COMMANDS.includes(firstArg)) {
+  if (!KNOWN_COMMANDS.includes(firstArg) && firstArg !== 'help') {
     if (isJson) {
-      console.log(JSON.stringify({ status: 'error', message: 'Missing network parameter. Usage: unuko <network> <command>' }));
+      console.log(JSON.stringify({ status: 'error', message: `Unknown command: "${firstArg}"` }));
     } else {
-      console.error(chalk.bold.red(`\n  Error: Missing network parameter.`));
-      console.error(chalk.red(`  Usage: unuko <network> <command> [options]`));
-      console.error(chalk.red(`  Example: unuko core5g ${firstArg}\n`));
-    }
-    process.exit(1);
-  }
-
-  const network = firstArg;
-  const command = cleanArgs[1];
-
-  if (!command) {
-    if (isJson) {
-      console.log(JSON.stringify({ status: 'error', message: 'Missing command parameter. Usage: unuko <network> <command>' }));
-    } else {
-      console.error(chalk.bold.red(`\n  Error: Missing command parameter.`));
-      console.error(chalk.red(`  Usage: unuko <network> <command> [options]`));
-      console.error(chalk.red(`  Example: unuko ${network} status\n`));
-    }
-    process.exit(1);
-  }
-
-  if (!KNOWN_COMMANDS.includes(command) && command !== 'help') {
-    if (isJson) {
-      console.log(JSON.stringify({ status: 'error', message: `Unknown command: "${command}"` }));
-    } else {
-      console.error(chalk.bold.red(`\n  Unknown command: "${command}"`));
+      console.error(chalk.bold.red(`\n  Unknown command: "${firstArg}"`));
       printHelp();
     }
     process.exit(1);
   }
 
+  const command = firstArg;
+
   if (command === 'help') {
     printHelp();
     process.exit(0);
+  }
+
+  const network = cleanArgs[1];
+
+  if (!network) {
+    if (isJson) {
+      console.log(JSON.stringify({ status: 'error', message: `Missing network parameter. Usage: unuko ${command} <network>` }));
+    } else {
+      console.error(chalk.bold.red(`\n  Error: Missing network parameter.`));
+      console.error(chalk.red(`  Usage: unuko <command> <network> [options]`));
+      console.error(chalk.red(`  Example: unuko ${command} core5g\n`));
+    }
+    process.exit(1);
   }
 
   if (!limaManager.isLimaInstalled()) {
@@ -258,8 +248,8 @@ async function main() {
             console.log(JSON.stringify({ status: 'error', message: `VM '${network}' already exists.` }));
           } else {
             console.error(chalk.bold.red(`\n✖ Error: Lima VM (${network}) already exists.`));
-            console.error(chalk.red(`  To start it, run: unuko ${network} start`));
-            console.error(chalk.red(`  To delete/destroy it first, run: unuko ${network} destroy\n`));
+            console.error(chalk.red(`  To start it, run: unuko start ${network}`));
+            console.error(chalk.red(`  To delete/destroy it first, run: unuko destroy ${network}\n`));
           }
           process.exit(1);
         }
@@ -654,13 +644,13 @@ async function showStatus(network: string, isJson: boolean) {
   const status = limaManager.getVMStatus(network);
   if (!status) {
     console.log(`  Lima VM (${network}): ` + chalk.bold.red('Not Found / Unprovisioned'));
-    console.log(chalk.gray(`  Run 'unuko ${network} start' to provision and start the VM.\n`));
+    console.log(chalk.gray(`  Run 'unuko start ${network}' to provision and start the VM.\n`));
     return;
   }
 
   if (status !== 'Running') {
     console.log(`  Lima VM (${network}): ` + chalk.bold.red(status));
-    console.log(chalk.gray(`  Run 'unuko ${network} start' to boot the VM.\n`));
+    console.log(chalk.gray(`  Run 'unuko start ${network}' to boot the VM.\n`));
     return;
   }
 
@@ -702,7 +692,7 @@ async function showDevices(network: string, isJson: boolean) {
       console.log(JSON.stringify({ status: 'error', message: `Lima VM (${network}) is not running.` }));
     } else {
       console.error(chalk.red(`\n  Error: Lima VM (${network}) is not running.`));
-      console.error(chalk.red(`  Please start the VM using: unuko ${network} start\n`));
+      console.error(chalk.red(`  Please start the VM using: unuko start ${network}\n`));
     }
     process.exit(1);
   }
@@ -797,7 +787,7 @@ async function showNetworks(isJson: boolean) {
 
     if (instances.length === 0) {
       console.log(chalk.yellow('  No networks found.'));
-      console.log(chalk.gray("  Run 'unuko <network> start' to provision and start a new network VM.\n"));
+      console.log(chalk.gray("  Run 'unuko start <network>' to provision and start a new network VM.\n"));
       return;
     }
 
