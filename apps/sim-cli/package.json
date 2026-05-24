@@ -1,6 +1,6 @@
 {
   "name": "unuko",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "license": "AGPL-3.0-only",
   "type": "module",
   "description": "5G Core network virtualization and simulation control CLI",
