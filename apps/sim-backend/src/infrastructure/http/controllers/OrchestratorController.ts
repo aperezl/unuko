@@ -72,6 +72,30 @@ export class OrchestratorController {
     const result = await serviceUseCase.toggleServiceState(name, action);
     return reply.send(result);
   }
+
+  async getVms(request: FastifyRequest, reply: FastifyReply) {
+    const data = environmentUseCase.getVms();
+    return reply.send(data);
+  }
+
+  async setActiveVm(request: FastifyRequest, reply: FastifyReply) {
+    const { activeVm } = request.body as { activeVm: string };
+    const result = environmentUseCase.setActiveVm(activeVm);
+    return reply.send(result);
+  }
+
+  async startVm(request: FastifyRequest, reply: FastifyReply) {
+    const { name } = request.params as { name: string };
+    const result = await environmentUseCase.startVm(name);
+    return reply.send(result);
+  }
+
+  async stopVm(request: FastifyRequest, reply: FastifyReply) {
+    const { name } = request.params as { name: string };
+    const result = await environmentUseCase.stopVm(name);
+    return reply.send(result);
+  }
 }
 
 export const orchestratorController = new OrchestratorController();
+

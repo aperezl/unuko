@@ -40,7 +40,7 @@ export class ServiceUseCase {
 
       let systemctlStatuses: string[] = [];
       try {
-        const richStatus = limaManager.getRichStatus('core5g');
+        const richStatus = limaManager.getRichStatus(container.getActiveVm());
         const serviceNames = coreServices.map(s => s.name);
         systemctlStatuses = serviceNames.map(name => {
           const found = richStatus.services.find(s => s.name === name);
@@ -139,7 +139,7 @@ export class ServiceUseCase {
       return { status: action === 'start' ? 'active' : 'inactive' };
     }
 
-    const newStatus = limaManager.toggleService('core5g', name, action);
+    const newStatus = limaManager.toggleService(container.getActiveVm(), name, action);
     return { status: newStatus };
   }
 }

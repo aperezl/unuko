@@ -16,6 +16,7 @@ import { MockSdmAdapter, MockUeransimNetworkAdapter } from '../../adapters/MockI
 
 export class DependencyContainer {
   private currentEnvironment: 'mock' | 'lima' = 'mock';
+  private activeVmName: string = 'core5g';
 
   // Core adapters
   private rawHardware!: UeransimHardwareAdapter;
@@ -54,7 +55,9 @@ export class DependencyContainer {
     try {
       if (fs.existsSync(CONFIG.PATHS.ENVIRONMENT_FILE)) {
         const envData = fs.readFileSync(CONFIG.PATHS.ENVIRONMENT_FILE, 'utf-8');
-        this.currentEnvironment = JSON.parse(envData).environment;
+        const parsed = JSON.parse(envData);
+        this.currentEnvironment = parsed.environment || 'mock';
+        this.activeVmName = parsed.activeVm || 'core5g';
       }
     } catch (e) {
       console.error('[DI]: Failed to load environment configuration, falling back to mock:', e);
@@ -82,8 +85,8 @@ export class DependencyContainer {
     this.rawTransport = new HttpmTLSAdapter(this.crypto);
     this.notification = new WebhookNotificationAdapter(CONFIG.WEBHOOK.ALERT_URL);
     
-    this.ueransimNetwork = new UeransimNetworkAdapter(CONFIG.HARDWARE.UERANSIM_INSTANCE);
-    this.sdmAdapter = new Open5gsSdmAdapter(CONFIG.HARDWARE.OPEN5GS_INSTANCE);
+    this.ueransimNetwork = new UeransimNetworkAdapter(this.activeVmName);
+    this.sdmAdapter = new Open5gsSdmAdapter(this.activeVmName);
     this.mockUeransimNetwork = new MockUeransimNetworkAdapter();
     this.mockSdmAdapter = new MockSdmAdapter();
     this.mockNetwork = new MockNetworkAdapter({ delayMs: 1000 });
@@ -97,7 +100,29 @@ export class DependencyContainer {
   setEnvironment(env: 'mock' | 'lima') {
     this.currentEnvironment = env;
     try {
-      fs.writeFileSync(CONFIG.PATHS.ENVIRONMENT_FILE, JSON.stringify({ environment: env }, null, 2));
+      fs.writeFileSync(
+        CONFIG.PATHS.ENVIRONMENT_FILE,
+        JSON.stringify({ environment: env, activeVm: this.activeVmName }, null, 2)
+      );
+    } catch (e) {
+      console.error('[DI]: Failed to write environment config file:', e);
+    }
+  }
+
+  getActiveVm(): string {
+    return this.activeVmName;
+  }
+
+  setActiveVm(vmName: string) {
+    this.activeVmName = vmName;
+    this.ueransimNetwork = new UeransimNetworkAdapter(vmName);
+    this.sdmAdapter = new Open5gsSdmAdapter(vmName);
+    try {
+      fs.writeFileSync(
+        CONFIG.PATHS.ENVIRONMENT_FILE,
+        JSON.stringify({ environment: this.currentEnvironment, activeVm: vmName }, null, 2)
+      );
+      console.log(`[DI]: Updated active VM to: ${vmName}`);
     } catch (e) {
       console.error('[DI]: Failed to write environment config file:', e);
     }

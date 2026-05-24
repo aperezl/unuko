@@ -6,7 +6,9 @@ import {
   switchEnvironmentSchema,
   createSessionSchema,
   sendSessionEventSchema,
-  sessionIdParamSchema
+  sessionIdParamSchema,
+  switchActiveVmSchema,
+  vmNameParamSchema
 } from '../../../domain/schemas/orchestrator.schema.js';
 import {
   serviceNameParamSchema,
@@ -160,4 +162,63 @@ export async function orchestratorRoutes(fastify: FastifyInstance) {
       },
     },
   }, orchestratorController.toggleServiceState);
+
+  // VM Management routes
+  server.get('/v1/orchestrator/vms', {
+    schema: {
+      description: 'Get list of all Lima VMs and their statuses',
+      tags: ['Orchestrator'],
+      response: {
+        200: z.object({
+          activeVm: z.string(),
+          vms: z.array(z.object({
+            name: z.string(),
+            status: z.string(),
+            cpus: z.number().optional(),
+            memory: z.string().optional(),
+            sshLocalPort: z.number().optional(),
+          }))
+        }),
+      },
+    },
+  }, orchestratorController.getVms);
+
+  server.post('/v1/orchestrator/vms/active', {
+    schema: {
+      description: 'Set active Lima VM',
+      tags: ['Orchestrator'],
+      body: switchActiveVmSchema,
+      response: {
+        200: z.object({
+          activeVm: z.string()
+        }),
+      },
+    },
+  }, orchestratorController.setActiveVm);
+
+  server.post('/v1/orchestrator/vms/:name/start', {
+    schema: {
+      description: 'Start a Lima VM',
+      tags: ['Orchestrator'],
+      params: vmNameParamSchema,
+      response: {
+        200: z.object({
+          status: z.string()
+        }),
+      },
+    },
+  }, orchestratorController.startVm);
+
+  server.post('/v1/orchestrator/vms/:name/stop', {
+    schema: {
+      description: 'Stop a Lima VM',
+      tags: ['Orchestrator'],
+      params: vmNameParamSchema,
+      response: {
+        200: z.object({
+          status: z.string()
+        }),
+      },
+    },
+  }, orchestratorController.stopVm);
 }

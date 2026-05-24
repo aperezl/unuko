@@ -2,6 +2,10 @@ export const APP_CONFIG = {
   API_BASE_URL: '',
   ENDPOINTS: {
     ENVIRONMENT: '/v1/orchestrator/environment',
+    VMS: '/v1/orchestrator/vms',
+    ACTIVE_VM: '/v1/orchestrator/vms/active',
+    START_VM: (name: string) => `/v1/orchestrator/vms/${name}/start`,
+    STOP_VM: (name: string) => `/v1/orchestrator/vms/${name}/stop`,
     SESSIONS: '/v1/orchestrator/sessions',
     SESSION: '/v1/orchestrator/session',
     SESSION_DETAIL: (id: string) => `/v1/orchestrator/session/${id}`,

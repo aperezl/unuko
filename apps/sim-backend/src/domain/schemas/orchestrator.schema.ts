@@ -26,3 +26,18 @@ export const sessionIdParamSchema = z.object({
 export type SwitchEnvironmentRequest = z.infer<typeof switchEnvironmentSchema>;
 export type CreateSessionRequest = z.infer<typeof createSessionSchema>;
 export type SendSessionEventRequest = z.infer<typeof sendSessionEventSchema>;
+
+export const switchActiveVmSchema = z.object({
+  activeVm: z.string({
+    message: 'Active VM name is required',
+  }),
+});
+
+export const vmNameParamSchema = z.object({
+  name: z.string({
+    message: 'VM name parameter is required',
+  }),
+});
+
+export type SwitchActiveVmRequest = z.infer<typeof switchActiveVmSchema>;
+
