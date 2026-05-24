@@ -55,6 +55,14 @@ function main() {
     path.join(cliRoot, 'lima.yaml')
   );
 
+  // 5. Copy config seeds
+  console.log(' - Copying config seeds...');
+  fs.cpSync(
+    path.join(repoRoot, 'config'),
+    path.join(assetsDir, 'config'),
+    { recursive: true }
+  );
+
   console.log('✨ All assets bundled successfully!');
 }
 

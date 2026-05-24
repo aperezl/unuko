@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +10,26 @@ const IS_DEV = process.env.UNUKO_ENV === 'development' || process.env.NODE_ENV =
 const DATA_DIR = IS_DEV
   ? path.resolve(__dirname, '../../data')
   : path.join(os.homedir(), '.unuko', 'data');
+
+function resolveSeedPath(seedFileName: string): string {
+  // 1. Try dev/source location (4 levels up from src/config)
+  const devPath = path.resolve(__dirname, `../../../../config/seeds/${seedFileName}`);
+  if (fs.existsSync(devPath)) {
+    return devPath;
+  }
+  // 2. Try compiled/dist location in development (3 levels up from dist)
+  const compiledDevPath = path.resolve(__dirname, `../../../config/seeds/${seedFileName}`);
+  if (fs.existsSync(compiledDevPath)) {
+    return compiledDevPath;
+  }
+  // 3. Try production/bundled location (2 levels up from assets/sim-backend/dist)
+  const prodPath = path.resolve(__dirname, `../../config/seeds/${seedFileName}`);
+  if (fs.existsSync(prodPath)) {
+    return prodPath;
+  }
+  // Fallback to devPath
+  return devPath;
+}
 
 export const CONFIG = {
   SERVER: {
@@ -22,9 +43,9 @@ export const CONFIG = {
     LIMA_PERSISTENCE_DIR: path.join(DATA_DIR, 'lima'),
     MOCK_FILE_AUDIT_DIR: path.join(DATA_DIR, 'mock'),
     LIMA_FILE_AUDIT_DIR: path.join(DATA_DIR, 'lima'),
-    SUBSCRIBERS_SEED: path.resolve(__dirname, '../../../../config/seeds/subscribers.json'),
-    GNBS_SEED: path.resolve(__dirname, '../../../../config/seeds/gnbs.json'),
-    UES_SEED: path.resolve(__dirname, '../../../../config/seeds/ues.json'),
+    SUBSCRIBERS_SEED: resolveSeedPath('subscribers.json'),
+    GNBS_SEED: resolveSeedPath('gnbs.json'),
+    UES_SEED: resolveSeedPath('ues.json'),
   },
   HARDWARE: {
     UERANSIM_IP: '127.0.0.1',

@@ -18,13 +18,19 @@
 - [ ] **TASK-B3:** Escribir tests unitarios en `EnvironmentUseCase.spec.ts` y `DependencyContainer.spec.ts` para validar el cambio dinámico y el listado de VMs.
 
 ### Bloque C: Exposición e Infraestructura
-- [ ] **TASK-C1:** Implementar rutas y handlers en `orchestrator.routes.ts` y `OrchestratorController.ts` exponiendo los endpoints `GET /v1/orchestrator/vms`, `POST /v1/orchestrator/vms/active`, y `POST /v1/orchestrator/vms/:name/(start|stop)`.
-- [ ] **TASK-C2:** Modificar [HttpEnvironmentRepository.ts](file:///Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend/src/infrastructure/adapters/HttpEnvironmentRepository.ts) en el frontend implementando el mapeo a los nuevos endpoints de las VMs.
-- [ ] **TASK-C3:** Modificar [DashboardLayout.tsx](file:///Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend/src/ui/templates/DashboardLayout.tsx) para sustituir el botón simple de "LIMA (5G)" por un selector interactivo que muestre el listado de VMs reales, sus estados (verde/rojo/amarillo), permita encenderlas/apagarlas de forma visual y establecer la VM activa con animaciones fluidas de hover/transiciones.
-- [ ] **TASK-C4:** Ejecutar la suite completa de pruebas unitarias (`pnpm test`) y verificar el correcto empaquetamiento monorepo (`pnpm build`).
+- [x] **TASK-C1:** Implementar rutas y handlers en `orchestrator.routes.ts` y `OrchestratorController.ts` exponiendo los endpoints `GET /v1/orchestrator/vms`, `POST /v1/orchestrator/vms/active`, y `POST /v1/orchestrator/vms/:name/(start|stop)`.
+- [x] **TASK-C2:** Modificar [HttpEnvironmentRepository.ts](file:///Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend/src/infrastructure/adapters/HttpEnvironmentRepository.ts) en el frontend implementando el mapeo a los nuevos endpoints de las VMs.
+- [x] **TASK-C3:** Modificar [DashboardLayout.tsx](file:///Users/aperezl/mio/telcom/unuko-rsp/apps/sim-frontend/src/ui/templates/DashboardLayout.tsx) para sustituir el botón simple de "LIMA (5G)" por un selector interactivo que muestre el listado de VMs reales, sus estados (verde/rojo/amarillo), permita encenderlas/apagarlas de forma visual y establecer la VM activa con animaciones fluidas de hover/transiciones.
+- [x] **TASK-C4:** Ejecutar la suite completa de pruebas unitarias (`pnpm test`) y verificar el correcto empaquetamiento monorepo (`pnpm build`).
+
+### Bloque D: Remediación (Producción Bundle)
+- [x] **TASK-D1:** Modificar [copy-assets.js](file:///Users/aperezl/mio/telcom/unuko-rsp/apps/sim-cli/scripts/copy-assets.js) para copiar la carpeta global `config/` a `assets/config/` de forma que sea parte de los recursos publicados en NPM.
+- [x] **TASK-D2:** Modificar [config.ts](file:///Users/aperezl/mio/telcom/unuko-rsp/apps/sim-backend/src/config/config.ts) para usar una función helper que determine la ubicación correcta del fichero de semillas dinámicamente según se ejecute en dev (origen/compilado) o prod (NPM assets).
 
 ## 3. Definición de Hecho (DoD)
-- [ ] Tests pasan al 100%.
-- [ ] Cero errores de Lint y TSC.
-- [ ] El dashboard de simulación responde visualmente a los cambios de estado en tiempo real.
-- [ ] Los recursos de la máquina virtual se inician y detienen asíncronamente sin congelar el backend.
+- [x] Tests pasan al 100%.
+- [x] Cero errores de Lint y TSC.
+- [x] El dashboard de simulación responde visualmente a los cambios de estado en tiempo real.
+- [x] Los recursos de la máquina virtual se inician y detienen asíncronamente sin congelar el backend.
+- [x] La provisión de semillas (Automatic 5G Provisioning) funciona correctamente tanto en desarrollo como en la versión empaquetada global.
+
