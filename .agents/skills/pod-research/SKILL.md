@@ -14,7 +14,7 @@ Cuando se te entregue un archivo o repositorio legacy:
 3. **Reglas de Validación Ocultas:** Busca los `if` perdidos que definen límites de negocio (ej. "el descuento no puede superar el 20%").
 
 ## II. Entregable: La Proto-Spec
-Tu salida no debe ser código corregido, sino un archivo `.sdd/specs/legacy-recovery/<feature>.spec.md` que siga el estándar del **pod-specify**.
+Tu salida no debe ser código corregido, sino un archivo `.sdd/features/<packages|apps>/<package-or-app-name>/<feature>/<feature>.spec.md` que siga el estándar del **pod-specify** o se ubique bajo `.sdd/specs/legacy-recovery/packages|apps/...`.
 ## III. Siguiente Paso
 Al terminar la investigación del código legacy, debes proponer al usuario el siguiente paso:
 > "He extraído la intención de negocio del código legacy. ¿Deseas formalizar esta especificación usando @[/pod-specify]?"

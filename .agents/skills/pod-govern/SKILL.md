@@ -35,7 +35,7 @@ Cuando el **Implement** entrega:
 ## V. Estructura del Archivo de Evidencia
 **CRÍTICO:** Debes crear **siempre** el fichero `*.evidence.md` (ej: `<feature>.evidence.md`) al finalizar el tribunal.
 
-Ubicación: `.sdd/features/<feature>/<feature>.evidence.md`
+Ubicación: `.sdd/features/<packages|apps>/<package-or-app-name>/<feature>/<feature>.evidence.md`
 
 **IMPORTANTE:** Utiliza obligatoriamente el template ubicado en:
 `assets/templates/evidence.template.md`

@@ -15,7 +15,7 @@ Por cada feature definida, DEBES asegurar:
 4. **Escenarios de Éxito y Fracaso:** Qué debe ocurrir en términos de negocio cuando todo va bien y cuando algo falla.
 
 ## II. Estructura del Archivo `spec.md`
-Ubicación: `.sdd/features/<feature-name>/<feature-name>.spec.md`
+Ubicación: `.sdd/features/<packages|apps>/<package-or-app-name>/<feature-name>/<feature-name>.spec.md`
 
 **IMPORTANTE:** Utiliza obligatoriamente el template ubicado en:
 `assets/templates/spec.template.md`
