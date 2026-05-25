@@ -35,6 +35,7 @@ unuko-rsp/
 - **Tests:** Vitest (ejecutados de forma unificada mediante Turborepo con `pnpm test`)
 - **Calidad de Código:** Compilación TypeScript estricta.
 - **Commits:** Conventional Commits (administrado bajo el estándar de `@/pod-commit`)
+- **Estructura SDD:** La documentación de desarrollo (especificaciones, planos técnicos, tareas y evidencias) debe organizarse jerárquicamente bajo `.sdd/features/<packages|apps>/<nombre-módulo>/<nombre-feature>/` para monorrepos complejos.
 - **Publicación:** Registro NPM mediante `@/pod-npm` (empaquetando assets bajo demanda de forma controlada y segura)
 
 ---
