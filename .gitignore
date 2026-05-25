@@ -58,6 +58,4 @@ turbo.log
 # unused credentials zip
 /osmo-smdpp-keys.zip
 
-# agent tools
-.agents/
 
