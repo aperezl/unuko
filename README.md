@@ -1,75 +1,75 @@
 # Unuko 5G Core & RSP Simulation Suite 🚀
 
-Unuko es una suite completa de simulación para **Core 5G (Open5GS)** y **Remote SIM Provisioning (RSP)** que permite emular redes 5G reales y procesos de aprovisionamiento de perfiles eSIM de forma 100% automatizada e interactiva.
+Unuko is a comprehensive simulation suite for **5G Core (Open5GS)** and **Remote SIM Provisioning (RSP)** that allows emulating real 5G networks and eSIM profile provisioning processes in a 100% automated and interactive way.
 
-El proyecto orquesta una máquina virtual en **Lima VM** que aloja el Core 5G y el simulador **UERANSIM**, ofreciendo además un Dashboard web interactivo y servidores SM-DP+ simulados con soporte para las arquitecturas de Consumo (**SGP.22**) e IoT (**SGP.32**).
+The project orchestrates a virtual machine using **Lima VM** that hosts the 5G Core and the **UERANSIM** simulator, also offering an interactive web Dashboard and simulated SM-DP+ servers with support for both Consumer (**SGP.22**) and IoT (**SGP.32**) architectures.
 
 ---
 
-## 🛠️ Requisitos Previos
+## 🛠️ Prerequisites
 
-Antes de empezar, asegúrate de tener instalado lo siguiente en tu Mac:
+Before you begin, make sure you have the following installed on your Mac:
 
-1. **Node.js** (versión v20 o superior recomendada)
-2. **Lima VM** (para la virtualización de Linux y ejecución del Core 5G):
+1. **Node.js** (version v20 or higher recommended)
+2. **Lima VM** (for Linux virtualization and running the 5G Core):
    ```bash
    brew install lima
    ```
 
 ---
 
-## 🚀 Guía de Inicio Rápido (Uso Global)
+## 🚀 Quick Start Guide (Global Usage)
 
-### 1. Instalación de la CLI
-Una vez publicado en NPM, los desarrolladores podrán instalar la CLI de Unuko de manera global. En local, puedes instalarla enlazando el paquete CLI del repositorio:
+### 1. Installing the CLI
+Once published on NPM, developers will be able to install the Unuko CLI globally. Locally, you can install it by linking the repository's CLI package:
 
 ```bash
 npm install -g ./apps/sim-cli
 ```
 
-### 2. Aprovisionar y Arrancar la Red 5G (Lima VM)
-Para crear, descargar la imagen Ubuntu, instalar dependencias e iniciar los servicios de red 5G dentro de la VM automáticamente:
+### 2. Provision and Start the 5G Network (Lima VM)
+To automatically create, download the Ubuntu image, install dependencies, and start the 5G network services inside the VM:
 
 ```bash
 unuko create core5g
 ```
-*(Nota: El primer arranque tomará unos minutos mientras descarga y compila UERANSIM y Open5GS automáticamente).*
+*(Note: The first startup will take a few minutes as it automatically downloads and compiles UERANSIM and Open5GS).*
 
-Para arranques posteriores:
+For subsequent startups:
 ```bash
 unuko start core5g
 ```
 
-### 3. Iniciar el Dashboard de Simulación
-Para lanzar los servicios interactivos de Unuko (Frontend, API Backend y SM-DP+ Mock):
+### 3. Start the Simulation Dashboard
+To launch Unuko's interactive services (Frontend, Backend API, and SM-DP+ Mock):
 
 ```bash
 unuko dashboard start
 ```
 
-**Direcciones y accesos locales:**
-* 🌐 **Dashboard Web**: [http://localhost:3000](http://localhost:3000)
+**Local addresses and access points:**
+* 🌐 **Web Dashboard**: [http://localhost:3000](http://localhost:3000)
 * 📖 **OpenAPI Docs (Swagger)**: [http://localhost:3000/documentation](http://localhost:3000/documentation)
 * 📡 **Mock SM-DP+ Server (SGP.22 & SGP.32)**: [http://localhost:8080](http://localhost:8080)
-* 🛠️ **WebUI de Open5GS**: [http://localhost:9999](http://localhost:9999) (mapeado de la VM al host)
-* 🗄️ **Base de datos (MongoDB)**: `mongodb://localhost:27017`
+* 🛠️ **Open5GS WebUI**: [http://localhost:9999](http://localhost:9999) (mapped from the VM to the host)
+* 🗄️ **Database (MongoDB)**: `mongodb://localhost:27017`
 
-### 4. Detener el Entorno
-Cuando termines de trabajar y quieras liberar memoria RAM en tu Mac:
+### 4. Stop the Environment
+When you are done working and want to free up RAM on your Mac:
 
 ```bash
-# Detiene el dashboard interactivo
+# Stops the interactive dashboard
 unuko dashboard stop
 
-# Detiene la máquina virtual Lima core5g
+# Stops the Lima core5g virtual machine
 unuko stop core5g
 ```
 
 ---
 
-## 💻 Comandos de la CLI (`unuko`)
+## 💻 CLI Commands (`unuko`)
 
-La herramienta `unuko` expone comandos fáciles para orquestar la red de simulación:
+The `unuko` tool exposes simple commands to orchestrate the simulation network:
 
 ```text
 unuko <command> <network> [options]
@@ -77,88 +77,88 @@ unuko dashboard start|stop
 unuko list [options]
 ```
 
-### Comandos Generales:
-* `unuko list`: Lista todas las redes virtualizadas (instancias de Lima VM) en tu Mac.
-* `unuko dashboard start`: Inicia el backend de simulación, el mock de SM-DP+ y sirve estáticamente el frontend web.
-* `unuko dashboard stop`: Apaga de forma limpia todos los procesos del dashboard liberando puertos.
+### General Commands:
+* `unuko list`: Lists all virtualized networks (Lima VM instances) on your Mac.
+* `unuko dashboard start`: Starts the simulation backend, the SM-DP+ mock, and statically serves the web frontend.
+* `unuko dashboard stop`: Cleanly shuts down all dashboard processes, freeing up ports.
 
-### Comandos del Entorno (`network` como `core5g`):
-* `unuko create core5g`: Crea, configura e instala de forma limpia una nueva instancia virtualizada.
-* `unuko start core5g`: Enciende la VM e inicia la base de datos y servicios del Core 5GS.
-* `unuko stop core5g`: Apaga la VM liberando recursos del Mac.
-* `unuko restart core5g`: Reinicia todos los servicios del Core 5G dentro de la VM sin apagar la máquina virtual.
-* `unuko status core5g`: Muestra un panel de salud interactivo del estado de la VM y de los servicios internos (mongod, open5gs, etc.).
-* `unuko devices core5g`: Lista los dispositivos gNodeB y UEs simulados por UERANSIM.
-* `unuko logs core5g <device-id>`: Sigue los logs en tiempo real de un dispositivo simulado específico (ej. `gnb-0x000000010` o `imsi-999700000000001`).
-* `unuko destroy core5g`: Detiene y elimina permanentemente la máquina virtual y sus discos del Mac.
+### Environment Commands (`network` as `core5g`):
+* `unuko create core5g`: Cleanly creates, configures, and installs a new virtualized instance.
+* `unuko start core5g`: Turns on the VM and starts the database and 5G Core services.
+* `unuko stop core5g`: Shuts down the VM, freeing up Mac resources.
+* `unuko restart core5g`: Restarts all 5G Core services inside the VM without shutting down the virtual machine itself.
+* `unuko status core5g`: Displays an interactive health panel showing the status of the VM and internal services (mongod, open5gs, etc.).
+* `unuko devices core5g`: Lists the gNodeB and UE devices simulated by UERANSIM.
+* `unuko logs core5g <device-id>`: Follows real-time logs for a specific simulated device (e.g. `gnb-0x000000010` or `imsi-999700000000001`).
+* `unuko destroy core5g`: Stops and permanently deletes the virtual machine and its disks from the Mac.
 
-*Nota: Añade `--format=json` a cualquiera de los comandos anteriores para obtener una salida estructurada y programable.*
+*Note: Add `--format=json` to any of the commands above to get structured and programmable output.*
 
 ---
 
-## 🏗️ Arquitectura y Estructura del Proyecto
+## 🏗️ Architecture & Project Structure
 
-El repositorio está organizado como un monorepo administrado por **Turborepo** y **pnpm**:
+The repository is organized as a monorepo managed by **Turborepo** and **pnpm**:
 
 ```text
 ├── apps/
-│   ├── sim-backend/     # Servidor Fastify que orquesta la simulación, expone APIs y persistencia.
-│   ├── sim-frontend/    # Dashboard React / Vite interactivo con visualización del Core y eSIMs.
-│   ├── sim-cli/         # Entrypoint de la CLI (unuko) y scripts de empaquetado de assets.
-│   ├── smdp-mockv2/     # Servidor mock SM-DP+ compatible con GSMA SGP.22 (Consumer) y SGP.32 (IoT).
-│   └── smdp-mock/       # Servidor mock SM-DP+ heredado (SGP.22 básico).
+│   ├── sim-backend/     # Fastify server that orchestrates the simulation, exposing APIs and persistence.
+│   ├── sim-frontend/    # Interactive React / Vite dashboard for Core and eSIM visualization.
+│   ├── sim-cli/         # Entry point for the CLI (unuko) and asset packaging scripts.
+│   ├── smdp-mockv2/     # SM-DP+ mock server compatible with GSMA SGP.22 (Consumer) and SGP.32 (IoT).
+│   └── smdp-mock/       # Legacy SM-DP+ mock server (basic SGP.22).
 ├── packages/
-│   ├── core/            # Reglas de negocio del gemelo digital, motores de workflow y transiciones.
-│   ├── cli/             # Lógica compartida para gestionar la VM Lima a través de comandos limactl.
-│   ├── ueransim-lib/    # Librería de control y generación de ficheros de configuración para UERANSIM.
-│   └── adapter-*/       # Adaptadores de comunicación (HTTP, MongoDB, PKCS11, SoftHSM, etc.).
-└── lima.yaml            # Configuración IaC del aprovisionamiento automatizado de la VM core5g.
+│   ├── core/            # Digital twin business rules, workflow engines, and transitions.
+│   ├── cli/             # Shared logic to manage the Lima VM using limactl commands.
+│   ├── ueransim-lib/    # Control library and configuration file generation for UERANSIM.
+│   └── adapter-*/       # Communication adapters (HTTP, MongoDB, PKCS11, SoftHSM, etc.).
+└── lima.yaml            # IaC configuration for automated VM core5g provisioning.
 ```
 
 ---
 
-## 🔧 Guía de Desarrollo (Desarrolladores del Repositorio)
+## 🔧 Development Guide (Repository Contributors)
 
-Si deseas modificar código, añadir adaptadores o extender los workflows de simulación, sigue estos pasos:
+If you want to modify code, add adapters, or extend simulation workflows, follow these steps:
 
-### 1. Instalación de dependencias
-Usa `pnpm` para la instalación de dependencias en el espacio de trabajo:
+### 1. Install dependencies
+Use `pnpm` to install workspace dependencies:
 ```bash
 pnpm install
 ```
 
-### 2. Ejecución en Modo Desarrollo
-Para levantar todos los microservicios en vivo con Hot Module Reload (HMR):
+### 2. Run in Development Mode
+To start all microservices live with Hot Module Replacement (HMR):
 ```bash
 pnpm dev
 ```
-*Esto levantará el frontend en el puerto `5173`, el backend en el `3000` y el servidor SM-DP+ Mock en el `8080` en modo observador (`watch`).*
+*This will spin up the frontend on port `5173`, the backend on `3000`, and the Mock SM-DP+ server on `8080` in watch mode.*
 
-### 3. Ejecutar Tests
-La suite cuenta con tests automatizados completos de backend, core y frontend que se pueden correr con:
+### 3. Run Tests
+The suite has complete automated tests for backend, core, and frontend which can be run with:
 ```bash
 pnpm test
 ```
 
-### 4. Compilar y Empaquetar
-Para preparar la CLI con los bundles estáticos antes de publicar a NPM o probar en local:
+### 4. Build and Package
+To prepare the CLI with static bundles before publishing to NPM or testing locally:
 
 ```bash
-# Compila todos los paquetes y apps en JS de distribución
+# Compiles all packages and apps into distribution JS
 pnpm build
 
-# Copia los bundles de backend, frontend y configuraciones a sim-cli/assets
+# Copies backend, frontend, and configuration bundles to sim-cli/assets
 pnpm --filter unuko run copy-assets
 
-# Instala la CLI globalmente desde tu directorio local
+# Installs the CLI globally from your local directory
 npm install -g ./apps/sim-cli
 ```
 
 ---
 
-## 🛡️ Almacenamiento de Estados y Logs
+## 🛡️ State and Log Storage
 
-Para no interferir con tu workspace de desarrollo y garantizar que la ejecución global sea portátil y libre de errores de permisos:
-* En **Desarrollo** (`pnpm dev`), los datos dinámicos de sesiones y logs se guardan localmente en el directorio `scratch/` del proyecto.
-* En **Producción** (ejecución global mediante `unuko dashboard start`), todos los archivos de configuración, estado persistido de la base de datos (e.g. entorno actual) y ficheros de logs se crean y gestionan bajo la home del usuario en:
-  `~/.unuko/` y `~/.unuko/data/`
+To avoid interfering with your development workspace and to ensure that global execution is portable and free of permission errors:
+* In **Development** (`pnpm dev`), dynamic session data and logs are saved locally in the project's `scratch/` directory.
+* In **Production** (global execution via `unuko dashboard start`), all configuration files, persisted database state (e.g. current environment), and log files are created and managed under the user's home directory in:
+  `~/.unuko/` and `~/.unuko/data/`
